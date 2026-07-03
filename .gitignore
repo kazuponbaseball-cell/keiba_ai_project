@@ -1,0 +1,28 @@
+# Python/cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.zip
+
+# Local environments and secrets
+.env
+.venv/
+venv/
+
+# Generated or bulky project artifacts
+data/
+date/raw/
+date/interim/
+date/processed/
+models/
+outputs/
+202606*/
+
+# Local tooling installed by Codex
+tools/git/
+tools/*.exe
+
+# Local reference manuals / vendor documents
+docs/*.pdf
+docs/*.xls
+docs/*.xlsx

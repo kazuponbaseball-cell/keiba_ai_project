@@ -1,0 +1,62 @@
+{
+  "pipeline": {
+    "timezone": "Asia/Tokyo",
+    "baseline_feature_config": "config/baseline_features.json",
+    "baseline_model_path": "models/baseline/baseline_ranker.pkl",
+    "logs_dir": "outputs/logs",
+    "state_dir": "data/state"
+  },
+  "jv_data": {
+    "provider": {
+      "name": "local_drop",
+      "external_command": "",
+      "external_workdir": ""
+    },
+    "source_drop_dir": "data/inbox/jv",
+    "raw_archive_root": "data/raw/jv",
+    "parsed_root": "data/processed/jv_parsed",
+    "file_patterns": [
+      "*.csv",
+      "*.txt",
+      "*.zip",
+      "*.lzh",
+      "*.dat"
+    ]
+  },
+  "normalized": {
+    "root_dir": "data/processed/normalized",
+    "races_file": "races.csv",
+    "runners_file": "runners.csv",
+    "results_file": "results.csv",
+    "horses_file": "horses_latest.csv"
+  },
+  "datasets": {
+    "train_root": "data/datasets/train",
+    "inference_root": "data/datasets/inference",
+    "weekly_entry_file": "data/datasets/inference/weekly/entry_snapshot.csv",
+    "weekly_template_file": "data/templates/weekly_entry_template.csv"
+  },
+  "target_import": {
+    "source_dirs": [
+      "C:/Users/kazup/Data Lab/TXT",
+      "C:/Users/kazup/Downloads"
+    ],
+    "source_max_age_days": 14,
+    "entry_drop_dir": "data/inbox/target/entries",
+    "race_drop_dir": "data/inbox/target/races",
+    "odds_drop_dir": "data/inbox/target/odds",
+    "timeline_odds_drop_dir": "data/inbox/target/timeline_odds",
+    "entry_file_patterns": [
+      "*.csv"
+    ],
+    "race_file_patterns": [
+      "*.csv"
+    ]
+  },
+  "schedules": {
+    "daily_raw_update": "05:30",
+    "weekly_inference_build": "Friday 19:00",
+    "race_day_refresh": "Saturday/Sunday before race time",
+    "retrain": "Monday 06:00"
+  }
+}
