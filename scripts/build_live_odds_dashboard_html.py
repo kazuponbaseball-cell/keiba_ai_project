@@ -1780,6 +1780,11 @@ def build_ticket_rows(
                 "lapPromoteNote": text(row.get("lap_positive_expansion_note")),
                 "lapPromoteScore": first_number(row, ["lap_positive_expansion_score"]),
                 "lapRoleScore": first_number(row, ["lap_axis_specialist_role_score"]),
+                "productionContextLabel": text(row.get("production_context_label")),
+                "productionContextAdjustment": first_number(row, ["production_context_probability_adjustment"]),
+                "productionContextFrontAdjustment": first_number(row, ["prod_front_context_probability_adjustment"]),
+                "productionContextLapAdjustment": first_number(row, ["prod_s_priority_probability_adjustment"]),
+                "productionContextCloserAdjustment": first_number(row, ["prod_closer_course_probability_adjustment"]),
                 "decisionGeneratedAt": text(row.get("runtime_decision_generated_at")),
                 "generatedBeforePost": truthy(row.get("runtime_decision_generated_before_post"), default=False),
                 "purchaseValid": truthy(row.get("runtime_purchase_valid"), default=True),
@@ -4079,8 +4084,37 @@ HTML_TEMPLATE = """<!doctype html>
       const n = Number(value);
       return Number.isFinite(n) && n > 0 ? ` ${n.toFixed(2)}` : '';
     }
+    function contextAdjSuffix(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return '';
+      const sign = n >= 0 ? '+' : '';
+      return ` 補正${sign}${n.toFixed(3)}`;
+    }
+    function productionContextText(label, adjustment) {
+      const n = Number(adjustment);
+      const map = {
+        prod_context_support: '最強文脈は強く支持',
+        prod_context_caution: '最強文脈は警戒',
+        prod_s_lap_support: 'ラップ文脈が支持',
+        prod_front_survival_support: '前残り文脈が支持',
+        prod_closer_context_support: '差し文脈が支持',
+        prod_context_neutral: '',
+      };
+      if (map[label]) return map[label];
+      if (Number.isFinite(n)) {
+        if (n >= 0.030) return '最強文脈は強く支持';
+        if (n >= 0.010) return '最強文脈はやや支持';
+        if (n <= -0.030) return '最強文脈は警戒';
+        if (n < 0) return '最強文脈はやや警戒';
+      }
+      return '';
+    }
     function ticketExtraPlain(x) {
       const parts = [];
+      const prodContext = productionContextText(x.productionContextLabel, x.productionContextAdjustment);
+      if (prodContext) {
+        parts.push(`${prodContext}${contextAdjSuffix(x.productionContextAdjustment)}`);
+      }
       const paceLabel = x.pacePairNote || pacePairLabelText(x.pacePairLabel);
       if (paceLabel && x.pacePairLabel !== 'pace_pair_neutral') {
         parts.push(`${paceLabel}${scoreSuffix(x.pacePairScore)}`);
