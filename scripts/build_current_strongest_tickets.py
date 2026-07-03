@@ -3718,6 +3718,148 @@ def build_pair_candidates(runners: pd.DataFrame, pair: pd.DataFrame) -> pd.DataF
         ],
         default="",
     )
+
+    def _m01(name: str, default: float = 0.0) -> pd.Series:
+        raw = merged[name] if name in merged.columns else pd.Series(default, index=merged.index)
+        return pd.to_numeric(raw, errors="coerce").fillna(default).clip(0.0, 1.0)
+
+    # Production reflection of the OOS-positive pair-probability validations.
+    # Keep it deliberately thin: these modifiers refine pair/value probabilities,
+    # while the strict BUY gate below still controls final executability.
+    front_context_support_norm = (
+        0.64 * norm01(_m01("front_context_survival_support_score"), lo=0.08, hi=0.24)
+        + 0.22 * norm01(_m01("front_context_readability_score"), lo=0.25, hi=0.55)
+        + 0.14 * _m01("projected_front5_prob")
+    ).clip(0.0, 1.0)
+    front_context_collapse_norm = (
+        0.72 * norm01(_m01("front_context_collapse_risk_score"), lo=0.006, hi=0.026)
+        + 0.18 * _m01("front_context_high_pressure_signal")
+        + 0.10 * _m01("projected_front5_prob")
+    ).clip(0.0, 1.0)
+    front_context_closer_rescue = (
+        front_context_collapse_norm
+        * (
+            0.38 * _m01("closer_logic_watch_score")
+            + 0.24 * _m01("position_closer_value_score")
+            + 0.20 * _m01("closer_pair_max")
+            + 0.18 * _m01("lap_pair_same_race_fit_score")
+        )
+    ).clip(0.0, 1.0)
+    front_context_probability_adjustment = (
+        0.014 * front_context_support_norm
+        - 0.018 * front_context_collapse_norm
+        + 0.008 * front_context_closer_rescue
+    ).clip(-0.05, 0.05)
+
+    s_priority_support = (
+        0.28 * _m01("lap_advanced_combo_score")
+        + 0.20 * _m01("lap_role_pair_probability_proxy")
+        + 0.18 * _m01("goodrun_lap_pair_avg_score")
+        + 0.16 * _m01("lap_positive_expansion_score")
+        + 0.10 * _m01("past3_lap_pair_fit_score")
+        + 0.08 * _m01("race_quality_v2_confidence")
+    ).clip(0.0, 1.0)
+    s_priority_caution = (
+        0.36 * _m01("lap_light_safety_caution_score")
+        + 0.28 * _m01("lap_pair_popular_mismatch_score")
+        + 0.20 * _m01("lap_role_front_front_collision_risk")
+        + 0.16 * _m01("lap_pair_contradiction_score")
+    ).clip(0.0, 1.0)
+    s_priority_probability_adjustment = (
+        0.032 * s_priority_support - 0.032 * s_priority_caution
+    ).clip(-0.06, 0.06)
+
+    closer_course_pair_fit = (
+        front_context_collapse_norm
+        * (
+            0.34 * _m01("closer_logic_watch_score")
+            + 0.22 * _m01("position_closer_value_score")
+            + 0.18 * _m01("collapse_fit")
+            + 0.14 * _m01("closer_pair_max")
+            + 0.12 * _m01("style_diversity_score")
+        )
+    ).clip(0.0, 1.0)
+    closer_course_front_risk = (
+        front_context_collapse_norm
+        * (
+            0.46 * _m01("projected_front5_prob")
+            + 0.24 * _m01("front_front_slow_fit")
+            + 0.18 * _m01("front_front_clash")
+            + 0.12 * _m01("lap_light_safety_caution_score")
+        )
+    ).clip(0.0, 1.0)
+    closer_course_probability_adjustment = (
+        0.040 * closer_course_pair_fit - 0.048 * closer_course_front_risk
+    ).clip(-0.06, 0.06)
+
+    merged["prod_front_context_support_score"] = front_context_support_norm
+    merged["prod_front_context_collapse_score"] = front_context_collapse_norm
+    merged["prod_front_context_closer_rescue_score"] = front_context_closer_rescue
+    merged["prod_front_context_probability_adjustment"] = front_context_probability_adjustment
+    merged["prod_s_priority_support_score"] = s_priority_support
+    merged["prod_s_priority_caution_score"] = s_priority_caution
+    merged["prod_s_priority_probability_adjustment"] = s_priority_probability_adjustment
+    merged["prod_closer_course_pair_fit_score"] = closer_course_pair_fit
+    merged["prod_closer_course_front_risk_score"] = closer_course_front_risk
+    merged["prod_closer_course_probability_adjustment"] = closer_course_probability_adjustment
+    production_context_adjustment = (
+        front_context_probability_adjustment
+        + s_priority_probability_adjustment
+        + closer_course_probability_adjustment
+    ).clip(-0.10, 0.10)
+    merged["production_context_probability_adjustment"] = production_context_adjustment
+    merged["production_context_variant"] = "front_context_light+s_lap_strong+closer_switch_strong"
+    merged["production_context_label"] = np.select(
+        [
+            production_context_adjustment.ge(0.030),
+            production_context_adjustment.le(-0.030),
+            s_priority_support.ge(0.62) & s_priority_caution.le(0.34),
+            front_context_support_norm.ge(0.62) & front_context_collapse_norm.le(0.42),
+            closer_course_pair_fit.ge(0.30) & closer_course_front_risk.le(0.36),
+        ],
+        [
+            "prod_context_support",
+            "prod_context_caution",
+            "prod_s_lap_support",
+            "prod_front_survival_support",
+            "prod_closer_context_support",
+        ],
+        default="prod_context_neutral",
+    )
+    merged["pair_quinella_score"] = (merged["pair_quinella_score"] + production_context_adjustment).clip(0.0, 1.0)
+    merged["pair_score"] = (merged["pair_score"] + 0.70 * production_context_adjustment).clip(0.0, 1.0)
+    merged["market_overlay_score"] = (
+        merged["market_overlay_score"]
+        + 0.006 * (0.72 * s_priority_support - 0.52 * s_priority_caution)
+        + 0.006 * (0.76 * front_context_support_norm - 0.55 * front_context_collapse_norm + 0.45 * front_context_closer_rescue)
+        + 0.016 * (0.80 * closer_course_pair_fit - 0.55 * closer_course_front_risk)
+    ).clip(0.0, 1.0)
+    merged["projected_front5_prob"] = (
+        merged["projected_front5_prob"]
+        + 0.008 * (0.75 * front_context_support_norm - 0.85 * front_context_collapse_norm)
+        - 0.024 * closer_course_front_risk
+    ).clip(0.0, 1.0)
+    overlay = merged["market_overlay_score"]
+    front_bonus = merged["projected_front5_prob"]
+    merged["late_value_survives_score"] = (0.50 + 0.30 * overlay - 0.12 * danger).clip(0.0, 1.0)
+    merged["continuous_pair_value_score"] = (
+        0.24 * merged["pair_quinella_score"]
+        + 0.20 * merged["pair_score"]
+        + 0.18 * merged["market_overlay_score"]
+        + 0.16 * norm01(merged["pair_score"], lo=0.45, hi=0.82)
+        + 0.12 * merged["late_value_survives_score"]
+        + 0.10 * norm01(merged["pair_quinella_score"], lo=0.48, hi=0.75)
+    ).clip(0.0, 1.0)
+    merged["continuous_pair_formal_score"] = (
+        0.36 * merged["continuous_pair_value_score"]
+        + 0.30 * merged["continuous_pair_pace_fit_score"]
+        + 0.18 * merged["continuous_pair_readability_score"]
+        + 0.10 * merged["member_pair_support_score"]
+        + 0.06 * merged["race_quality_pair_fit_score"]
+        - 0.10 * merged["ticket_danger_popular_score"]
+        - 0.06 * merged["ticket_danger_popular_in_pair_score"]
+    ).clip(0.0, 1.0)
+
     merged["pace_pair_gate_label"] = np.select(
         [
             merged["continuous_pair_formal_score"].ge(0.72)
@@ -4576,6 +4718,36 @@ def select_tickets(candidates: pd.DataFrame, *, max_per_day: int, max_per_race: 
             .round(2)
             .astype(str)
         )
+        + "|prod_context="
+        + selected.get("production_context_label", pd.Series("prod_context_neutral", index=selected.index)).astype(str)
+        + "|prod_adj="
+        + (
+            pd.to_numeric(selected.get("production_context_probability_adjustment", 0.0), errors="coerce")
+            .fillna(0.0)
+            .round(3)
+            .astype(str)
+        )
+        + "|prod_front="
+        + (
+            pd.to_numeric(selected.get("prod_front_context_probability_adjustment", 0.0), errors="coerce")
+            .fillna(0.0)
+            .round(3)
+            .astype(str)
+        )
+        + "|prod_s_lap="
+        + (
+            pd.to_numeric(selected.get("prod_s_priority_probability_adjustment", 0.0), errors="coerce")
+            .fillna(0.0)
+            .round(3)
+            .astype(str)
+        )
+        + "|prod_closer="
+        + (
+            pd.to_numeric(selected.get("prod_closer_course_probability_adjustment", 0.0), errors="coerce")
+            .fillna(0.0)
+            .round(3)
+            .astype(str)
+        )
         + "|workout_auto="
         + selected["workout_auto_pair_runtime_tag"].astype(str)
         + "|workout_auto_score="
@@ -4734,6 +4906,19 @@ def export_tickets(selected: pd.DataFrame, all_candidates: pd.DataFrame, out_dir
         "front_context_collapse_risk_score": 0.0,
         "front_context_gate_label": "front_context_neutral",
         "front_context_gate_note": "",
+        "prod_front_context_support_score": 0.0,
+        "prod_front_context_collapse_score": 0.0,
+        "prod_front_context_closer_rescue_score": 0.0,
+        "prod_front_context_probability_adjustment": 0.0,
+        "prod_s_priority_support_score": 0.0,
+        "prod_s_priority_caution_score": 0.0,
+        "prod_s_priority_probability_adjustment": 0.0,
+        "prod_closer_course_pair_fit_score": 0.0,
+        "prod_closer_course_front_risk_score": 0.0,
+        "prod_closer_course_probability_adjustment": 0.0,
+        "production_context_probability_adjustment": 0.0,
+        "production_context_variant": "",
+        "production_context_label": "prod_context_neutral",
         **TARGET_RA_LAP_DEFAULTS,
     }.items():
         if col not in selected_out.columns:
@@ -4933,6 +5118,19 @@ def main() -> int:
                 "target_ra_lap_mismatch_risk_score",
                 "target_ra_lap_shadow_label",
                 "target_ra_lap_shadow_note",
+                "prod_front_context_support_score",
+                "prod_front_context_collapse_score",
+                "prod_front_context_closer_rescue_score",
+                "prod_front_context_probability_adjustment",
+                "prod_s_priority_support_score",
+                "prod_s_priority_caution_score",
+                "prod_s_priority_probability_adjustment",
+                "prod_closer_course_pair_fit_score",
+                "prod_closer_course_front_risk_score",
+                "prod_closer_course_probability_adjustment",
+                "production_context_probability_adjustment",
+                "production_context_variant",
+                "production_context_label",
                 "workout_auto_pair_score",
                 "workout_auto_pair_runtime_tag",
                 "pair_min_ability_floor_score_5",
