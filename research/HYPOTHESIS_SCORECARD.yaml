@@ -1,0 +1,79 @@
+version: 1
+name: research_os_v1_hypothesis_scorecard
+total_points: 100
+auto_execution_threshold: 75
+human_approval_required: true
+rules:
+  below_threshold_status: BLOCKED_SCORE
+  threshold_or_above_status: PROPOSED
+  execution_status: APPROVED_TO_RUN
+  below_threshold_auto_execution: false
+  threshold_or_above_auto_execution_without_approval: false
+  production_promotion_supported: false
+criteria:
+  independent_information:
+    label: 既存特徴では代替できない独立情報
+    max_points: 25
+    guidance:
+      0: 既存特徴の名称変更または同義変換である
+      13: 相関・ablationによる部分的な独立性を示す
+      25: as-of安全な新規観測経路と条件付き増分を示す
+  racing_mechanism:
+    label: 競馬上の作用機序
+    max_points: 20
+    guidance:
+      0: データ探索だけで機序がない
+      10: 方向性と対象条件を説明できる
+      20: 反対方向・交絡・適用限界まで事前記述できる
+  outer_oos_failure_evidence:
+    label: outer OOSの失敗分析による根拠
+    max_points: 20
+    guidance:
+      0: in-sampleまたはROI上位だけが根拠である
+      10: 複数foldの失敗segmentと対象母集団を示す
+      20: 凍結baselineのouter OOS residualを再現可能に示す
+  leakage_safety:
+    label: リーク安全性
+    max_points: 15
+    guidance:
+      0: source timeまたは未来情報を証明できない
+      8: as-of ruleと禁止列を定義している
+      15: lineage、availability、negative controlを機械検査できる
+  minimal_falsifiability:
+    label: 最小実験による反証可能性
+    max_points: 10
+    guidance:
+      0: 成功条件だけで棄却条件がない
+      5: primary metricと停止条件を事前登録する
+      10: 1つの変更で短時間にnullを棄却または保持できる
+  acquisition_implementation_cost:
+    label: 取得・実装コスト
+    max_points: 10
+    guidance:
+      0: 高コストまたは権利・運用リスクが不明である
+      5: 既存dataで限定的に検証できる
+      10: 小さく可逆で、失敗時の廃棄コストが低い
+hard_blockers:
+  - score_below_75
+  - missing_human_approval
+  - odds_used_for_candidate_selection
+  - chronological_outer_oos_not_defined
+  - post_event_or_future_information
+  - top3_or_wide_probability_contract_not_tested
+  - formal_buy_or_order_side_effect
+  - production_or_merge_approval_assumed
+template:
+  experiment_id: EXP-YYYYMMDD-NNN
+  scores:
+    independent_information: 0
+    racing_mechanism: 0
+    outer_oos_failure_evidence: 0
+    leakage_safety: 0
+    minimal_falsifiability: 0
+    acquisition_implementation_cost: 0
+  total: 0
+  auto_execution_eligible: false
+  human_approval:
+    status: pending
+    approver: null
+    approved_at: null
