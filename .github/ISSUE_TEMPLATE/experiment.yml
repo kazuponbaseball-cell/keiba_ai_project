@@ -1,5 +1,5 @@
 name: Research experiment
-description: Research OS v1の仮説を採点し、人間承認へ送る
+description: Canonical scopeをGitHub-backed二段階承認へ送る
 title: "[EXP] "
 labels:
   - research
@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        75点未満は自動実行できません。75点以上でもAPPROVED_TO_RUNの人間承認が必要です。本番反映、merge、正式BUY再開はこのIssueの承認範囲外です。
+        このIssueのMarkdownは承認scopeの正本ではありません。tracked canonical JSONとdigestを確認してください。準備・実行・shadowは別承認です。本番、merge、正式BUY、注文は承認できません。
   - type: input
     id: experiment_id
     attributes:
@@ -15,104 +15,72 @@ body:
       placeholder: EXP-YYYYMMDD-NNN
     validations:
       required: true
-  - type: textarea
-    id: hypothesis
+  - type: input
+    id: proposal_scope_path
     attributes:
-      label: 仮説と競馬上の作用機序
-      description: null仮説、対象条件、既存特徴との差を含める
-    validations:
-      required: true
-  - type: textarea
-    id: failure_evidence
-    attributes:
-      label: outer OOS失敗分析
-      description: 対象fold、segment、baseline artifact、再現手順を記す
+      label: Canonical proposal scope path
+      placeholder: research/scopes/EXP-YYYYMMDD-NNN.proposal.json
     validations:
       required: true
   - type: input
-    id: score_independent
+    id: proposal_scope_digest
     attributes:
-      label: 独立情報 score / 25
-      placeholder: "0"
-    validations:
-      required: true
-  - type: input
-    id: score_mechanism
-    attributes:
-      label: 作用機序 score / 20
-      placeholder: "0"
-    validations:
-      required: true
-  - type: input
-    id: score_failure
-    attributes:
-      label: outer OOS根拠 score / 20
-      placeholder: "0"
-    validations:
-      required: true
-  - type: input
-    id: score_leakage
-    attributes:
-      label: リーク安全性 score / 15
-      placeholder: "0"
-    validations:
-      required: true
-  - type: input
-    id: score_falsifiability
-    attributes:
-      label: 最小反証可能性 score / 10
-      placeholder: "0"
-    validations:
-      required: true
-  - type: input
-    id: score_cost
-    attributes:
-      label: 取得・実装コスト score / 10
-      placeholder: "0"
-    validations:
-      required: true
-  - type: input
-    id: score_total
-    attributes:
-      label: 合計 score / 100
-      description: 75未満はBLOCKED_SCORE
-      placeholder: "0"
+      label: Proposal scope SHA-256
+      description: queue、experiment Markdown、canonical JSONから一致を確認する
+      placeholder: 64 lowercase hex characters
     validations:
       required: true
   - type: textarea
-    id: minimum_experiment
+    id: proposal_review
     attributes:
-      label: 最小実験と反証条件
-      description: 変更を1つに限定し、primary metric、停止条件、compute budgetを固定する
+      label: Proposal review summary
+      description: 仮説/null、作用機序、対象母集団、scope、data/as-of、fold、metric/gate/stop、budget、scoreを要約する
     validations:
       required: true
-  - type: textarea
-    id: data_contract
+  - type: markdown
     attributes:
-      label: Data、as-of、outer OOS契約
-      description: train/validation/calibration/test期間、purge、lineage、禁止列を書く
+      value: |
+        準備を承認するallowlisted humanは、内容確認後に次のexact commentを投稿してください。
+
+        `APPROVED_TO_PREPARE <proposal_scope_digest>`
+
+        これはresearch branch上の実装とsynthetic fixture unit testだけを許可します。実データ学習、backtest、outer OOS、ROI計算は禁止です。
+  - type: input
+    id: run_scope_path
+    attributes:
+      label: Canonical run scope path
+      description: 実装完了後に記入。準備承認時はpendingでよい
+      placeholder: research/scopes/EXP-YYYYMMDD-NNN.run.json or pending
     validations:
       required: true
+  - type: input
+    id: run_scope_digest
+    attributes:
+      label: Run scope SHA-256
+      description: exact commit、config/data/fold/runner/environment hash、seed、commandsを含む。準備承認時はpendingでよい
+      placeholder: 64 lowercase hex characters or pending
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        実データ実行を承認するallowlisted humanは、実装後scopeを確認し、次のexact commentを別途投稿してください。
+
+        `APPROVED_TO_RUN <run_scope_digest>`
+
+        RUNNING直前に同じcommentが再取得・再検証されます。shadow昇格にはさらに別の `APPROVED_FOR_SHADOW <review_digest>` が必要です。
   - type: checkboxes
     id: absolute_contracts
     attributes:
-      label: 絶対契約
+      label: Absolute contracts
       options:
-        - label: 取消後の全C(n,3) Top3集合softmax、Top3 mass=1、derived wide mass=3を維持する
+        - label: Top3 unordered-set softmax、Top3 mass=1、derived wide mass=3を維持する
           required: true
         - label: 候補選択にodds、人気、market、払戻、ROIを使用しない
           required: true
-        - label: chronological outer OOSを使い、未来・事後・リーク情報を禁止する
+        - label: chronological outer OOS、as-of、lineage、no leakageを維持する
           required: true
         - label: formal_buy=false、send_order=false、stake=0を維持する
           required: true
-        - label: mainへ直接commitせず、本番反映とmergeに人間承認を要求する
+        - label: production、merge、BUY、注文、通知、credentialはscope外である
           required: true
-  - type: checkboxes
-    id: approval
-    attributes:
-      label: Human approval
-      description: repository ownerまたは指定approverだけが確認する
-      options:
-        - label: scoreとscopeを確認し、この実験をAPPROVED_TO_RUNとする
-          required: false

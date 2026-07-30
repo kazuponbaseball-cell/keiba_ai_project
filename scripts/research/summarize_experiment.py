@@ -72,7 +72,8 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
         f"- Generated at (UTC): `{utc_now()}`",
         f"- Registry: `{registry_path}`",
         f"- Filter: `{experiment_id}`" if experiment_id else "- Filter: all experiments",
-        "- Autonomous execution: prohibited before approval; allowed only in `approved_to_run` / `running` within approved scope",
+        "- Real-data execution: prohibited until a verified `APPROVED_TO_RUN` is revalidated immediately before `RUNNING`",
+        "- Preparation: only `APPROVED_TO_PREPARE` / `PREPARING`; synthetic fixtures only",
         "- Production / merge / BUY approval: always false and outside this registry's authority",
         "",
     ]
@@ -84,8 +85,8 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
         [
             "## Latest state",
             "",
-            "| Experiment | Status | Score | Human run approval | Execution authorized | Updated (UTC) | Events |",
-            "|---|---|---:|---|---|---|---:|",
+            "| Experiment | Status | Score | Prepare approval | Run approval | Shadow approval | Real data allowed | Updated (UTC) | Events |",
+            "|---|---|---:|---|---|---|---|---|---:|",
         ]
     )
     for key in sorted(grouped):
@@ -98,13 +99,10 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
                     f"`{md(key)}`",
                     f"`{md(latest.get('status'))}`",
                     md(latest.get("score_total")),
-                    md(
-                        latest.get(
-                            "human_run_approval_recorded",
-                            latest.get("run_approval_in_effect", latest.get("human_approved", False)),
-                        )
-                    ),
-                    md(latest.get("execution_authorized", False)),
+                    md(latest.get("human_prepare_approval_recorded", False)),
+                    md(latest.get("human_run_approval_recorded", False)),
+                    md(latest.get("human_shadow_approval_recorded", False)),
+                    md(latest.get("real_data_execution_allowed", False)),
                     md(latest.get("occurred_at")),
                     str(len(history)),
                 ]
@@ -123,8 +121,15 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
                 f"- Latest status: `{md(latest.get('status'))}`",
                 f"- Score: **{md(latest.get('score_total'))}/{md(latest.get('score_threshold', 75))}**",
                 f"- Score threshold met: `{md(latest.get('score_threshold_met', False))}`",
+                f"- Proposal scope digest: `{md(latest.get('proposal_scope_digest'))}`",
+                f"- Run scope digest: `{md(latest.get('run_scope_digest'))}`",
+                f"- Review digest: `{md(latest.get('review_digest'))}`",
+                f"- Human prepare approval recorded: `{md(latest.get('human_prepare_approval_recorded', False))}`",
                 f"- Human run approval recorded: `{md(latest.get('human_run_approval_recorded', False))}`",
-                f"- Human run approval in effect: `{md(latest.get('run_approval_in_effect', False))}`",
+                f"- Human shadow approval recorded: `{md(latest.get('human_shadow_approval_recorded', False))}`",
+                f"- Preparation authorized: `{md(latest.get('preparation_authorized', False))}`",
+                f"- Synthetic fixture tests allowed: `{md(latest.get('synthetic_fixture_tests_allowed', False))}`",
+                f"- Real-data execution allowed: `{md(latest.get('real_data_execution_allowed', False))}`",
                 f"- Autonomous execution allowed: `{md(latest.get('automatic_execution_allowed', False))}`",
                 f"- Execution authorized: `{md(latest.get('execution_authorized', False))}`",
                 f"- Production approved: `{md(latest.get('production_approved', False))}`",
@@ -136,8 +141,8 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
                 "",
                 "### Event history",
                 "",
-                "| Seq | UTC | Status | Previous | Actor | Score | Human approved event | Artifacts | Notes |",
-                "|---:|---|---|---|---|---:|---|---|---|",
+                "| Seq | UTC | Status | Previous | Caller | Score | Approval comment | Proposal digest | Run/review digest | Artifacts | Notes |",
+                "|---:|---|---|---|---|---:|---|---|---|---|---|",
             ]
         )
         for event in history:
@@ -151,7 +156,13 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
                         f"`{md(event.get('previous_status'))}`" if event.get("previous_status") else "",
                         md(event.get("actor")),
                         md(event.get("score_total")),
-                        md(event.get("human_approved", False)),
+                        md(
+                            event.get("approval_evidence", {}).get("url")
+                            if isinstance(event.get("approval_evidence"), dict)
+                            else ""
+                        ),
+                        md(event.get("proposal_scope_digest")),
+                        md(event.get("run_scope_digest") or event.get("review_digest")),
                         artifact_text(event),
                         md(event.get("notes")),
                     ]

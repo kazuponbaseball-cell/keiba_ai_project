@@ -164,3 +164,47 @@ Research OS artifactは常に `formal_buy=false`、`send_order=false`、`stake=0
 - Source: `docs/EXTERNAL_AI_PROJECT_BRIEF.md`
 
 記載されたROI 375.9%〜716.4%は、小標本、上振れ、過学習リスクを文書自身が警告している。凍結manifestと再現手順がないため、現在baseline、hypothesis score、promotion gateに利用しない。
+
+## D-019 — 人間承認をGitHub Issue commentへ結び付ける
+
+- Decision: `LOCKED_GATE`
+- Evidence: governance decision + tracked implementation
+
+`--human-approved`やcaller指定`--actor`は人間身份の証明として扱わない。
+承認はGitHub Issue上のexact commentだけを証拠とし、proposalのbase commitが
+`origin/main` history上にあることを検証したうえで、そのcommit上の
+`research/APPROVERS.json`でauthor loginを検証する。experiment branch上の
+allowlist変更、allowlist外user、Codex、bot、automation actorを拒否する。
+
+registryへcomment ID、URL、author、created_at、updated_at、body SHA-256、
+approval type、承認digestを保存する。`APPROVED_TO_RUN`から`RUNNING`へ
+進む直前に同じcommentをread-only再取得し、author、body、digest、
+updated_atの変更またはGitHub取得不能時はfail-closeする。
+
+`APPROVED_TO_PREPARE`は実装とsynthetic fixture testだけを許可する。
+実データ学習、backtest、outer OOS、ROI計算には、実装後scopeに対する
+別の`APPROVED_TO_RUN`を必要とする。shadowも`review_digest`に対する
+別の`APPROVED_FOR_SHADOW`を必要とする。
+
+## D-020 — 承認scopeの正本をcanonical JSON digestとする
+
+- Decision: `LOCKED_CONTRACT`
+- Evidence: governance decision + tracked implementation
+
+Markdownを承認scopeの正本にしない。proposal/run scopeはcanonical JSONを
+UTF-8、key sort、compact separator、Unicode保持でserializeし、SHA-256化する。
+setとして扱うproposal listはsorted uniqueとし、execution command listは
+順序を保持する。
+
+proposal scopeは仮説、null、作用機序、対象母集団、in/out scope、expected
+paths、data/as-of、column/lineage、fold、metric/gate/stop、budget、
+variant/threshold上限、base commit、score、安全flagを固定する。
+
+run scopeはproposal scope全体とdigestに加え、exact execution commit、
+config/data/fold/runner/environment manifest hash、seed、exact commandsを
+固定する。`RUNNING`直前にdigest、current commit、実ファイルhashを再検証する。
+hash-bound lifecycle/manifest以外のuncommitted・untracked pathも拒否する。
+承認後の変更は新しいexperiment IDまたは再承認を必要とする。
+
+実験結果、candidate digest、price join後artifactは実行前承認scopeへ混ぜず、
+append-only result evidenceとして保存する。

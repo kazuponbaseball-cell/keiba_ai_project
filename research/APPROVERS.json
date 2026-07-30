@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "approvers": [
+    {
+      "login": "kazuponbaseball-cell",
+      "role": "repository_owner"
+    }
+  ],
+  "denied_login_patterns": [
+    "bot",
+    "codex",
+    "automation",
+    "github-actions",
+    "dependabot"
+  ]
+}

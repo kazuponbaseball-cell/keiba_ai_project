@@ -56,6 +56,7 @@ jobs:
         run: |
           python scripts/research/check_probability_contracts.py --help
           python scripts/research/create_experiment.py --help
+          python scripts/research/prepare_run_scope.py --help
           python scripts/research/update_registry.py --help
           python scripts/research/summarize_experiment.py --help
 

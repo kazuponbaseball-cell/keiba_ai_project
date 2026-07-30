@@ -1,8 +1,9 @@
-## Purpose
+## Purpose and lineage
 
 - Experiment / governance ID:
-- Human approver:
-- Approval record:
+- Issue:
+- This PR succeeds PR #:
+- Draft retained: yes / no
 
 ## Scope
 
@@ -16,46 +17,71 @@
 - [ ] 候補選択
 - [ ] value判定
 - [ ] 正式BUYロジック、stake、注文、通知
+- [ ] credential / secret
+- [ ] production path
+
+## Approval evidence model
+
+- Base commit:
+- Base-commit approver allowlist:
+- APPROVED_TO_PREPARE comment ID / URL:
+- APPROVED_TO_RUN comment ID / URL:
+- APPROVED_FOR_SHADOW comment ID / URL:
+- [ ] caller `--actor`と`--human-approved`を承認証拠にしていない。
+- [ ] comment author、body、digest、updated_atをGitHubからread-only検証した。
+- [ ] comment ID、URL、author、created_at、updated_at、body SHA-256をregistryへ保存した。
+
+## Canonical digests
+
+- Proposal scope JSON:
+- `proposal_scope_digest`:
+- Run scope JSON:
+- `run_scope_digest`:
+- Review/result manifest:
+- `review_digest`:
+
+- [ ] Markdownを承認scopeの正本にしていない。
+- [ ] exact commit、config/data/fold/runner/environment hash、seed、commandsをrun scopeで固定した。
+- [ ] 実行後にだけ生成されるresult/candidate/price artifactをrun scopeから分離した。
 
 ## Research contracts
 
-- [ ] Top3は非順序集合softmaxである。
-- [ ] 取消後runner universeの全 `C(n,3)` 集合を含み、確率はfiniteかつ `[0,1]`。
-- [ ] 各raceのTop3集合確率合計は `1 ± 1e-10`。
-- [ ] Top3集合から導出したwide pair確率合計は `3 ± 1e-10`。
-- [ ] 候補選択にodds、人気、market、払戻、ROIを使用しない。
-- [ ] `train < validation < calibration < outer test` を維持する。
-- [ ] 事後情報、未来情報、リークを使用しない。
-- [ ] research outputは `formal_buy=false`、`send_order=false`、`stake=0`。
+- [ ] Top3は非順序集合softmax。
+- [ ] 取消後runner universeの全`C(n,3)`、Top3 mass=`1 ± 1e-10`。
+- [ ] 導出wide mass=`3 ± 1e-10`。
+- [ ] candidateはodds、人気、market、払戻、ROIから独立。
+- [ ] `train < validation < calibration < outer test`。
+- [ ] future/post-event/leakageなし。
+- [ ] `formal_buy=false`、`send_order=false`、`stake=0`。
 
-## Score and approval
+## Fail-close conditions
 
-- Hypothesis score: `/100`
-- [ ] 75点以上である。75点未満の場合は実行していない。
-- [ ] 人間が `APPROVED_TO_RUN` を記録してから実行した。
-- [ ] 承認後にscope、fold、primary metric、gateを変更していない。
+- [ ] GitHub取得不能またはapproval evidence欠落。
+- [ ] allowlist外、Codex、bot、automation author。
+- [ ] approval commentのauthor、body、digest、updated_at変更。
+- [ ] proposal/run scope digest変更。
+- [ ] execution commit、config/data/fold/runner/environment hash変更。
+- [ ] exact execution commandまたは安全flag変更。
+- [ ] preparation中のreal-data execution。
 
-## OOS and leakage evidence
-
-- Fold manifest / hash:
-- Data as-of / hash:
-- Frozen runner universe / hash:
-- Candidate manifest / hash:
-- Contract audit artifact:
-
-## Verification
+## Local verification
 
 ```text
 # exact commands and results
 ```
 
-## Results and robustness
+## GitHub Actions
 
-- Primary metric:
-- Fold-level result:
-- Uncertainty:
-- Payout concentration / max drawdown:
-- Negative result or rejection evidence:
+- Workflow run:
+- Python 3.11:
+- Python 3.12:
+- Research tests:
+
+## Results and artifacts
+
+- Result artifacts:
+- Contract audit:
+- Negative/rejection evidence:
 
 ## Unconfirmed items
 
@@ -63,6 +89,8 @@
 
 ## Human-only gates
 
-- [ ] This PR does not resume formal BUY or send orders.
-- [ ] Production promotion requires a separate approved PR.
-- [ ] Merge requires explicit human approval; no auto-merge.
+- [ ] Draftのまま維持する。
+- [ ] 新しいPRを作成していない。
+- [ ] このPRはformal BUYを再開せず、注文を送らない。
+- [ ] Production promotionは別の承認済みPRを必要とする。
+- [ ] Mergeは明示的な人間承認を必要とし、auto-mergeしない。

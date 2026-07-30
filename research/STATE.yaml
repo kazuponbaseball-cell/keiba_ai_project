@@ -1,6 +1,6 @@
 schema_version: 1
 state_id: RESEARCH-OS-V1-20260730
-updated_at: "2026-07-30T00:00:00+09:00"
+updated_at: "2026-07-31T00:00:00+09:00"
 repository: kazuponbaseball-cell/keiba_ai_project
 base_commit: 288dff5e86385908281428d5ed4f077625a43e4b
 branch: chore/research-os-v1
@@ -13,9 +13,11 @@ authority:
     - read_only_audit
     - hypothesis_draft
     - scorecard_draft
-    - approved_research_branch_execution
-    - approved_shadow_artifact_generation
+    - github_approved_research_branch_preparation
+    - github_approved_exact_scope_execution
+    - separately_approved_shadow_artifact_generation
   human_approval_required_for:
+    - approved_to_prepare
     - approved_to_run
     - approved_for_shadow
     - production_change
@@ -25,6 +27,8 @@ authority:
     - direct_commit_to_main
     - automatic_merge
     - unapproved_experiment_execution
+    - real_data_execution_during_preparation
+    - caller_asserted_or_automation_self_approval
     - formal_buy_or_order_side_effect
     - production_model_candidate_value_or_buy_change
 
@@ -51,6 +55,87 @@ hypothesis_gate:
   below_threshold_auto_execution: false
   human_approval_required_at_or_above_threshold: true
   scorecard: research/HYPOTHESIS_SCORECARD.yaml
+
+approval_system:
+  schema_version: 2
+  lifecycle:
+    - proposed
+    - approved_to_prepare
+    - preparing
+    - run_approval_required
+    - approved_to_run
+    - running
+    - review_required
+    - rejected_or_approved_for_shadow_or_invalid
+  invalid_terminal: true
+  evidence_source: github_issue_comment
+  comment_formats:
+    prepare: "APPROVED_TO_PREPARE <proposal_scope_digest>"
+    run: "APPROVED_TO_RUN <run_scope_digest>"
+    shadow: "APPROVED_FOR_SHADOW <review_digest>"
+  allowlist:
+    tracked_path: research/APPROVERS.json
+    trust_source: proposal_base_commit
+    base_commit_must_be_on_origin_main_history: true
+    experiment_branch_copy_trusted: false
+  caller_actor_is_identity_proof: false
+  human_approved_flag_supported: false
+  denied_approver_actor_types:
+    - Bot
+    - App
+  denied_approver_login_classes:
+    - codex
+    - bot
+    - automation
+    - github_actions
+  evidence_fields:
+    - comment_id
+    - url
+    - author
+    - created_at
+    - updated_at
+    - body_sha256
+    - approval_type
+    - approval_digest
+  running_reverification:
+    same_comment_required: true
+    author_unchanged: true
+    body_unchanged: true
+    digest_unchanged: true
+    updated_at_unchanged: true
+    github_unavailable_action: fail_close
+  ci_external_network: false
+
+scope_digest_contract:
+  canonical_source: json
+  markdown_authoritative: false
+  serialization:
+    encoding: utf_8
+    object_keys: sorted
+    separators: compact
+    unicode: preserved
+    non_finite_numbers: forbidden
+    set_like_proposal_lists: sorted_unique
+    order_sensitive_lists: preserved
+  proposal_scope_path: research/scopes/<experiment_id>.proposal.json
+  run_scope_path: research/scopes/<experiment_id>.run.json
+  digest: sha256
+  queue_records_proposal_digest: true
+  experiment_markdown_records_proposal_digest: true
+  registry_records_proposal_and_run_digest: true
+  run_scope_freezes:
+    - proposal_scope_and_digest
+    - exact_execution_commit_sha
+    - config_hashes
+    - data_input_manifest_hashes
+    - fold_manifest_hash
+    - runner_universe_manifest_hash
+    - dependency_environment_manifest
+    - seed
+    - exact_execution_commands
+    - safety_flags
+    - no_uncommitted_code_outside_hash_bound_artifacts
+  post_run_results_separate_from_run_scope: true
 
 evidence_classes:
   A_HEAD:
@@ -324,3 +409,5 @@ unconfirmed_items:
   - standard baselineとresearch Top3 baselineの唯一のsource of truth
   - strict T-3 plus final-price prospective evidence
   - branch protection、CODEOWNERS、required reviewのGitHub側設定
+  - GitHub AppまたはCLI実行環境がprivate Issue commentをread-only取得できるcredentialを持つこと
+  - PR #2 merge後のmain commitをbaseとするproposalでAPPROVERS.jsonを取得できること
