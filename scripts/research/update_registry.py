@@ -5,15 +5,11 @@ import getpass
 import hashlib
 import json
 import os
-import re
 import subprocess
 import sys
-import urllib.error
-import urllib.request
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Protocol
+from typing import Any, Callable
 
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -31,6 +27,17 @@ from scope_contract import (  # noqa: E402
     proposal_score_total,
     strict_json_load,
     verify_run_materials,
+)
+from github_approval import (  # noqa: E402
+    COMMENT_EVIDENCE_FIELDS,
+    DEFAULT_BASE_BRANCH,
+    DEFAULT_REPOSITORY,
+    GitHubApprovalProvider,
+    GitHubRestApprovalProvider,
+    reverify_same_approval as reverify_github_approval,
+    utc_now,
+    verify_approval_comment,
+    verify_github_trust,
 )
 
 
@@ -66,50 +73,21 @@ APPROVAL_STATUS_TO_KEYWORD = {
     "approved_to_run": "APPROVED_TO_RUN",
     "approved_for_shadow": "APPROVED_FOR_SHADOW",
 }
+APPROVAL_GRANT_STATUSES = frozenset(APPROVAL_STATUS_TO_KEYWORD)
+PRIOR_APPROVAL_GRANTS_BY_STATUS = {
+    "preparing": ("approved_to_prepare",),
+    "approved_to_run": ("approved_to_prepare",),
+    "running": ("approved_to_prepare", "approved_to_run"),
+    "approved_for_shadow": ("approved_to_prepare", "approved_to_run"),
+}
+GITHUB_APPROVAL_CHECK_STATUSES = APPROVAL_GRANT_STATUSES | frozenset(
+    PRIOR_APPROVAL_GRANTS_BY_STATUS
+)
 PROHIBITED_STATUS_HINT = "production/merge/BUY approval is outside this registry's authority"
-DEFAULT_REPOSITORY = "kazuponbaseball-cell/keiba_ai_project"
-
-
-class ApprovalProvider(Protocol):
-    def get_issue_comment(self, repository: str, comment_id: int) -> dict[str, Any]:
-        ...
-
-
-class GitHubRestApprovalProvider:
-    """Read-only GitHub REST provider used only outside CI fixtures."""
-
-    def __init__(self, token: str | None = None, api_url: str | None = None) -> None:
-        self.token = token or os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN")
-        self.api_url = (api_url or os.environ.get("GITHUB_API_URL") or "https://api.github.com").rstrip(
-            "/"
-        )
-
-    def get_issue_comment(self, repository: str, comment_id: int) -> dict[str, Any]:
-        url = f"{self.api_url}/repos/{repository}/issues/comments/{comment_id}"
-        headers = {
-            "Accept": "application/vnd.github+json",
-            "User-Agent": "keiba-ai-research-os",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
-        if self.token:
-            headers["Authorization"] = f"Bearer {self.token}"
-        request = urllib.request.Request(url, headers=headers, method="GET")
-        try:
-            with urllib.request.urlopen(request, timeout=15) as response:
-                payload = json.loads(response.read().decode("utf-8"))
-        except (OSError, urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError) as exc:
-            raise RuntimeError(f"GitHub comment GET failed: {exc}") from exc
-        if not isinstance(payload, dict):
-            raise RuntimeError("GitHub comment response is not an object")
-        return payload
 
 
 def default_root() -> Path:
     return Path(__file__).resolve().parents[2]
-
-
-def utc_now() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def normalize_status(value: str) -> str:
@@ -232,211 +210,140 @@ def load_events(path: Path) -> list[dict[str, Any]]:
     return events
 
 
-def load_approvers_from_base(root: Path, base_commit: str) -> dict[str, Any]:
-    """Read APPROVERS.json from the proposal base commit, never the worktree."""
+def validate_approval_grant_history(events: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
+    """Return globally consumed approval comment IDs, rejecting ambiguous history."""
 
-    trust_check = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(root),
-            "merge-base",
-            "--is-ancestor",
-            base_commit,
-            "refs/remotes/origin/main",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if trust_check.returncode != 0:
-        raise ValueError(
-            "proposal base commit is not verified on origin/main history; fail-close"
-        )
-    completed = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(root),
-            "show",
-            f"{base_commit}:research/APPROVERS.json",
-        ],
-        check=False,
-        capture_output=True,
-        text=True,
-    )
-    if completed.returncode != 0:
-        raise ValueError(
-            "cannot read research/APPROVERS.json from proposal base commit; fail-close"
-        )
-    try:
-        payload = json.loads(completed.stdout)
-    except json.JSONDecodeError as exc:
-        raise ValueError("base-commit APPROVERS.json is invalid JSON; fail-close") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != 1:
-        raise ValueError("base-commit APPROVERS.json schema_version must be 1")
-    approvers = payload.get("approvers")
-    denied_patterns = payload.get("denied_login_patterns", [])
-    if not isinstance(approvers, list) or not approvers:
-        raise ValueError("base-commit APPROVERS.json must contain approvers")
-    logins: set[str] = set()
-    for entry in approvers:
-        if not isinstance(entry, dict) or not isinstance(entry.get("login"), str):
-            raise ValueError("base-commit APPROVERS.json contains an invalid approver")
-        login = entry["login"].strip().lower()
-        if not login:
-            raise ValueError("base-commit APPROVERS.json contains a blank login")
-        logins.add(login)
-    if not isinstance(denied_patterns, list) or any(
-        not isinstance(item, str) or not item.strip() for item in denied_patterns
-    ):
-        raise ValueError("base-commit denied_login_patterns must be strings")
-    return {
-        "approvers": logins,
-        "denied_login_patterns": [item.strip().lower() for item in denied_patterns],
-    }
-
-
-def _comment_issue_number(comment: dict[str, Any]) -> int:
-    issue_url = comment.get("issue_url")
-    if not isinstance(issue_url, str):
-        raise ValueError("GitHub approval comment is missing issue_url")
-    match = re.search(r"/issues/(\d+)$", issue_url)
-    if not match:
-        raise ValueError("GitHub approval comment issue_url is invalid")
-    return int(match.group(1))
-
-
-def verify_approval_comment(
-    *,
-    provider: ApprovalProvider,
-    allowlist_loader: Callable[[Path, str], dict[str, Any]],
-    root: Path,
-    repository: str,
-    issue_number: int,
-    comment_id: int,
-    base_commit: str,
-    approval_keyword: str,
-    approval_digest: str,
-) -> dict[str, Any]:
-    try:
-        comment = provider.get_issue_comment(repository, comment_id)
-    except Exception as exc:
-        raise ValueError(
-            f"GitHub approval verification unavailable; fail-close: {exc}"
-        ) from exc
-    if not isinstance(comment, dict):
-        raise ValueError("GitHub approval verification returned invalid data; fail-close")
-    if comment.get("id") != comment_id or isinstance(comment.get("id"), bool):
-        raise ValueError("GitHub approval comment ID mismatch")
-    if _comment_issue_number(comment) != issue_number:
-        raise ValueError("GitHub approval comment belongs to a different Issue")
-
-    user = comment.get("user")
-    if not isinstance(user, dict):
-        raise ValueError("GitHub approval comment is missing author")
-    login_raw = user.get("login")
-    author_type = user.get("type")
-    if not isinstance(login_raw, str) or not login_raw.strip():
-        raise ValueError("GitHub approval comment author login is invalid")
-    login = login_raw.strip()
-    normalized_login = login.lower()
-    allowlist = allowlist_loader(root, base_commit)
-    approvers = allowlist.get("approvers")
-    denied_patterns = allowlist.get("denied_login_patterns", [])
-    if not isinstance(approvers, set):
-        raise ValueError("approval allowlist loader returned invalid data")
-    automation_patterns = {
-        "bot",
-        "codex",
-        "automation",
-        "github-actions",
-        "dependabot",
-    }
-    automation_patterns.update(str(item).lower() for item in denied_patterns)
-    if author_type != "User" or any(pattern in normalized_login for pattern in automation_patterns):
-        raise ValueError("Codex or automation actor cannot approve research")
-    if normalized_login not in approvers:
-        raise ValueError(f"GitHub approval author {login!r} is not in the base-commit allowlist")
-
-    body = comment.get("body")
-    if not isinstance(body, str):
-        raise ValueError("GitHub approval comment body is invalid")
-    expected_body = f"{approval_keyword} {approval_digest}"
-    if body != expected_body:
-        raise ValueError(
-            f"GitHub approval comment digest or format mismatch; expected {expected_body!r}"
-        )
-    created_at = comment.get("created_at")
-    updated_at = comment.get("updated_at")
-    html_url = comment.get("html_url")
-    if not all(isinstance(value, str) and value for value in (created_at, updated_at, html_url)):
-        raise ValueError("GitHub approval comment metadata is incomplete")
-    return {
-        "approval_type": approval_keyword,
-        "approval_digest": approval_digest,
-        "repository": repository,
-        "issue_number": issue_number,
-        "comment_id": comment_id,
-        "url": html_url,
-        "author": login,
-        "author_type": author_type,
-        "created_at": created_at,
-        "updated_at": updated_at,
-        "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
-    }
-
-
-def reverify_same_approval(
-    *,
-    evidence: dict[str, Any],
-    provider: ApprovalProvider,
-    allowlist_loader: Callable[[Path, str], dict[str, Any]],
-    root: Path,
-    base_commit: str,
-) -> dict[str, Any]:
-    required = {
-        "approval_type",
-        "approval_digest",
-        "repository",
-        "issue_number",
-        "comment_id",
-        "url",
-        "author",
-        "author_type",
-        "created_at",
-        "updated_at",
-        "body_sha256",
-    }
-    if not isinstance(evidence, dict) or set(evidence) != required:
-        raise ValueError("stored approval evidence is missing or invalid; fail-close")
-    current = verify_approval_comment(
-        provider=provider,
-        allowlist_loader=allowlist_loader,
-        root=root,
-        repository=evidence["repository"],
-        issue_number=evidence["issue_number"],
-        comment_id=evidence["comment_id"],
-        base_commit=base_commit,
-        approval_keyword=evidence["approval_type"],
-        approval_digest=evidence["approval_digest"],
-    )
-    for field in (
-        "comment_id",
-        "url",
-        "author",
-        "author_type",
-        "created_at",
-        "updated_at",
-        "body_sha256",
-        "approval_digest",
-        "approval_type",
-    ):
-        if current[field] != evidence[field]:
+    consumed: dict[int, dict[str, Any]] = {}
+    for event in events:
+        status = normalize_status(str(event.get("status", "")))
+        if status not in APPROVAL_GRANT_STATUSES:
+            continue
+        evidence = event.get("approval_evidence")
+        if not isinstance(evidence, dict) or set(evidence) != set(COMMENT_EVIDENCE_FIELDS):
             raise ValueError(
-                f"GitHub approval comment changed after approval ({field}); fail-close"
+                f"registry {status} grant is missing or has malformed approval_evidence; "
+                "fail-close"
             )
-    return current
+        comment_id = evidence.get("comment_id")
+        if isinstance(comment_id, bool) or not isinstance(comment_id, int) or comment_id <= 0:
+            raise ValueError(
+                f"registry {status} grant has an invalid approval comment ID; fail-close"
+            )
+        expected_keyword = APPROVAL_STATUS_TO_KEYWORD[status]
+        if evidence.get("approval_type") != expected_keyword:
+            raise ValueError(
+                f"registry {status} grant has mismatched approval evidence; fail-close"
+            )
+        approval_digest = evidence.get("approval_digest")
+        event_digest_field = {
+            "approved_to_prepare": "proposal_scope_digest",
+            "approved_to_run": "run_scope_digest",
+            "approved_for_shadow": "review_digest",
+        }[status]
+        if approval_digest != event.get(event_digest_field):
+            raise ValueError(
+                f"registry {status} grant digest is not bound to its event; fail-close"
+            )
+        body = evidence.get("body")
+        body_sha256 = evidence.get("body_sha256")
+        if (
+            not isinstance(approval_digest, str)
+            or not FULL_SHA256.fullmatch(approval_digest)
+            or body != f"{expected_keyword} {approval_digest}"
+            or body_sha256 != hashlib.sha256(body.encode("utf-8")).hexdigest()
+        ):
+            raise ValueError(
+                f"registry {status} grant has malformed approval evidence; fail-close"
+            )
+        prior = consumed.get(comment_id)
+        if prior is not None:
+            raise ValueError(
+                "registry contains a reused approval comment ID "
+                f"{comment_id} in {prior.get('experiment_id')!r} and "
+                f"{event.get('experiment_id')!r}; fail-close"
+            )
+        consumed[comment_id] = event
+    return consumed
+
+
+def ensure_approval_comment_id_unused(
+    events: list[dict[str, Any]],
+    comment_id: int,
+) -> None:
+    if isinstance(comment_id, bool) or not isinstance(comment_id, int) or comment_id <= 0:
+        raise ValueError("approval comment ID must be a positive integer")
+    consumed = validate_approval_grant_history(events)
+    if comment_id in consumed:
+        prior = consumed[comment_id]
+        raise ValueError(
+            "approval comment ID "
+            f"{comment_id} was already used by an approval grant for "
+            f"{prior.get('experiment_id')!r}; fail-close"
+        )
+
+
+def find_unique_approval_grant(
+    history: list[dict[str, Any]],
+    grant_status: str,
+) -> dict[str, Any]:
+    matches = [
+        event
+        for event in history
+        if normalize_status(str(event.get("status", ""))) == grant_status
+    ]
+    if len(matches) != 1:
+        raise ValueError(
+            f"expected exactly one {grant_status.upper()} grant; found {len(matches)}; fail-close"
+        )
+    return matches[0]
+
+
+def reverify_prior_approvals(
+    *,
+    transition_status: str,
+    history: list[dict[str, Any]],
+    provider: GitHubApprovalProvider,
+    allowlist: dict[str, Any],
+    proposal_digest: str,
+    current_run_scope_digest: str | None,
+) -> list[dict[str, Any]]:
+    reverified: list[dict[str, Any]] = []
+    for grant_status in PRIOR_APPROVAL_GRANTS_BY_STATUS.get(transition_status, ()):
+        grant = find_unique_approval_grant(history, grant_status)
+        if grant_status == "approved_to_prepare":
+            expected_digest = proposal_digest
+        else:
+            expected_digest = grant.get("run_scope_digest")
+            if not isinstance(expected_digest, str) or not FULL_SHA256.fullmatch(
+                expected_digest
+            ):
+                raise ValueError(
+                    "stored APPROVED_TO_RUN grant has an invalid run scope digest; fail-close"
+                )
+            if (
+                current_run_scope_digest is not None
+                and expected_digest != current_run_scope_digest
+            ):
+                raise ValueError("run scope digest differs from APPROVED_TO_RUN")
+        evidence = grant.get("approval_evidence")
+        if not isinstance(evidence, dict) or set(evidence) != set(
+            COMMENT_EVIDENCE_FIELDS
+        ):
+            raise ValueError("stored approval evidence is missing or invalid; fail-close")
+        if evidence.get("approval_type") != APPROVAL_STATUS_TO_KEYWORD[grant_status]:
+            raise ValueError("stored approval keyword differs from the required grant; fail-close")
+        if evidence.get("approval_digest") != expected_digest:
+            raise ValueError("stored approval digest differs from the required scope; fail-close")
+        reverified.append(
+            reverify_github_approval(
+                evidence=evidence,
+                provider=provider,
+                allowlist=allowlist,
+                expected_approval_type=APPROVAL_STATUS_TO_KEYWORD[grant_status],
+                expected_approval_digest=expected_digest,
+            )
+        )
+    return reverified
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -460,6 +367,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Audit caller only; never proof of human identity.",
     )
     parser.add_argument("--github-repository", default=DEFAULT_REPOSITORY)
+    parser.add_argument("--github-base-branch", default=DEFAULT_BASE_BRANCH)
     parser.add_argument("--issue-number", type=int, default=None)
     parser.add_argument("--approval-comment-id", type=int, default=None)
     parser.add_argument(
@@ -495,8 +403,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(
     argv: list[str] | None = None,
     *,
-    approval_provider: ApprovalProvider | None = None,
-    allowlist_loader: Callable[[Path, str], dict[str, Any]] = load_approvers_from_base,
+    approval_provider: GitHubApprovalProvider | None = None,
     execution_commit_provider: Callable[[Path], str] = current_commit,
     execution_worktree_verifier: Callable[[Path, set[str]], None] = verify_execution_worktree,
 ) -> int:
@@ -537,6 +444,7 @@ def main(
             queue_path, root, experiment_id
         )
         events = load_events(registry_path)
+        validate_approval_grant_history(events)
     except ValueError as exc:
         parser.error(str(exc))
 
@@ -568,7 +476,20 @@ def main(
 
     provider = approval_provider or GitHubRestApprovalProvider()
     base_commit = proposal_scope["base_commit"]
+    allowlist: dict[str, Any] | None = None
+    github_trust_evidence: dict[str, Any] | None = None
+    if status in GITHUB_APPROVAL_CHECK_STATUSES:
+        try:
+            allowlist, github_trust_evidence = verify_github_trust(
+                provider=provider,
+                repository=args.github_repository,
+                base_branch=args.github_base_branch,
+                base_commit=base_commit,
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
     approval_evidence: dict[str, Any] | None = None
+    revalidated_approval_evidence: list[dict[str, Any]] = []
     run_scope: dict[str, Any] | None = None
     run_scope_digest: str | None = None
     run_scope_path: Path | None = None
@@ -631,87 +552,77 @@ def main(
         except ValueError as exc:
             parser.error(str(exc))
 
-    if status == "approved_to_prepare":
+    if status == "approved_for_shadow":
+        review_digest = (args.review_digest or "").strip().lower()
+        if not FULL_SHA256.fullmatch(review_digest):
+            parser.error("APPROVED_FOR_SHADOW requires a full --review-digest")
+
+    if status in APPROVAL_GRANT_STATUSES:
+        missing_evidence_messages = {
+            "approved_to_prepare": "APPROVED_TO_PREPARE requires GitHub Issue comment evidence",
+            "approved_to_run": "APPROVED_TO_RUN requires GitHub Issue comment evidence",
+            "approved_for_shadow": (
+                "APPROVED_FOR_SHADOW requires separate GitHub Issue comment evidence"
+            ),
+        }
         if args.issue_number is None or args.approval_comment_id is None:
-            parser.error("APPROVED_TO_PREPARE requires GitHub Issue comment evidence")
+            parser.error(missing_evidence_messages[status])
         try:
-            approval_evidence = verify_approval_comment(
+            ensure_approval_comment_id_unused(events, args.approval_comment_id)
+        except ValueError as exc:
+            parser.error(str(exc))
+
+    if status in PRIOR_APPROVAL_GRANTS_BY_STATUS:
+        if allowlist is None:
+            parser.error("GitHub approval allowlist is unavailable; fail-close")
+        try:
+            revalidated_approval_evidence = reverify_prior_approvals(
+                transition_status=status,
+                history=history,
                 provider=provider,
-                allowlist_loader=allowlist_loader,
-                root=root,
-                repository=args.github_repository,
-                issue_number=args.issue_number,
-                comment_id=args.approval_comment_id,
-                base_commit=base_commit,
-                approval_keyword="APPROVED_TO_PREPARE",
-                approval_digest=proposal_digest,
+                allowlist=allowlist,
+                proposal_digest=proposal_digest,
+                current_run_scope_digest=run_scope_digest if status == "running" else None,
             )
         except ValueError as exc:
             parser.error(str(exc))
-    elif status == "preparing":
-        prepare_event = previous if previous_status == "approved_to_prepare" else None
+
+    if status == "approved_to_prepare":
         try:
-            if prepare_event is None:
-                raise ValueError("PREPARING requires APPROVED_TO_PREPARE")
-            approval_evidence = reverify_same_approval(
-                evidence=prepare_event.get("approval_evidence"),
+            approval_evidence = verify_approval_comment(
                 provider=provider,
-                allowlist_loader=allowlist_loader,
-                root=root,
-                base_commit=base_commit,
+                allowlist=allowlist,
+                repository=args.github_repository,
+                issue_number=args.issue_number,
+                comment_id=args.approval_comment_id,
+                approval_keyword="APPROVED_TO_PREPARE",
+                approval_digest=proposal_digest,
             )
         except ValueError as exc:
             parser.error(str(exc))
     elif status == "approved_to_run":
         if run_scope_digest is None:
             parser.error("APPROVED_TO_RUN requires a frozen run scope")
-        if args.issue_number is None or args.approval_comment_id is None:
-            parser.error("APPROVED_TO_RUN requires GitHub Issue comment evidence")
         try:
             approval_evidence = verify_approval_comment(
                 provider=provider,
-                allowlist_loader=allowlist_loader,
-                root=root,
+                allowlist=allowlist,
                 repository=args.github_repository,
                 issue_number=args.issue_number,
                 comment_id=args.approval_comment_id,
-                base_commit=base_commit,
                 approval_keyword="APPROVED_TO_RUN",
                 approval_digest=run_scope_digest,
             )
         except ValueError as exc:
             parser.error(str(exc))
-    elif status == "running":
-        run_approval = previous if previous_status == "approved_to_run" else None
-        try:
-            if run_approval is None:
-                raise ValueError("RUNNING requires APPROVED_TO_RUN")
-            if run_approval.get("run_scope_digest") != run_scope_digest:
-                raise ValueError("run scope digest differs from APPROVED_TO_RUN")
-            approval_evidence = reverify_same_approval(
-                evidence=run_approval.get("approval_evidence"),
-                provider=provider,
-                allowlist_loader=allowlist_loader,
-                root=root,
-                base_commit=base_commit,
-            )
-        except ValueError as exc:
-            parser.error(str(exc))
     elif status == "approved_for_shadow":
-        review_digest = (args.review_digest or "").strip().lower()
-        if not FULL_SHA256.fullmatch(review_digest):
-            parser.error("APPROVED_FOR_SHADOW requires a full --review-digest")
-        if args.issue_number is None or args.approval_comment_id is None:
-            parser.error("APPROVED_FOR_SHADOW requires separate GitHub Issue comment evidence")
         try:
             approval_evidence = verify_approval_comment(
                 provider=provider,
-                allowlist_loader=allowlist_loader,
-                root=root,
+                allowlist=allowlist,
                 repository=args.github_repository,
                 issue_number=args.issue_number,
                 comment_id=args.approval_comment_id,
-                base_commit=base_commit,
                 approval_keyword="APPROVED_FOR_SHADOW",
                 approval_digest=review_digest,
             )
@@ -745,10 +656,12 @@ def main(
         "score_threshold": RUN_SCORE_THRESHOLD,
         "score_threshold_met": threshold_met,
         "proposal_scope_digest": proposal_digest,
+        "github_trust_evidence": github_trust_evidence,
         "run_scope_digest": run_scope_digest,
         "review_digest": review_digest,
         "approval_evidence": approval_evidence,
-        "human_approved": approval_evidence is not None,
+        "revalidated_approval_evidence": revalidated_approval_evidence,
+        "human_approved": approval_evidence is not None or bool(revalidated_approval_evidence),
         "human_prepare_approval_recorded": prepare_recorded,
         "human_run_approval_recorded": run_recorded,
         "human_shadow_approval_recorded": shadow_recorded,

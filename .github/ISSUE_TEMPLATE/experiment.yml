@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        このIssueのMarkdownは承認scopeの正本ではありません。tracked canonical JSONとdigestを確認してください。準備・実行・shadowは別承認です。本番、merge、正式BUY、注文は承認できません。
+        このIssueのMarkdownは承認scopeの正本ではありません。tracked canonical JSONとdigestを確認してください。対象は `kazuponbaseball-cell/keiba_ai_project` の `main` に固定します。準備・実行・shadowは相互に異なる未使用comment IDによる別grantです。本番、merge、正式BUY、注文は承認できません。
   - type: input
     id: experiment_id
     attributes:
@@ -30,6 +30,22 @@ body:
       placeholder: 64 lowercase hex characters
     validations:
       required: true
+  - type: input
+    id: base_commit
+    attributes:
+      label: Proposal base commit
+      description: Canonical proposalに固定した40文字のcommit SHA
+      placeholder: 40 lowercase hex characters
+    validations:
+      required: true
+  - type: textarea
+    id: github_trust_evidence
+    attributes:
+      label: GitHub main and approver trust evidence
+      description: Verified current main SHA、compare URL/status、merge-base SHA、APPROVERS blob SHA/content SHA-256、verification timeを記録する
+      placeholder: GitHub read-only API verification evidence; local origin/main and git show are not authority
+    validations:
+      required: true
   - type: textarea
     id: proposal_review
     attributes:
@@ -45,6 +61,8 @@ body:
         `APPROVED_TO_PREPARE <proposal_scope_digest>`
 
         これはresearch branch上の実装とsynthetic fixture unit testだけを許可します。実データ学習、backtest、outer OOS、ROI計算は禁止です。
+
+        GitHub current mainとbase commitのancestor性をcompareで検証し、allowlistはGitHub上のbase commitの `research/APPROVERS.json` から取得します。監査時点のpre-merge main `288dff5e86385908281428d5ed4f077625a43e4b` には同fileがないため、そのcommitをbaseとする承認はfail-closeします。
   - type: input
     id: run_scope_path
     attributes:
@@ -68,7 +86,7 @@ body:
 
         `APPROVED_TO_RUN <run_scope_digest>`
 
-        RUNNING直前に同じcommentが再取得・再検証されます。shadow昇格にはさらに別の `APPROVED_FOR_SHADOW <review_digest>` が必要です。
+        run grant前にprepare commentを再検証し、RUNNING直前にはprepareとrunの両commentを再検証します。shadow昇格にはprepare/runと異なる未使用IDの `APPROVED_FOR_SHADOW <review_digest>` が必要で、そのgrant前にもprepareとrunを再検証します。commentの編集・削除・grant ID再利用はfail-closeします。後続transitionで同じ証拠を再検証すること自体は新規grantではありません。
   - type: checkboxes
     id: absolute_contracts
     attributes:

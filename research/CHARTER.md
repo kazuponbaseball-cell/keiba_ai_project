@@ -13,7 +13,7 @@
 
 ## 2. Level 3の意味
 
-Agentは、研究提案、read-only監査、score作成、experiment draftを自律的に行える。GitHub上でproposal scopeが`APPROVED_TO_PREPARE`された後はresearch branch上の実装とsynthetic fixture testを行える。実装後のexact run scopeが別途`APPROVED_TO_RUN`され、同じ承認commentを`RUNNING`直前に再検証した場合だけ、承認scope内の実データ実験を行える。
+Agentは、研究提案、read-only監査、score作成、experiment draftを自律的に行える。GitHub上でproposal scopeが`APPROVED_TO_PREPARE`された後はresearch branch上の実装とsynthetic fixture testを行える。実装後のexact run scopeが別の未使用comment IDで`APPROVED_TO_RUN`され、prepareとrunの両承認commentを`RUNNING`直前に再検証した場合だけ、承認scope内の実データ実験を行える。
 
 Agentは次を行えない。
 
@@ -88,7 +88,7 @@ Research OSが作る全artifactは `formal_buy=false`、`send_order=false`、`st
 - 75点以上: `PROPOSED`。GitHub上の承認証拠までは準備・実行禁止。
 - `APPROVED_TO_PREPARE`: 実装準備とsynthetic fixture testのみ可能。
 - `APPROVED_TO_RUN`: exact code/config/data/fold/command scopeに対する実行承認。
-- `APPROVED_FOR_SHADOW`: run承認とは別のreview digest承認。
+- `APPROVED_FOR_SHADOW`: prepare/runと異なる未使用comment IDによるreview digest承認。
 - 契約違反: `INVALID`。metricsやROIで救済しない。
 
 高得点は本番採用を意味しない。shadow移行と本番反映には別の人間承認が必要である。
@@ -124,16 +124,33 @@ APPROVED_TO_RUN <run_scope_digest>
 APPROVED_FOR_SHADOW <review_digest>
 ```
 
-- author loginはproposalのbase commit上のtracked
+- 対象repositoryを`kazuponbaseball-cell/keiba_ai_project`、base branchを`main`
+  に実装定数として固定し、proposalに固定したbase commitとの一致を検証する。
+- GitHub read-only APIから`refs/heads/main`のcurrent head SHAを取得する。
+- proposalのbase commitからcurrent main SHAへのGitHub compareが`ahead`
+  または`identical`で、merge-base SHAがproposalのbase commitと一致する場合だけ
+  main ancestorとして認める。
+- author loginはGitHub上のproposal base commitから取得した
   `research/APPROVERS.json`に含まれなければならない。
-- base commitが`origin/main` history上にあることを検証する。
-- experiment branch上で変更されたallowlistを信用しない。
+- ローカルworktree、ローカルgit object、`refs/remotes/origin/main`、
+  experiment branch上のallowlistを承認根拠として信用しない。
 - actor typeが`User`でない、またはCodex/bot/automation loginなら拒否する。
-- comment ID、URL、author、created_at、updated_at、body SHA-256をregistryへ保存する。
-- `RUNNING`直前に同じcommentをread-only GETし、author、body、digest、
-  updated_atを再検証する。
-- GitHub確認不能、comment欠落、編集、unauthorized authorはfail-closeする。
+- registryへrepository、base branch、verified current main SHA、verified base
+  commit、compare URL/status、merge-base SHA、APPROVERS blob SHA、APPROVERS
+  content SHA-256、verification timeを保存する。
+- registryへcomment ID、Issue番号、URL、author login/type、body、approval
+  keyword/digest、body SHA-256、created_at、updated_atを保存する。
+- prepare/run/shadowの新規grantは、同じregistry全体で未使用の異なるcomment
+  IDを使う。後続transitionで同じ証拠を再検証することは新規grantではない。
+- `PREPARING`前はprepare、`APPROVED_TO_RUN`前はprepare、`RUNNING`前は
+  prepareとrun、`APPROVED_FOR_SHADOW`前はprepareとrunをread-only GETで
+  再検証する。
+- GitHub確認不能、base ancestry/allowlist検証不能、comment欠落・編集・削除・
+  再利用、unauthorized authorはfail-closeする。
 - CIは外部通信せずfixtureまたはinjected providerを使う。
+- 監査時点のpre-merge `main` `288dff5e86385908281428d5ed4f077625a43e4b`
+  には`research/APPROVERS.json`がないため、そのcommitをbaseとする承認は
+  fail-closeする。PR #2 merge後のmainでの取得は未確認である。
 
 ### 6.2 Canonical scope digest
 
@@ -175,7 +192,8 @@ positive/negative resultを同じ基準で登録する。pooled平均だけ、1 
 - freeze前後のcandidate digest不一致
 - 正式BUY、stake、order、production control pathへの接続
 - 75点未満、GitHub承認証拠なし、または承認scope外の準備・実行
-- approval commentの編集、GitHub確認不能、base-commit allowlist不一致
+- GitHub main/compare/base-commit allowlist検証不能または不一致
+- approval commentの編集・削除・grant ID再利用、先行承認の再検証失敗
 - proposal/run digest、execution commit、config/data/fold/commandの変更
 
 ## 9. Research OS v1の完了条件

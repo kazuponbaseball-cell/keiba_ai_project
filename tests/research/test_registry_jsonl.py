@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import hashlib
 import importlib.util
 import io
 import json
@@ -39,6 +40,7 @@ REQUIRED_EVENT_TYPES: dict[str, type[object]] = {
     "score_threshold": int,
     "score_threshold_met": bool,
     "proposal_scope_digest": str,
+    "revalidated_approval_evidence": list,
     "human_approved": bool,
     "human_prepare_approval_recorded": bool,
     "human_run_approval_recorded": bool,
@@ -69,6 +71,31 @@ def strict_json_loads(raw: str) -> object:
         raise ValueError(f"non-standard JSON constant: {value}")
 
     return json.loads(raw, parse_constant=reject_nonstandard_constant)
+
+
+def approval_evidence(
+    comment_id: int,
+    approval_type: str = "APPROVED_TO_PREPARE",
+    approval_digest: str = "e" * 64,
+) -> dict[str, object]:
+    body = f"{approval_type} {approval_digest}"
+    return {
+        "approval_type": approval_type,
+        "approval_digest": approval_digest,
+        "repository": "kazuponbaseball-cell/keiba_ai_project",
+        "issue_number": 17,
+        "comment_id": comment_id,
+        "url": (
+            "https://github.com/kazuponbaseball-cell/keiba_ai_project/"
+            f"issues/17#issuecomment-{comment_id}"
+        ),
+        "author": "kazuponbaseball-cell",
+        "author_type": "User",
+        "body": body,
+        "body_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
+        "created_at": "2026-07-31T00:00:00Z",
+        "updated_at": "2026-07-31T00:00:00Z",
+    }
 
 
 def proposal(experiment_id: str, fold_ref: dict[str, str]) -> dict[str, object]:
@@ -172,6 +199,7 @@ class RegistryJsonlTests(unittest.TestCase):
             "previous_event_id",
             "run_scope_digest",
             "review_digest",
+            "github_trust_evidence",
             "approval_evidence",
             "run_scope_file",
         ):
@@ -181,6 +209,9 @@ class RegistryJsonlTests(unittest.TestCase):
         self.assertRegex(event["proposal_scope_digest"], r"^[0-9a-f]{64}$")
         self.assertEqual(event["score_total"], sum(event["score_components"].values()))
         self.assertTrue(all(isinstance(item, str) for item in event["artifacts"]))
+        self.assertTrue(
+            all(isinstance(item, dict) for item in event["revalidated_approval_evidence"])
+        )
 
     def test_committed_registry_is_valid_jsonl(self) -> None:
         self.assertTrue(REGISTRY_PATH.is_file())
@@ -222,6 +253,88 @@ class RegistryJsonlTests(unittest.TestCase):
                 path.write_text(raw, encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, message):
                     update_registry.load_events(path)
+
+    def test_grant_history_rejects_malformed_or_duplicate_comment_ids(self) -> None:
+        valid_evidence = approval_evidence(101)
+        malformed_cases = (
+            (
+                [{"experiment_id": "EXP-001", "status": "approved_to_prepare"}],
+                "missing or has malformed approval_evidence",
+            ),
+            (
+                [
+                    {
+                        "experiment_id": "EXP-001",
+                        "status": "approved_to_prepare",
+                        "approval_evidence": approval_evidence(0),
+                    }
+                ],
+                "invalid approval comment ID",
+            ),
+            (
+                [
+                    {
+                        "experiment_id": "EXP-001",
+                        "status": "approved_to_prepare",
+                        "approval_evidence": approval_evidence(
+                            101, approval_type="APPROVED_TO_RUN"
+                        ),
+                    }
+                ],
+                "mismatched approval evidence",
+            ),
+            (
+                [
+                    {
+                        "experiment_id": "EXP-001",
+                        "status": "approved_to_prepare",
+                        "proposal_scope_digest": "f" * 64,
+                        "approval_evidence": approval_evidence(101),
+                    }
+                ],
+                "digest is not bound to its event",
+            ),
+        )
+        for events, message in malformed_cases:
+            with self.subTest(message=message):
+                with self.assertRaisesRegex(ValueError, message):
+                    update_registry.validate_approval_grant_history(events)
+
+        duplicate_events = [
+            {
+                "experiment_id": "EXP-001",
+                "status": "approved_to_prepare",
+                "proposal_scope_digest": "e" * 64,
+                "approval_evidence": dict(valid_evidence),
+            },
+            {
+                "experiment_id": "EXP-002",
+                "status": "approved_to_prepare",
+                "proposal_scope_digest": "e" * 64,
+                "approval_evidence": dict(valid_evidence),
+            },
+        ]
+        with self.assertRaisesRegex(ValueError, "reused approval comment ID"):
+            update_registry.validate_approval_grant_history(duplicate_events)
+
+    def test_revalidation_evidence_does_not_consume_comment_id(self) -> None:
+        evidence = approval_evidence(101)
+        events = [
+            {
+                "experiment_id": "EXP-001",
+                "status": "approved_to_prepare",
+                "proposal_scope_digest": "e" * 64,
+                "approval_evidence": evidence,
+            },
+            {
+                "experiment_id": "EXP-001",
+                "status": "preparing",
+                "approval_evidence": None,
+                "revalidated_approval_evidence": [evidence],
+            },
+        ]
+        consumed = update_registry.validate_approval_grant_history(events)
+        self.assertEqual(set(consumed), {101})
 
     def test_multiple_appends_remain_complete_line_delimited_events(self) -> None:
         experiment_id = "EXP-APPEND-001"

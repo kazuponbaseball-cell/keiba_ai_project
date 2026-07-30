@@ -72,8 +72,10 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
         f"- Generated at (UTC): `{utc_now()}`",
         f"- Registry: `{registry_path}`",
         f"- Filter: `{experiment_id}`" if experiment_id else "- Filter: all experiments",
-        "- Real-data execution: prohibited until a verified `APPROVED_TO_RUN` is revalidated immediately before `RUNNING`",
+        "- GitHub trust: repository `kazuponbaseball-cell/keiba_ai_project`, branch `main`; current-main ancestry and base-commit APPROVERS are verified remotely",
+        "- Real-data execution: prohibited until prepare approval is revalidated before run grant and prepare/run approvals are revalidated immediately before `RUNNING`",
         "- Preparation: only `APPROVED_TO_PREPARE` / `PREPARING`; synthetic fixtures only",
+        "- Approval comments: prepare/run/shadow grant IDs are registry-wide single-use; edit, deletion, or reuse fails closed",
         "- Production / merge / BUY approval: always false and outside this registry's authority",
         "",
     ]

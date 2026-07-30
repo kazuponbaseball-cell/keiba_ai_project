@@ -48,6 +48,8 @@ PROPOSED
 
 - GitHub Issue comment
   `APPROVED_TO_PREPARE <proposal_scope_digest>`が必要。
+- 新規grantのcomment IDは、同じ`REGISTRY.jsonl`内の過去のprepare/run/shadow
+  grantで未使用でなければならない。
 - 実装準備とsynthetic fixture unit testだけを許可する。
 - 実データ学習、backtest、outer OOS、ROI計算を禁止する。
 
@@ -55,29 +57,48 @@ PROPOSED
 
 - 実装後のcanonical run scopeに対するGitHub Issue comment
   `APPROVED_TO_RUN <run_scope_digest>`が必要。
-- `RUNNING`直前に同じcommentをGitHubから再取得し、author、body、
-  digest、updated_atを再検証する。
-- GitHub確認不能、証拠欠落、unauthorized author、comment編集、
+- run承認にはprepare承認と異なる未使用comment IDが必要である。
+- `APPROVED_TO_RUN`直前にprepare承認commentを再検証する。
+- `RUNNING`直前にprepare承認commentとrun承認commentを再検証する。
+- GitHub確認不能、証拠欠落、unauthorized author、comment編集・削除・再利用、
   scope/hash/command変更はfail-closeする。
 
 ### APPROVED_FOR_SHADOW
 
 - `APPROVED_TO_RUN`とは別の人間承認である。
-- `APPROVED_FOR_SHADOW <review_digest>`形式の別commentを必要とする。
+- `APPROVED_FOR_SHADOW <review_digest>`形式で、prepare/run承認のいずれとも
+  異なる未使用comment IDを必要とする。
+- `APPROVED_FOR_SHADOW`直前にprepare承認commentとrun承認commentを
+  GitHubから再取得して再検証する。
 - production、merge、正式BUY再開を承認できない。
 
 ## GitHub-backed approval evidence
 
-- approver allowlistの正本はtrackedな`research/APPROVERS.json`。
-- experiment branch上のallowlistを信用しない。
-- proposalに記録したbase commitが`origin/main` history上にあることを検証し、
-  そのcommit上のallowlistを`git show`で読む。
+- 承認対象repositoryは`kazuponbaseball-cell/keiba_ai_project`、base branchは
+  `main`に実装定数として固定する。proposalはbase commitを固定する。
+- GitHubのread-only APIから`refs/heads/main`のcurrent head SHAを取得する。
+- proposalのbase commitからcurrent main SHAへのGitHub compareが`ahead`
+  または`identical`で、merge-base SHAがproposalのbase commitと一致する場合だけ
+  main ancestorとして認める。
+- approver allowlistの正本は、GitHub上のproposal base commitにある
+  `research/APPROVERS.json`である。ローカルworktree、ローカルobject、
+  `refs/remotes/origin/main`、experiment branch上のcopyを承認根拠にしない。
 - author loginがallowlistにあり、GitHub actor typeが`User`であり、
   Codex/bot/automationでないことを検証する。
-- registryへcomment ID、URL、author、created_at、updated_at、
-  body SHA-256、approval type、digestを保存する。
+- registryへrepository、base branch、verified current main SHA、verified base
+  commit、compare URL/status、merge-base SHA、APPROVERS blob SHA、APPROVERS
+  content SHA-256、verification timeを保存する。
+- registryへcomment ID、Issue番号、URL、author login/type、body、approval
+  keyword/digest、body SHA-256、created_at、updated_atを保存する。
+- prepare/run/shadowの新規grantはそれぞれ異なるcomment IDを使う。
+  後続transitionで同じ証拠を再検証することは新規grantまたは再利用ではない。
+- comment ID、Issue、URL、author、body、keyword、digest、body SHA-256、
+  created_at、updated_atの変更、comment削除、grant ID再利用はfail-closeする。
 - GitHub取得はread-only GETのみ。CIはfixture/injected providerを使い、
   外部通信しない。
+- 監査時点のpre-merge `main` `288dff5e86385908281428d5ed4f077625a43e4b`
+  には`research/APPROVERS.json`がないため、そのcommitをbaseとする実承認は
+  fail-closeする。PR #2 merge後のmainでの検証は未確認である。
 
 ## Canonical scope
 

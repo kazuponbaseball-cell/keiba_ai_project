@@ -208,3 +208,36 @@ hash-bound lifecycle/manifest以外のuncommitted・untracked pathも拒否す�
 
 実験結果、candidate digest、price join後artifactは実行前承認scopeへ混ぜず、
 append-only result evidenceとして保存する。
+
+## D-021 — D-019の承認信頼境界をGitHub remote検証と単一用途commentへ置換する
+
+- Decision: `LOCKED_GATE`
+- Evidence: governance decision + tracked implementation and fixture tests
+- Supersedes: D-019の`origin/main`、local `git show`、run承認だけの再検証に関する部分
+
+D-019は履歴として保持するが、承認可否にローカルremote-tracking ref、ローカル
+git object、worktree上の`research/APPROVERS.json`を使わない。対象repositoryを
+`kazuponbaseball-cell/keiba_ai_project`、base branchを`main`に固定する。
+GitHub read-only APIから`refs/heads/main`のcurrent head SHAを取得し、proposalの
+base commitからcurrent main SHAへのcompareが`ahead`または`identical`で、
+merge-base SHAがproposalのbase commitと一致する場合だけancestor性を認める。
+
+allowlistはGitHub上のproposal base commitから
+`research/APPROVERS.json`を取得して構築する。registryにはrepository、base
+branch、verified current main SHA、verified base commit、compare URL/status、
+merge-base SHA、APPROVERS blob SHA、APPROVERS content SHA-256、verification
+timeを監査証拠として保存する。GitHub取得不能、responseのrepository/base
+branch/base commit不一致、compare不一致、contents欠落・不正JSONはfail-closeする。
+
+prepare、run、shadowの新規grantは、同じ`REGISTRY.jsonl`全体で未使用の異なる
+comment IDを必要とする。後続transitionで同じ証拠を再検証することは新規grant
+ではない。`PREPARING`前はprepare、`APPROVED_TO_RUN`前はprepare、`RUNNING`前は
+prepareとrun、`APPROVED_FOR_SHADOW`前はprepareとrunをGitHubから再取得する。
+comment ID、Issue番号、URL、author login/type、body、approval keyword/digest、
+body SHA-256、created_at、updated_atの変更、comment削除、grant ID再利用は
+fail-closeする。
+
+監査時点のpre-merge `main` `288dff5e86385908281428d5ed4f077625a43e4b`
+には`research/APPROVERS.json`がないため、そのcommitをbaseとする承認は
+fail-closeする。PR #2 merge後のmain commitに対するend-to-end取得・検証は
+未確認事項として残す。本決定はproduction、merge、BUY、注文の承認を追加しない。

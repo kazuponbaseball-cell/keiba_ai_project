@@ -57,7 +57,7 @@ hypothesis_gate:
   scorecard: research/HYPOTHESIS_SCORECARD.yaml
 
 approval_system:
-  schema_version: 2
+  schema_version: 3
   lifecycle:
     - proposed
     - approved_to_prepare
@@ -73,11 +73,28 @@ approval_system:
     prepare: "APPROVED_TO_PREPARE <proposal_scope_digest>"
     run: "APPROVED_TO_RUN <run_scope_digest>"
     shadow: "APPROVED_FOR_SHADOW <review_digest>"
+  target:
+    repository: kazuponbaseball-cell/keiba_ai_project
+    base_branch: main
+    pinned_as_implementation_constants: true
+    proposal_pins_base_commit: true
+  remote_trust:
+    provider: github_read_only_api
+    current_main_ref: refs/heads/main
+    compare_direction: proposal_base_commit_to_current_main_sha
+    allowed_compare_status:
+      - ahead
+      - identical
+    merge_base_must_equal_proposal_base_commit: true
+    local_origin_main_trusted: false
+    local_git_show_trusted: false
   allowlist:
     tracked_path: research/APPROVERS.json
-    trust_source: proposal_base_commit
-    base_commit_must_be_on_origin_main_history: true
+    trust_source: github_proposal_base_commit_contents
+    github_blob_sha_required: true
+    content_sha256_required: true
     experiment_branch_copy_trusted: false
+    local_worktree_copy_trusted: false
   caller_actor_is_identity_proof: false
   human_approved_flag_supported: false
   denied_approver_actor_types:
@@ -88,22 +105,69 @@ approval_system:
     - bot
     - automation
     - github_actions
-  evidence_fields:
+  github_base_verification_evidence_fields:
+    - repository_full_name
+    - base_branch
+    - verified_current_main_sha
+    - verified_base_commit
+    - compare_url
+    - compare_status
+    - merge_base_sha
+    - approvers_blob_sha
+    - approvers_content_sha256
+    - verification_time
+  comment_evidence_fields:
+    - approval_type
+    - approval_digest
+    - repository
+    - issue_number
     - comment_id
     - url
     - author
+    - author_type
+    - body
+    - body_sha256
     - created_at
     - updated_at
-    - body_sha256
+  event_evidence_fields:
+    new_grant: approval_evidence
+    prior_reverification: revalidated_approval_evidence
+    github_trust: github_trust_evidence
+  grant_comment_ids:
+    scope: registry_wide
+    prepare_run_shadow_distinct: true
+    revalidation_is_not_a_new_grant: true
+  transition_reverification:
+    preparing:
+      - prepare
+    approved_to_run:
+      - prepare
+    running:
+      - prepare
+      - run
+    approved_for_shadow:
+      - prepare
+      - run
+  immutable_comment_fields:
+    - comment_id
+    - issue_number
+    - url
+    - author
+    - author_type
+    - body
     - approval_type
     - approval_digest
-  running_reverification:
-    same_comment_required: true
-    author_unchanged: true
-    body_unchanged: true
-    digest_unchanged: true
-    updated_at_unchanged: true
-    github_unavailable_action: fail_close
+    - body_sha256
+    - created_at
+    - updated_at
+  fail_close_on:
+    - github_unavailable
+    - repository_base_branch_or_base_commit_mismatch
+    - base_commit_not_current_main_ancestor
+    - compare_status_or_merge_base_mismatch
+    - github_approvers_missing_or_invalid
+    - approval_comment_missing_edited_or_deleted
+    - approval_comment_id_reused
   ci_external_network: false
 
 scope_digest_contract:
@@ -120,6 +184,8 @@ scope_digest_contract:
   proposal_scope_path: research/scopes/<experiment_id>.proposal.json
   run_scope_path: research/scopes/<experiment_id>.run.json
   digest: sha256
+  proposal_scope_freezes:
+    - base_commit
   queue_records_proposal_digest: true
   experiment_markdown_records_proposal_digest: true
   registry_records_proposal_and_run_digest: true
@@ -409,5 +475,6 @@ unconfirmed_items:
   - standard baselineとresearch Top3 baselineの唯一のsource of truth
   - strict T-3 plus final-price prospective evidence
   - branch protection、CODEOWNERS、required reviewのGitHub側設定
-  - GitHub AppまたはCLI実行環境がprivate Issue commentをread-only取得できるcredentialを持つこと
-  - PR #2 merge後のmain commitをbaseとするproposalでAPPROVERS.jsonを取得できること
+  - GitHub AppまたはCLI実行環境がprivate Issue commentとrepository metadataをread-only取得できるcredentialを持つこと
+  - 監査時点のpre-merge main 288dff5e86385908281428d5ed4f077625a43e4bにはresearch/APPROVERS.jsonがなく、そのcommitをbaseとする承認はfail-closeすること
+  - PR #2 merge後のmain commitをbaseとするproposalでGitHubからAPPROVERS.jsonを取得・検証できること

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import contextlib
 import copy
 import importlib.util
@@ -71,6 +72,54 @@ class FakeApprovalProvider:
         self.comments: dict[int, dict[str, Any]] = {}
         self.error: Exception | None = None
         self.calls: list[tuple[str, int]] = []
+        self.current_main = "c" * 40
+        self.approvers_content = json.dumps(
+            {
+                "schema_version": 1,
+                "approvers": [{"login": APPROVER}],
+                "denied_login_patterns": ["bot", "codex", "automation"],
+            },
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    def get_repository(self, repository: str) -> dict[str, Any]:
+        return {"full_name": REPOSITORY, "default_branch": "main"}
+
+    def get_branch_ref(self, repository: str, branch: str) -> dict[str, Any]:
+        return {
+            "ref": "refs/heads/main",
+            "object": {"type": "commit", "sha": self.current_main},
+        }
+
+    def compare_commits(
+        self,
+        repository: str,
+        base_commit: str,
+        head_commit: str,
+    ) -> dict[str, Any]:
+        return {
+            "status": "identical" if base_commit == head_commit else "ahead",
+            "url": (
+                f"https://api.github.com/repos/{REPOSITORY}/compare/"
+                f"{base_commit}...{head_commit}"
+            ),
+            "base_commit": {"sha": base_commit},
+            "merge_base_commit": {"sha": base_commit},
+        }
+
+    def get_file_contents(
+        self,
+        repository: str,
+        path: str,
+        ref: str,
+    ) -> dict[str, Any]:
+        return {
+            "type": "file",
+            "path": "research/APPROVERS.json",
+            "encoding": "base64",
+            "sha": "d" * 40,
+            "content": base64.b64encode(self.approvers_content).decode("ascii"),
+        }
 
     def get_issue_comment(self, repository: str, comment_id: int) -> dict[str, Any]:
         self.calls.append((repository, comment_id))
@@ -188,18 +237,6 @@ class ExperimentLifecycleTests(unittest.TestCase):
             "stake": 0,
         }
 
-    def _allowlist_loader(self, _root: Path, base_commit: str) -> dict[str, Any]:
-        self.assertEqual(base_commit, BASE_COMMIT)
-        return {
-            "approvers": {APPROVER.lower()},
-            "denied_login_patterns": [
-                "bot",
-                "codex",
-                "automation",
-                "github-actions",
-            ],
-        }
-
     def _execution_commit_provider(self, _root: Path) -> str:
         return self.execution_commit
 
@@ -282,7 +319,6 @@ class ExperimentLifecycleTests(unittest.TestCase):
             update_registry.main,
             argv,
             approval_provider=provider or self.provider,
-            allowlist_loader=self._allowlist_loader,
             execution_commit_provider=self._execution_commit_provider,
             execution_worktree_verifier=lambda _root, _allowed: None,
         )
@@ -304,7 +340,6 @@ class ExperimentLifecycleTests(unittest.TestCase):
             argv,
             message,
             approval_provider=provider or self.provider,
-            allowlist_loader=self._allowlist_loader,
             execution_commit_provider=self._execution_commit_provider,
             execution_worktree_verifier=lambda _root, _allowed: None,
         )
@@ -321,6 +356,22 @@ class ExperimentLifecycleTests(unittest.TestCase):
         if not path.exists():
             return []
         return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+    def _grant_event(self, experiment_id: str, status: str) -> dict[str, Any]:
+        matches = [
+            event
+            for event in self._events()
+            if event["experiment_id"] == experiment_id and event["status"] == status
+        ]
+        self.assertEqual(len(matches), 1)
+        return matches[0]
+
+    def _grant_comment_id(self, experiment_id: str, status: str) -> int:
+        evidence = self._grant_event(experiment_id, status)["approval_evidence"]
+        self.assertIsInstance(evidence, dict)
+        comment_id = evidence["comment_id"]
+        self.assertIs(type(comment_id), int)
+        return comment_id
 
     def _add_comment(
         self,
@@ -409,6 +460,14 @@ class ExperimentLifecycleTests(unittest.TestCase):
         self._append(experiment_id, "RUNNING", extra=["--execution-kind", "real-data"])
         return path, digest, comment_id
 
+    def _review_required(self, experiment_id: str) -> tuple[int, int]:
+        self._running(experiment_id)
+        self._append(experiment_id, "REVIEW_REQUIRED", extra=["--artifact", "result.json"])
+        return (
+            self._grant_comment_id(experiment_id, "approved_to_prepare"),
+            self._grant_comment_id(experiment_id, "approved_to_run"),
+        )
+
     def test_score_74_is_blocked_and_75_is_proposed(self) -> None:
         blocked = self._create("exp-score-74", SCORE_74)
         proposed = self._create("exp-score-75", SCORE_75)
@@ -459,7 +518,7 @@ class ExperimentLifecycleTests(unittest.TestCase):
         self._append_error(
             experiment_id,
             "APPROVED_TO_PREPARE",
-            "not in the base-commit allowlist",
+            "not in the allowlist",
             extra=self._approval_args(comment_id),
         )
 
@@ -474,31 +533,18 @@ class ExperimentLifecycleTests(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        trust_check = mock.Mock(returncode=0, stdout="", stderr="")
-        completed = mock.Mock(
-            returncode=0,
-            stdout=json.dumps(
-                {
-                    "schema_version": 1,
-                    "approvers": [{"login": APPROVER}],
-                    "denied_login_patterns": ["bot"],
-                }
-            ),
-            stderr="",
-        )
-        with mock.patch.object(
-            update_registry.subprocess,
-            "run",
-            side_effect=[trust_check, completed],
-        ) as run:
-            allowlist = update_registry.load_approvers_from_base(self.root, BASE_COMMIT)
-        self.assertEqual(allowlist["approvers"], {APPROVER.lower()})
-        trust_command = run.call_args_list[0].args[0]
-        self.assertEqual(trust_command[-2:], [BASE_COMMIT, "refs/remotes/origin/main"])
-        command = run.call_args_list[1].args[0]
-        self.assertIn(
-            f"{BASE_COMMIT}:research/APPROVERS.json",
-            command,
+        experiment_id = "exp-worktree-allowlist-ignored"
+        self._start_proposal(experiment_id)
+        digest = self._queue(experiment_id)["proposal_scope_digest"]
+        comment_id = self._add_comment("APPROVED_TO_PREPARE", digest)
+        event = self._append(
+            experiment_id,
+            "APPROVED_TO_PREPARE",
+            extra=self._approval_args(comment_id),
+        )["event"]
+        self.assertEqual(event["approval_evidence"]["author"], APPROVER)
+        self.assertEqual(
+            event["github_trust_evidence"]["verified_base_commit"], BASE_COMMIT
         )
 
     def test_codex_and_automation_authors_cannot_self_approve(self) -> None:
@@ -519,19 +565,12 @@ class ExperimentLifecycleTests(unittest.TestCase):
                     author_type=author_type,
                 )
 
-                def broad_allowlist(_root: Path, _base: str) -> dict[str, Any]:
-                    return {
-                        "approvers": {author.lower(), APPROVER.lower()},
-                        "denied_login_patterns": [],
-                    }
-
                 self._assert_cli_error(
                     update_registry.main,
                     self._append_argv(experiment_id, "APPROVED_TO_PREPARE")
                     + self._approval_args(comment_id),
                     "Codex or automation actor cannot approve research",
                     approval_provider=self.provider,
-                    allowlist_loader=broad_allowlist,
                     execution_commit_provider=self._execution_commit_provider,
                 )
 
@@ -725,6 +764,250 @@ class ExperimentLifecycleTests(unittest.TestCase):
             "run scope changed",
         )
 
+    def test_prepare_comment_id_cannot_be_reused_for_run_grant(self) -> None:
+        experiment_id = "exp-reuse-prepare-as-run"
+        self._start_preparing(experiment_id)
+        _path, run_digest = self._freeze_run_scope(experiment_id)
+        prepare_comment_id = self._grant_comment_id(
+            experiment_id, "approved_to_prepare"
+        )
+        self.provider.comments[prepare_comment_id]["body"] = (
+            f"APPROVED_TO_RUN {run_digest}"
+        )
+        self.provider.comments[prepare_comment_id]["updated_at"] = (
+            "2026-07-31T00:01:00Z"
+        )
+        self._append_error(
+            experiment_id,
+            "APPROVED_TO_RUN",
+            "already used by an approval grant",
+            extra=self._approval_args(prepare_comment_id),
+        )
+
+    def test_run_comment_id_cannot_be_reused_for_shadow_grant(self) -> None:
+        experiment_id = "exp-reuse-run-as-shadow"
+        _prepare_comment_id, run_comment_id = self._review_required(experiment_id)
+        review_digest = "d" * 64
+        self.provider.comments[run_comment_id]["body"] = (
+            f"APPROVED_FOR_SHADOW {review_digest}"
+        )
+        self.provider.comments[run_comment_id]["updated_at"] = (
+            "2026-07-31T00:01:00Z"
+        )
+        self._append_error(
+            experiment_id,
+            "APPROVED_FOR_SHADOW",
+            "already used by an approval grant",
+            extra=self._approval_args(run_comment_id)
+            + ["--review-digest", review_digest],
+        )
+
+    def test_comment_id_cannot_be_reused_across_experiments(self) -> None:
+        first_experiment = "exp-global-comment-first"
+        self._start_proposal(first_experiment)
+        comment_id = self._approve_prepare(first_experiment)
+
+        second_experiment = "exp-global-comment-second"
+        self._start_proposal(second_experiment)
+        second_digest = self._queue(second_experiment)["proposal_scope_digest"]
+        self.provider.comments[comment_id]["body"] = (
+            f"APPROVED_TO_PREPARE {second_digest}"
+        )
+        self.provider.comments[comment_id]["updated_at"] = (
+            "2026-07-31T00:01:00Z"
+        )
+        self._append_error(
+            second_experiment,
+            "APPROVED_TO_PREPARE",
+            "already used by an approval grant",
+            extra=self._approval_args(comment_id),
+        )
+
+    def test_revalidation_events_do_not_consume_comment_ids_as_new_grants(self) -> None:
+        experiment_id = "exp-revalidation-not-grant"
+        self._running(experiment_id)
+        events = self._events()
+        consumed = update_registry.validate_approval_grant_history(events)
+        self.assertEqual(len(consumed), 2)
+        for status in ("preparing", "running"):
+            event = next(item for item in events if item["status"] == status)
+            self.assertIsNone(event["approval_evidence"])
+            self.assertTrue(event["revalidated_approval_evidence"])
+
+    def test_deleted_prepare_comment_blocks_run_approval(self) -> None:
+        experiment_id = "exp-prepare-deleted-before-run-approval"
+        self._start_preparing(experiment_id)
+        _path, run_digest = self._freeze_run_scope(experiment_id)
+        prepare_comment_id = self._grant_comment_id(
+            experiment_id, "approved_to_prepare"
+        )
+        del self.provider.comments[prepare_comment_id]
+        run_comment_id = self._add_comment("APPROVED_TO_RUN", run_digest)
+        self._append_error(
+            experiment_id,
+            "APPROVED_TO_RUN",
+            "GitHub approval verification unavailable; fail-close",
+            extra=self._approval_args(run_comment_id),
+        )
+
+    def test_deleted_prepare_or_run_comment_blocks_running(self) -> None:
+        for index, grant_status in enumerate(
+            ("approved_to_prepare", "approved_to_run")
+        ):
+            with self.subTest(grant_status=grant_status):
+                experiment_id = f"exp-deleted-before-running-{index}"
+                self._approved_run(experiment_id)
+                comment_id = self._grant_comment_id(experiment_id, grant_status)
+                del self.provider.comments[comment_id]
+                self._append_error(
+                    experiment_id,
+                    "RUNNING",
+                    "GitHub approval verification unavailable; fail-close",
+                    extra=["--execution-kind", "real-data"],
+                )
+
+    def test_deleted_prepare_or_run_comment_blocks_shadow_approval(self) -> None:
+        for index, grant_status in enumerate(
+            ("approved_to_prepare", "approved_to_run")
+        ):
+            with self.subTest(grant_status=grant_status):
+                experiment_id = f"exp-deleted-before-shadow-{index}"
+                self._review_required(experiment_id)
+                comment_id = self._grant_comment_id(experiment_id, grant_status)
+                del self.provider.comments[comment_id]
+                review_digest = "d" * 64
+                shadow_comment_id = self._add_comment(
+                    "APPROVED_FOR_SHADOW", review_digest
+                )
+                self._append_error(
+                    experiment_id,
+                    "APPROVED_FOR_SHADOW",
+                    "GitHub approval verification unavailable; fail-close",
+                    extra=self._approval_args(shadow_comment_id)
+                    + ["--review-digest", review_digest],
+                )
+
+    def test_prepare_comment_edit_blocks_run_approval_even_with_fresh_run_comment(self) -> None:
+        experiment_id = "exp-prepare-edited-before-run-approval"
+        self._start_preparing(experiment_id)
+        _path, run_digest = self._freeze_run_scope(experiment_id)
+        prepare_comment_id = self._grant_comment_id(
+            experiment_id, "approved_to_prepare"
+        )
+        self.provider.comments[prepare_comment_id]["body"] = (
+            f"APPROVED_TO_RUN {run_digest}"
+        )
+        self.provider.comments[prepare_comment_id]["updated_at"] = (
+            "2026-07-31T00:01:00Z"
+        )
+        run_comment_id = self._add_comment("APPROVED_TO_RUN", run_digest)
+        self._append_error(
+            experiment_id,
+            "APPROVED_TO_RUN",
+            "digest or format mismatch",
+            extra=self._approval_args(run_comment_id),
+        )
+
+    def test_run_comment_edit_blocks_shadow_even_with_fresh_shadow_comment(self) -> None:
+        experiment_id = "exp-run-edited-before-shadow"
+        _prepare_comment_id, run_comment_id = self._review_required(experiment_id)
+        review_digest = "d" * 64
+        self.provider.comments[run_comment_id]["body"] = (
+            f"APPROVED_FOR_SHADOW {review_digest}"
+        )
+        self.provider.comments[run_comment_id]["updated_at"] = (
+            "2026-07-31T00:01:00Z"
+        )
+        shadow_comment_id = self._add_comment("APPROVED_FOR_SHADOW", review_digest)
+        self._append_error(
+            experiment_id,
+            "APPROVED_FOR_SHADOW",
+            "digest or format mismatch",
+            extra=self._approval_args(shadow_comment_id)
+            + ["--review-digest", review_digest],
+        )
+
+    def test_updated_at_change_blocks_each_later_approval_gate(self) -> None:
+        experiment_id = "exp-updated-before-run-approval"
+        self._start_preparing(experiment_id)
+        _path, run_digest = self._freeze_run_scope(experiment_id)
+        prepare_comment_id = self._grant_comment_id(
+            experiment_id, "approved_to_prepare"
+        )
+        self.provider.comments[prepare_comment_id]["updated_at"] = (
+            "2026-07-31T00:01:00Z"
+        )
+        run_comment_id = self._add_comment("APPROVED_TO_RUN", run_digest)
+        self._append_error(
+            experiment_id,
+            "APPROVED_TO_RUN",
+            "changed after approval (updated_at)",
+            extra=self._approval_args(run_comment_id),
+        )
+
+        for index, grant_status in enumerate(
+            ("approved_to_prepare", "approved_to_run")
+        ):
+            with self.subTest(gate="running", grant_status=grant_status):
+                running_experiment = f"exp-updated-before-running-{index}"
+                self._approved_run(running_experiment)
+                comment_id = self._grant_comment_id(
+                    running_experiment, grant_status
+                )
+                self.provider.comments[comment_id]["updated_at"] = (
+                    "2026-07-31T00:01:00Z"
+                )
+                self._append_error(
+                    running_experiment,
+                    "RUNNING",
+                    "changed after approval (updated_at)",
+                    extra=["--execution-kind", "real-data"],
+                )
+
+        for index, grant_status in enumerate(
+            ("approved_to_prepare", "approved_to_run")
+        ):
+            with self.subTest(gate="shadow", grant_status=grant_status):
+                shadow_experiment = f"exp-updated-before-shadow-{index}"
+                self._review_required(shadow_experiment)
+                comment_id = self._grant_comment_id(
+                    shadow_experiment, grant_status
+                )
+                self.provider.comments[comment_id]["updated_at"] = (
+                    "2026-07-31T00:01:00Z"
+                )
+                review_digest = "d" * 64
+                shadow_comment_id = self._add_comment(
+                    "APPROVED_FOR_SHADOW", review_digest
+                )
+                self._append_error(
+                    shadow_experiment,
+                    "APPROVED_FOR_SHADOW",
+                    "changed after approval (updated_at)",
+                    extra=self._approval_args(shadow_comment_id)
+                    + ["--review-digest", review_digest],
+                )
+
+    def test_distinct_prepare_run_and_shadow_comment_ids_succeed(self) -> None:
+        experiment_id = "exp-distinct-approval-comments"
+        prepare_comment_id, run_comment_id = self._review_required(experiment_id)
+        review_digest = "d" * 64
+        shadow_comment_id = self._add_comment("APPROVED_FOR_SHADOW", review_digest)
+        event = self._append(
+            experiment_id,
+            "APPROVED_FOR_SHADOW",
+            extra=self._approval_args(shadow_comment_id)
+            + ["--review-digest", review_digest],
+        )["event"]
+        self.assertEqual(
+            len({prepare_comment_id, run_comment_id, shadow_comment_id}), 3
+        )
+        self.assertEqual(event["approval_evidence"]["comment_id"], shadow_comment_id)
+        self.assertEqual(
+            [item["comment_id"] for item in event["revalidated_approval_evidence"]],
+            [prepare_comment_id, run_comment_id],
+        )
+
     def test_approval_comment_edit_before_running_is_rejected(self) -> None:
         for field, value in (
             ("updated_at", "2026-07-31T00:01:00Z"),
@@ -743,7 +1026,7 @@ class ExperimentLifecycleTests(unittest.TestCase):
                         if field == "updated_at"
                         else "digest or format mismatch"
                         if field == "body"
-                        else "not in the base-commit allowlist"
+                        else "not in the allowlist"
                     ),
                 )
 
@@ -752,9 +1035,14 @@ class ExperimentLifecycleTests(unittest.TestCase):
         _path, digest, comment_id = self._approved_run(experiment_id)
         event = self._events()[-1]
         evidence = event["approval_evidence"]
+        self.assertEqual(tuple(evidence), update_registry.COMMENT_EVIDENCE_FIELDS)
         self.assertEqual(evidence["comment_id"], comment_id)
         self.assertEqual(evidence["approval_digest"], digest)
+        self.assertEqual(evidence["approval_type"], "APPROVED_TO_RUN")
         self.assertEqual(evidence["author"], APPROVER)
+        self.assertEqual(evidence["author_type"], "User")
+        self.assertEqual(evidence["issue_number"], ISSUE_NUMBER)
+        self.assertEqual(evidence["body"], f"APPROVED_TO_RUN {digest}")
         for field in (
             "url",
             "created_at",
@@ -772,7 +1060,7 @@ class ExperimentLifecycleTests(unittest.TestCase):
         self._append_error(
             experiment_id,
             "APPROVED_FOR_SHADOW",
-            "digest or format mismatch",
+            "already used by an approval grant",
             extra=self._approval_args(run_comment_id)
             + ["--review-digest", review_digest],
         )
