@@ -1928,6 +1928,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    _install_data_loader_shim()
     args = build_parser().parse_args(argv)
     config = load_adapter_config(args.config)
     if args.execution_mode == "real-data":

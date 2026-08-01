@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "experiment_id": "EXP-20260802-006",
-  "cohort_id": "grade_r_candidate_freeze_20260802_niigata_v2",
+  "experiment_id": "EXP-20260802-007",
+  "cohort_id": "grade_r_candidate_freeze_20260802_niigata_v3",
   "timezone": "Asia/Tokyo",
   "target_card": {
     "race_date": "2026-08-02",

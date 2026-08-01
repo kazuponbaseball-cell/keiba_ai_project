@@ -57,14 +57,8 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_direct_file_launch_bootstraps_repository_imports(self) -> None:
-        probe = (
-            "import runpy; "
-            f"module = runpy.run_path({str(MODULE_PATH)!r}); "
-            "module['_install_data_loader_shim'](); "
-            "print(module['ROOT'])"
-        )
         completed = subprocess.run(
-            [sys.executable, "-I", "-c", probe],
+            [sys.executable, "-I", str(MODULE_PATH), "--help"],
             cwd=ROOT,
             capture_output=True,
             text=True,
@@ -72,7 +66,8 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
         )
 
         self.assertEqual(0, completed.returncode, completed.stderr)
-        self.assertEqual(str(ROOT), completed.stdout.strip())
+        self.assertIn("--operation", completed.stdout)
+        self.assertNotIn("ModuleNotFoundError", completed.stderr)
 
     def _make_targets(self) -> dict:
         records = []
