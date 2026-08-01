@@ -1,34 +1,47 @@
 schema_version: 2
-state_id: RESEARCH-OS-V1-POST-MERGE-20260801
-updated_at: "2026-08-01T13:43:58+09:00"
+state_id: RESEARCH-OS-V1-FOUNDATION-MERGED-20260801
+updated_at: "2026-08-01T15:21:25+09:00"
 repository: kazuponbaseball-cell/keiba_ai_project
-current_main_commit: 1eaf364571bd8b9fd27f7de657ce295b563b3f1f
+reconciled_through_main_commit: 1eaf364571bd8b9fd27f7de657ce295b563b3f1f
 model_audit_baseline_commit: 288dff5e86385908281428d5ed4f077625a43e4b
-branch: chore/research-os-post-merge-reconciliation
-status: POST_MERGE_RECONCILIATION_REVIEW_REQUIRED
+status: RESEARCH_OS_V1_FOUNDATION_MERGED
 
-post_merge_reconciliation:
-  research_os_pull_request: 2
-  research_os_merge_commit: 1eaf364571bd8b9fd27f7de657ce295b563b3f1f
-  merged_at: "2026-08-01T13:30:02+09:00"
+reconciliation_snapshot:
+  observed_at: "2026-08-01T13:43:58+09:00"
   source: github_read_only_api
-  verified_at: "2026-08-01T13:43:58+09:00"
-  current_main_ref: refs/heads/main
-  current_main_sha: 1eaf364571bd8b9fd27f7de657ce295b563b3f1f
+  observed_main:
+    ref: refs/heads/main
+    commit: 1eaf364571bd8b9fd27f7de657ce295b563b3f1f
+  research_os_foundation:
+    pull_request: 2
+    merge_commit: 1eaf364571bd8b9fd27f7de657ce295b563b3f1f
+    merged_at: "2026-08-01T13:30:02+09:00"
+  reconciliation_change_review:
+    observed_at: "2026-08-01T15:21:25+09:00"
+    pull_request: 3
+    base_branch: main
+    head_branch: chore/research-os-post-merge-reconciliation
+    observed_state: open
+    observed_draft: true
+    observed_merged: false
+    represents_live_research_os_state: false
   model_audit_baseline:
     commit: 288dff5e86385908281428d5ed4f077625a43e4b
     purpose: pre_research_os_model_and_production_audit_baseline
-  baseline_to_current_main_compare:
+  baseline_to_observed_main_compare:
     url: https://api.github.com/repos/kazuponbaseball-cell/keiba_ai_project/compare/288dff5e86385908281428d5ed4f077625a43e4b...1eaf364571bd8b9fd27f7de657ce295b563b3f1f
     status: ahead
     merge_base_sha: 288dff5e86385908281428d5ed4f077625a43e4b
-  approvers_on_current_main:
+  approvers_on_observed_main:
     path: research/APPROVERS.json
     exists: true
     ref: 1eaf364571bd8b9fd27f7de657ce295b563b3f1f
     blob_sha: c973f7d83de78cc0eea09ef6a240e99e4512937e
     content_sha256: ac14971c8d8f6f4502c30c6b6434da9ce061009955461248c95363b36ee137b5
-  real_issue_comment_approval_e2e_verified: false
+  approval_transition_e2e:
+    provider: production_github_provider
+    evidence_source: real_issue_comment
+    verified: false
 
 authority:
   level: 3
@@ -499,5 +512,5 @@ unconfirmed_items:
   - standard baselineとresearch Top3 baselineの唯一のsource of truth
   - strict T-3 plus final-price prospective evidence
   - branch protection、CODEOWNERS、required reviewのGitHub側設定
-  - 実運用tokenでprivate Issue commentをread-only取得し、current main 1eaf364571bd8b9fd27f7de657ce295b563b3f1fをproposal baseとする実承認transitionをend-to-end完了できること
+  - 実運用GitHub providerを用いた、実Issue commentによるapproval transition E2Eが未確認であること
   - model audit baseline 288dff5e86385908281428d5ed4f077625a43e4bにはresearch/APPROVERS.jsonがなく、そのcommitをproposal baseとする承認はfail-closeすること

@@ -107,9 +107,10 @@
 
 ## Unconfirmed items
 
-- [ ] post-merge確認時点の`main` `1eaf364571bd8b9fd27f7de657ce295b563b3f1f`
-  に`research/APPROVERS.json`が存在することは確認済み。実Issue commentを用いた
-  承認transitionのend-to-end検証は未確認。
+- [ ] `research/STATE.yaml`のreconciliation snapshotで観測したmain commit上の
+  `research/APPROVERS.json`存在確認は、動的なcurrent mainの表明ではない。
+- [ ] 実運用GitHub providerを用いた、実Issue commentによるapproval transition
+  E2Eは未確認。
 - [ ] モデル監査基準commit `288dff5e86385908281428d5ed4f077625a43e4b`
   には同fileがなく、そのcommitをproposal baseとする承認はfail-closeする。
 

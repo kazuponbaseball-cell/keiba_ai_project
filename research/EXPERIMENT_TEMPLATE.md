@@ -49,9 +49,11 @@ Canonical serialization:
 - [ ] repository/base branchが固定実装値と一致し、base commit、compare
   response、contents refがcanonical proposalと一致した。
 
-post-merge確認時点の`main` `1eaf364571bd8b9fd27f7de657ce295b563b3f1f`
-には`research/APPROVERS.json`が存在する。ただし実Issue commentを用いた承認
-transitionのend-to-end検証は未確認である。モデル監査基準commit
+`research/STATE.yaml`に記録したreconciliation snapshotでは、観測した`main`
+commit上の`research/APPROVERS.json`の存在を確認済みである。これは動的なcurrent
+mainを表さない。ただし、実運用GitHub providerを用いた、実Issue commentによる
+approval transition E2Eは未確認である。各transitionではGitHub current mainを
+実行時に再取得してfail-close検証する。モデル監査基準commit
 `288dff5e86385908281428d5ed4f077625a43e4b`には同fileがないため、そのcommitを
 proposal baseとする承認はfail-closeする。
 
