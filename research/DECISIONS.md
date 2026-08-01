@@ -241,3 +241,31 @@ fail-closeする。
 には`research/APPROVERS.json`がないため、そのcommitをbaseとする承認は
 fail-closeする。PR #2 merge後のmain commitに対するend-to-end取得・検証は
 未確認事項として残す。本決定はproduction、merge、BUY、注文の承認を追加しない。
+
+## D-022 — PR #2 merge後のrepository stateをreconcileする
+
+- Decision: `POST_MERGE_STATE_RECONCILED`
+- Evidence: GitHub read-only API snapshot + merged PR #2 metadata
+- Observed at: `2026-08-01T13:43:58+09:00`
+
+PR #2は人間判断によりmergeされ、確認時点のGitHub `refs/heads/main`は
+`1eaf364571bd8b9fd27f7de657ce295b563b3f1f`を指している。このcurrent main
+snapshotと、既存モデル・production状態を監査した基準commit
+`288dff5e86385908281428d5ed4f077625a43e4b`は役割が異なるため、
+`research/STATE.yaml`で別フィールドとして管理する。
+
+モデル監査基準commitからcurrent mainへのGitHub compareは`ahead`、merge-baseは
+モデル監査基準commitと一致した。current main上の
+`research/APPROVERS.json`はGitHub Contents APIで存在を確認し、blob SHA
+`c973f7d83de78cc0eea09ef6a240e99e4512937e`、decoded content SHA-256
+`ac14971c8d8f6f4502c30c6b6434da9ce061009955461248c95363b36ee137b5`を記録した。
+
+これはallowlist fileのremote存在確認であり、実Issue commentを使った
+`APPROVED_TO_PREPARE`、`APPROVED_TO_RUN`、`APPROVED_FOR_SHADOW` transitionの
+end-to-end成功を意味しない。実承認E2Eは未確認のままfail-close境界を維持する。
+モデル監査基準commitには同fileが存在しないため、そのcommitをproposal baseと
+する承認も引き続きfail-closeする。
+
+このreconciliationはstateとgovernance/template文言だけを更新する。実験、ROI
+仮説、production、予測モデル、候補選択、value、BUY、stake、注文、通知、
+credentialを変更せず、merge判断はDraft PR上の人間に残す。

@@ -107,9 +107,11 @@
 
 ## Unconfirmed items
 
-- [ ] 監査時点のpre-merge `main` `288dff5e86385908281428d5ed4f077625a43e4b`
-  には`research/APPROVERS.json`がなく、そのcommitをbaseとする承認は
-  fail-closeする。PR #2 merge後のmainでの取得・検証は未確認。
+- [ ] post-merge確認時点の`main` `1eaf364571bd8b9fd27f7de657ce295b563b3f1f`
+  に`research/APPROVERS.json`が存在することは確認済み。実Issue commentを用いた
+  承認transitionのend-to-end検証は未確認。
+- [ ] モデル監査基準commit `288dff5e86385908281428d5ed4f077625a43e4b`
+  には同fileがなく、そのcommitをproposal baseとする承認はfail-closeする。
 
 ## Human-only gates
 

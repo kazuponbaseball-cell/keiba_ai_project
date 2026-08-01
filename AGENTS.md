@@ -96,9 +96,13 @@ PROPOSED
   created_at、updated_atの変更、comment削除、grant ID再利用はfail-closeする。
 - GitHub取得はread-only GETのみ。CIはfixture/injected providerを使い、
   外部通信しない。
-- 監査時点のpre-merge `main` `288dff5e86385908281428d5ed4f077625a43e4b`
-  には`research/APPROVERS.json`がないため、そのcommitをbaseとする実承認は
-  fail-closeする。PR #2 merge後のmainでの検証は未確認である。
+- post-merge確認時点の`main` `1eaf364571bd8b9fd27f7de657ce295b563b3f1f`
+  には`research/APPROVERS.json`が存在し、GitHub Contents APIからblob SHAと
+  content SHA-256を取得済みである。ただし実Issue commentを用いた承認transitionの
+  end-to-end検証は未確認である。
+- モデル監査基準commit `288dff5e86385908281428d5ed4f077625a43e4b`
+  には`research/APPROVERS.json`がないため、そのcommitをproposal baseとする
+  実承認は引き続きfail-closeする。
 
 ## Canonical scope
 

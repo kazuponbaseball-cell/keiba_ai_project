@@ -49,9 +49,11 @@ Canonical serialization:
 - [ ] repository/base branchが固定実装値と一致し、base commit、compare
   response、contents refがcanonical proposalと一致した。
 
-監査時点のpre-merge `main` `288dff5e86385908281428d5ed4f077625a43e4b`
-には`research/APPROVERS.json`がない。そのcommitをbaseとする承認はfail-closeし、
-PR #2 merge後のmainでの取得・検証は未確認として扱う。
+post-merge確認時点の`main` `1eaf364571bd8b9fd27f7de657ce295b563b3f1f`
+には`research/APPROVERS.json`が存在する。ただし実Issue commentを用いた承認
+transitionのend-to-end検証は未確認である。モデル監査基準commit
+`288dff5e86385908281428d5ed4f077625a43e4b`には同fileがないため、そのcommitを
+proposal baseとする承認はfail-closeする。
 
 ## 1. Human approval and revalidation
 
