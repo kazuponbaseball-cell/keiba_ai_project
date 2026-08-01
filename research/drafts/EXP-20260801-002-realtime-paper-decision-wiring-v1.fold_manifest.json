@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-002",
+  "manifest_type": "synthetic_timing_contract_cases",
+  "timezone": "Asia/Tokyo",
+  "cases": [
+    {
+      "case_id": "fresh_quote_normal_window",
+      "post_time": "2026-08-02T12:00:00+09:00",
+      "decision_time": "2026-08-02T11:57:50+09:00",
+      "quote_received_at": "2026-08-02T11:57:45+09:00",
+      "expected_status": "PAPER_READY"
+    },
+    {
+      "case_id": "stale_quote_fail_close",
+      "post_time": "2026-08-02T12:00:00+09:00",
+      "decision_time": "2026-08-02T11:57:50+09:00",
+      "quote_received_at": "2026-08-02T11:57:10+09:00",
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "late_decision_fail_close",
+      "post_time": "2026-08-02T12:00:00+09:00",
+      "decision_time": "2026-08-02T11:59:00+09:00",
+      "quote_received_at": "2026-08-02T11:58:55+09:00",
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "candidate_hash_change_fail_close",
+      "post_time": "2026-08-02T12:00:00+09:00",
+      "decision_time": "2026-08-02T11:57:50+09:00",
+      "quote_received_at": "2026-08-02T11:57:45+09:00",
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "missing_quote_fail_close",
+      "post_time": "2026-08-02T12:00:00+09:00",
+      "decision_time": "2026-08-02T11:57:50+09:00",
+      "quote_received_at": null,
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "duplicate_cycle_idempotent",
+      "post_time": "2026-08-02T12:00:00+09:00",
+      "decision_time": "2026-08-02T11:57:50+09:00",
+      "quote_received_at": "2026-08-02T11:57:45+09:00",
+      "expected_status": "ONE_PAPER_EVENT"
+    }
+  ]
+}

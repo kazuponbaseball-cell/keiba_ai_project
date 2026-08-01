@@ -1,0 +1,187 @@
+{
+  "schema_version": 2,
+  "experiment_id": "EXP-20260801-002",
+  "title": "Candidate-immutable realtime quote to paper-decision wiring",
+  "owner": "kazuponbaseball-cell",
+  "created_at": "2026-08-01T11:04:20Z",
+  "status": "proposed",
+  "score": {
+    "components": {
+      "independent_information": 20,
+      "racing_mechanism": 12,
+      "outer_oos_failure_evidence": 18,
+      "leakage_safety": 15,
+      "minimal_falsifiability": 10,
+      "acquisition_implementation_cost": 9
+    },
+    "weights": {
+      "independent_information": 25,
+      "racing_mechanism": 20,
+      "outer_oos_failure_evidence": 20,
+      "leakage_safety": 15,
+      "minimal_falsifiability": 10,
+      "acquisition_implementation_cost": 10
+    },
+    "total": 84,
+    "threshold": 75,
+    "threshold_met": true
+  },
+  "proposal_scope": {
+    "experiment_id": "EXP-20260801-002",
+    "title": "Candidate-immutable realtime quote to paper-decision wiring",
+    "hypothesis": "A paper-only coordinator can bind each fresh exact-pair quote to an already frozen non-odds candidate, recompute the existing robust value decision, and append an idempotent shadow event before the internal deadline without changing the candidate or enabling any order path.",
+    "null_hypothesis": "The coordinator cannot reliably preserve the frozen candidate identity, quote freshness, decision deadline, and idempotency contracts while producing timely paper decisions.",
+    "racing_mechanism": "Later races require their own near-post market observation because available prices change during the day. The horse combination remains determined by the pre-market racing model; only the separately governed value observation is refreshed for the exact frozen ticket.",
+    "target_population": "Synthetic race-time fixtures representing frozen same-race candidates with fresh, stale, missing, changed-hash, late, and duplicate quote-decision events.",
+    "stop_conditions": [
+      "A candidate freeze hash mismatch is not fail-closed",
+      "A formal_buy, send_order, or actual stake value becomes active",
+      "A production runtime path is imported or executed",
+      "A quote or decision deadline contract fails",
+      "The registered synthetic manifest hash changes"
+    ],
+    "out_of_scope": [
+      "Any TARGET handoff or external purchase adapter execution",
+      "Any candidate horse or ticket replacement based on odds",
+      "Any formal BUY policy change",
+      "Any production runtime script modification",
+      "Any real-data race-day execution before APPROVED_TO_RUN",
+      "Any real-money credential or order transmission",
+      "Any threshold optimization or ROI calculation"
+    ],
+    "forbidden_columns": [
+      "actual_order_acknowledgement",
+      "credential",
+      "final_odds_as_decision_input",
+      "formal_stake_yen",
+      "future_or_post_race_features",
+      "official_result_as_decision_input",
+      "payout_as_decision_input",
+      "popularity_as_candidate_selector",
+      "result_derived_candidate_change"
+    ],
+    "lineage_hash_requirements": [
+      "Candidate pair and freeze record hashes must be present and unchanged",
+      "Configuration and synthetic fixture manifest hashes must be fixed in the run scope",
+      "Decision events must reference the exact quote event and received timestamps",
+      "No output may set formal_buy or send_order true or stake above zero",
+      "Quote race, ticket type, and canonical selection key must match the frozen candidate"
+    ],
+    "in_scope": [
+      "Candidate hash verification before every paper decision",
+      "Exact race, ticket type, and selection quote matching",
+      "Fresh quote and decision deadline fail-close checks",
+      "Idempotent append-only paper event generation",
+      "Paper-only stake-zero shadow output",
+      "Synthetic fixture tests only during preparation"
+    ],
+    "allowed_columns": [
+      "candidate_freeze_record_hash",
+      "candidate_pair_key",
+      "decision_generated_at",
+      "formal_buy",
+      "market_status",
+      "paper_action",
+      "paper_stake_yen",
+      "post_time",
+      "quote_contract_ok",
+      "quote_received_at",
+      "quote_source_event_time",
+      "race_id",
+      "robust_expected_return",
+      "send_order",
+      "starter_universe_unchanged",
+      "ticket_type"
+    ],
+    "rejection_gate": [
+      "Any candidate hash or pair change",
+      "Any duplicate paper event for the same idempotency key",
+      "Any formal BUY, TARGET handoff, real stake, credential, or order side effect",
+      "Any fresh quote accepted for the wrong race, ticket type, or selection",
+      "Any real race-day data access during preparation",
+      "Any stale, future, missing, or late quote accepted"
+    ],
+    "expected_changed_paths": [
+      "config/realtime_paper_decision_wiring_v1.json",
+      "scripts/research/realtime_paper_decision_wiring_v1.py",
+      "tests/research/test_realtime_paper_decision_wiring_v1.py"
+    ],
+    "raw_data_sources": [
+      "config/auto_purchase_orchestrator_v1.json",
+      "scripts/auto_purchase_core_v1.py",
+      "scripts/build_current_strongest_tickets.py",
+      "scripts/run_auto_purchase_orchestrator_v1.py",
+      "scripts/start_current_strongest_timed_odds_snapshots.ps1"
+    ],
+    "data_as_of": "2026-08-01; preparation is limited to the registered synthetic timing manifest and does not read or execute race-day data.",
+    "chronological_fold_design": {
+      "design": "Deterministic synthetic contract cases, not a model-performance fold.",
+      "ordering": "candidate freeze < quote source event <= quote received <= decision < internal hard stop < scheduled post",
+      "real_data_rule": "No real race-day rows may be read during APPROVED_TO_PREPARE.",
+      "future_shadow_rule": "A separately approved run may append prospective paper rows only after the implementation commit and manifests are frozen."
+    },
+    "fold_manifest": {
+      "path": "research/drafts/EXP-20260801-002-realtime-paper-decision-wiring-v1.fold_manifest.json",
+      "sha256": "6f8de2ab87ec79d408ed4d5c358d0cf0f8277f2b4567b74721f285ca91b47ad1"
+    },
+    "purge_embargo": {
+      "candidate_market_firewall": "The candidate fixture is frozen before quote attachment.",
+      "post_event_embargo": "No result, payout, final odds, or post-time field is permitted.",
+      "race_overlap_allowed": false
+    },
+    "primary_metric": {
+      "name": "synthetic_contract_pass_rate",
+      "unit": "fraction",
+      "baseline": "current disconnected paper path",
+      "evaluation": "All registered synthetic cases"
+    },
+    "required_effect": {
+      "synthetic_contract_pass_rate": 1.0,
+      "candidate_changes": 0,
+      "duplicate_paper_events": 0,
+      "formal_buy_true_rows": 0,
+      "send_order_true_rows": 0,
+      "nonzero_actual_stake_rows": 0
+    },
+    "compute_budget": {
+      "cpu_only": true,
+      "maximum_wall_clock_minutes": 10,
+      "random_seeds": [
+        20260801
+      ],
+      "synthetic_cases": 6
+    },
+    "base_commit": "385a418827fd6d1cbf9868507d53ad7a04fe172d",
+    "score_components": {
+      "independent_information": 20,
+      "racing_mechanism": 12,
+      "outer_oos_failure_evidence": 18,
+      "leakage_safety": 15,
+      "minimal_falsifiability": 10,
+      "acquisition_implementation_cost": 9
+    },
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "allowed_variant_count": 1,
+    "allowed_threshold_search_count": 0
+  },
+  "proposal_scope_file": "research/scopes/EXP-20260801-002.proposal.json",
+  "proposal_scope_digest": "52a34b8e0b33948b3eaceca366e23d732919bb8923d7add3f2a759d97540fc19",
+  "human_approved_to_prepare": false,
+  "human_approved_to_run": false,
+  "human_approved_for_shadow": false,
+  "automatic_execution_allowed": false,
+  "execution_authorized": false,
+  "production_approved": false,
+  "merge_approved": false,
+  "buy_approved": false,
+  "production_change_allowed": false,
+  "merge_allowed": false,
+  "buy_logic_change_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0,
+  "experiment_markdown": "research/experiments/EXP-20260801-002.md",
+  "notes": "Paper-only realtime quote wiring proposal. No production, BUY, handoff, or real-data execution."
+}
