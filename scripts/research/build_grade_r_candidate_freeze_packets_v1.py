@@ -22,6 +22,9 @@ from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 HASH_FIELDS = {
     "candidate_freeze_record_hash",
     "packet_file_sha256",

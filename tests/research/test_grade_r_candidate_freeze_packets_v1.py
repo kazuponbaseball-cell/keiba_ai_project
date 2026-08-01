@@ -4,6 +4,8 @@ import csv
 import importlib
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import datetime
@@ -53,6 +55,24 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
+
+    def test_direct_file_launch_bootstraps_repository_imports(self) -> None:
+        probe = (
+            "import runpy; "
+            f"module = runpy.run_path({str(MODULE_PATH)!r}); "
+            "module['_install_data_loader_shim'](); "
+            "print(module['ROOT'])"
+        )
+        completed = subprocess.run(
+            [sys.executable, "-I", "-c", probe],
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(0, completed.returncode, completed.stderr)
+        self.assertEqual(str(ROOT), completed.stdout.strip())
 
     def _make_targets(self) -> dict:
         records = []
