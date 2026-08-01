@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import importlib
 import importlib.util
 import json
 import tempfile
@@ -360,6 +361,193 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
             set(feature_cols).difference(generated["202604020401"][0]), set()
         )
         self.assertEqual(generated["202604020401"][0]["m1c_any_core_missing"], "0.0")
+
+    def test_sanitize_entry_snapshot_blanks_current_market_fields(self) -> None:
+        import pandas as pd
+
+        raw_path = self.root / "raw_entry.csv"
+        sanitized_path = self.root / "sanitized_entry.csv"
+        rows = []
+        for race_no in range(1, 13):
+            for horse_no in range(1, 4):
+                rows.append(
+                    {
+                        "Ｒ": race_no,
+                        "馬番": horse_no,
+                        "血統登録番号": f"{race_no:02d}{horse_no:02d}",
+                        "レースID(新/馬番無)": f"old-{race_no}",
+                        "単勝オッズ": "4.2",
+                        "人気": "1",
+                    }
+                )
+        pd.DataFrame(rows).to_csv(raw_path, index=False, encoding="utf-8-sig")
+        summary = MODULE._sanitize_entry_snapshot(
+            raw_entry_path=raw_path,
+            output_path=sanitized_path,
+            targets=self.targets["records"],
+            baseline_config={"data": {"race_id_column": "レースID(新/馬番無)"}},
+        )
+        sanitized = pd.read_csv(sanitized_path, encoding="utf-8-sig", dtype=str)
+        self.assertEqual(summary["race_count"], 12)
+        self.assertTrue(sanitized["単勝オッズ"].fillna("").eq("").all())
+        self.assertTrue(sanitized["人気"].fillna("").eq("").all())
+        self.assertEqual(
+            set(sanitized["race_id"]),
+            {record["race_id"] for record in self.targets["records"]},
+        )
+
+    def test_sanitize_entry_snapshot_retains_missing_races_in_summary(self) -> None:
+        import pandas as pd
+
+        raw_path = self.root / "partial_entry.csv"
+        sanitized_path = self.root / "partial_entry.sanitized.csv"
+        pd.DataFrame(
+            [
+                {
+                    "Ｒ": 1,
+                    "馬番": horse_no,
+                    "血統登録番号": f"01{horse_no:02d}",
+                    "レースID(新/馬番無)": "old-1",
+                }
+                for horse_no in range(1, 4)
+            ]
+        ).to_csv(raw_path, index=False, encoding="utf-8-sig")
+        summary = MODULE._sanitize_entry_snapshot(
+            raw_entry_path=raw_path,
+            output_path=sanitized_path,
+            targets=self.targets["records"],
+            baseline_config={"data": {"race_id_column": "レースID(新/馬番無)"}},
+        )
+        self.assertEqual(summary["race_count"], 1)
+        self.assertEqual(len(summary["missing_race_ids"]), 11)
+        self.assertNotIn("202604020401", summary["missing_race_ids"])
+
+    def test_public_entry_metadata_parsers_are_deterministic(self) -> None:
+        self.assertEqual(MODULE._parse_race_class("3勝クラス"), "3勝")
+        self.assertEqual(MODULE._parse_race_class("リステッド (L)"), "OP(L)")
+        self.assertEqual(MODULE._parse_going("芝1600m / 馬場:稍重"), "稍")
+        self.assertEqual(MODULE._parse_track_code("芝1600m (外)", "芝"), "8")
+        self.assertEqual(MODULE._parse_track_code("ダ1800m", "ダ"), "1")
+
+    def test_clean_worktree_data_loader_shim_supplies_inference_contract(self) -> None:
+        MODULE._install_data_loader_shim()
+        loaders = importlib.import_module("src.data.loaders")
+        baseline = MODULE.load_json_object(ROOT / "config" / "baseline_features.json")
+        required = loaders.inference_required_columns(baseline)
+        optional = loaders.inference_optional_columns(baseline)
+        self.assertIn(baseline["data"]["race_id_column"], required)
+        self.assertIn(baseline["data"]["abnormal_column"], optional)
+
+    def test_public_entry_capture_uses_fixed_card_and_blanks_market(self) -> None:
+        import pandas as pd
+
+        MODULE._install_data_loader_shim()
+        fetcher = importlib.import_module("scripts.fetch_netkeiba_entries_snapshot")
+        runner_rows = "".join(
+            f"""
+            <tr class="HorseList">
+              <td class="Waku{horse_no}">{horse_no}</td>
+              <td class="Umaban{horse_no}">{horse_no}</td>
+              <td class="HorseInfo"><span class="HorseName"><a href="/horse/202010000{horse_no}/">horse-{horse_no}</a></span></td>
+              <td class="Barei">牡4</td>
+              <td class="Jockey"><a href="/jockey/result/recent/0100{horse_no}/">jockey</a></td>
+              <td>57.0</td>
+              <td class="Trainer"><a href="/trainer/result/recent/0100{horse_no}/">trainer</a></td>
+              <td><span id="odds-{horse_no}">4.2</span><span id="ninki-{horse_no}">1</span></td>
+            </tr>
+            """
+            for horse_no in range(1, 4)
+        )
+        fixture = f"""
+        <html><body>
+          <div class="RaceName">Synthetic Race 出馬表</div>
+          <div class="RaceData01">09:50発走 / 芝1600m (外) 馬場:良</div>
+          <div class="RaceData02">3頭 / 1勝クラス</div>
+          <table class="ShutubaTable">{runner_rows}</table>
+        </body></html>
+        """
+        raw_path = self.root / "captured_entry.csv"
+        capture_manifest_path = self.root / "capture_manifest.json"
+        original = fetcher._read_url
+        fetcher._read_url = lambda *args, **kwargs: fixture
+        try:
+            summary = MODULE.capture_public_entry_snapshot(
+                target_manifest_path=self.target_path,
+                baseline_config_path=ROOT / "config" / "baseline_features.json",
+                output_csv_path=raw_path,
+                capture_manifest_path=capture_manifest_path,
+                cache_dir=self.root / "cache",
+                config=self.config,
+                refresh=False,
+                sleep_seconds=0.0,
+            )
+        finally:
+            fetcher._read_url = original
+        captured = pd.read_csv(raw_path, encoding="utf-8-sig", dtype=str)
+        manifest = MODULE.load_json_object(capture_manifest_path)
+        self.assertEqual(summary["captured_races"], 12)
+        self.assertEqual(summary["runner_rows"], 36)
+        self.assertEqual(len(manifest["records"]), 12)
+        self.assertTrue(captured["単勝オッズ"].fillna("").eq("").all())
+        self.assertTrue(captured["人気"].fillna("").eq("").all())
+        self.assertEqual(set(captured["場所"]), {"新潟"})
+
+    def test_precomputed_runner_snapshot_builds_hash_bound_source_manifest(self) -> None:
+        import pandas as pd
+
+        raw_path = self.root / "raw_entry.csv"
+        enriched_path = self.root / "enriched_runner.csv"
+        runner_path = self.root / "runner_snapshot.csv"
+        manifest_path = self.root / "feature_source_manifest.json"
+        raw_path.write_text("synthetic entry snapshot\n", encoding="utf-8")
+        rows = []
+        for race_no in range(1, 13):
+            race_id = f"2026040204{race_no:02d}"
+            for horse_no in range(1, 5):
+                rows.append(
+                    {
+                        "race_id": race_id,
+                        "horse_no": horse_no,
+                        "horse_id": f"{race_no:02d}{horse_no:02d}",
+                        "horse_name": f"horse-{race_no}-{horse_no}",
+                        "ai_score": 100 - horse_no,
+                        "ai_rank": horse_no,
+                        "expected_pace": "middle",
+                        "front_running_tendency": 0.1 * horse_no,
+                        "closing_tendency": 0.1 * (5 - horse_no),
+                        "race_front_runner_count": 2,
+                        "race_early_pressure_score": 0.5,
+                        "ability_floor_score_5": 0.55,
+                        "ability_stability_score_3": 0.60,
+                        "recent_weighted_score_3": 0.58,
+                        "current_odds": "",
+                    }
+                )
+        pd.DataFrame(rows).to_csv(enriched_path, index=False, encoding="utf-8-sig")
+        summary = MODULE.prepare_runner_snapshot(
+            target_manifest_path=self.target_path,
+            raw_entry_path=raw_path,
+            inference_bundle_path=self.bundle_path,
+            runner_output_path=runner_path,
+            source_manifest_path=manifest_path,
+            work_dir=self.root / "work",
+            config=self.config,
+            precomputed_enriched_runner_path=enriched_path,
+            source_observed_at=datetime(
+                2026, 8, 2, 7, 30, tzinfo=ZoneInfo("Asia/Tokyo")
+            ),
+        )
+        manifest = MODULE.load_json_object(manifest_path)
+        runner = pd.read_csv(runner_path, encoding="utf-8-sig", dtype=str)
+        self.assertEqual(summary["target_races"], 12)
+        self.assertEqual(summary["source_contract_ok_races"], 12)
+        self.assertEqual(len(manifest["records"]), 12)
+        self.assertNotIn("current_odds", runner.columns)
+        self.assertEqual(manifest["runner_snapshot_sha256"], MODULE.file_sha256(runner_path))
+        for record in manifest["records"]:
+            claimed = record["source_record_hash"]
+            payload = {key: value for key, value in record.items() if key != "source_record_hash"}
+            self.assertEqual(claimed, MODULE.canonical_digest(payload))
 
 
 if __name__ == "__main__":

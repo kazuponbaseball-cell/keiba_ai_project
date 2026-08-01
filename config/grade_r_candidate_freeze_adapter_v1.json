@@ -44,6 +44,19 @@
     "roi",
     "t3_odds"
   ],
+  "runner_snapshot_contract": {
+    "source_priority": [
+      "pre_registered_public_entry_snapshot",
+      "local_target_entry_snapshot"
+    ],
+    "baseline_feature_config": "config/baseline_features.json",
+    "baseline_model": "models/baseline/baseline_ranker.pkl",
+    "current_market_columns_must_be_blank_before_inference": true,
+    "final_runner_snapshot_is_allowlist_only": true,
+    "historical_rows_must_precede_target_date": true,
+    "source_received_at_must_not_exceed_candidate_cutoff": true,
+    "all_target_races_must_remain_in_manifest": true
+  },
   "safety": {
     "formal_buy": false,
     "send_order": false,
