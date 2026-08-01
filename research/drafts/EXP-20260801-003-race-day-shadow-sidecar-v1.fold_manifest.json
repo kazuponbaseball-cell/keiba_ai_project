@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-003",
+  "manifest_type": "synthetic_race_day_sidecar_contract_cases",
+  "timezone": "Asia/Tokyo",
+  "cases": [
+    {
+      "case_id": "exact_pair_source_time_before_cutoff",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:25:30+09:00",
+      "quote_source_event_time": "2026-08-02T18:26:00+09:00",
+      "quote_received_at": "2026-08-02T18:26:20+09:00",
+      "quote_pair_matches": true,
+      "candidate_freeze_contract_ok": true,
+      "schedule_contract_ok": true,
+      "starter_universe_unchanged": true,
+      "expected_status": "PAPER_READY"
+    },
+    {
+      "case_id": "source_timestamp_missing_fail_close",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:25:30+09:00",
+      "quote_source_event_time": null,
+      "quote_received_at": "2026-08-02T18:26:20+09:00",
+      "quote_pair_matches": true,
+      "candidate_freeze_contract_ok": true,
+      "schedule_contract_ok": true,
+      "starter_universe_unchanged": true,
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "quote_received_after_cutoff_fail_close",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:26:30+09:00",
+      "quote_source_event_time": "2026-08-02T18:27:00+09:00",
+      "quote_received_at": "2026-08-02T18:27:05+09:00",
+      "quote_pair_matches": true,
+      "candidate_freeze_contract_ok": true,
+      "schedule_contract_ok": true,
+      "starter_universe_unchanged": true,
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "candidate_freeze_contract_false_fail_close",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:25:30+09:00",
+      "quote_source_event_time": "2026-08-02T18:26:00+09:00",
+      "quote_received_at": "2026-08-02T18:26:20+09:00",
+      "quote_pair_matches": true,
+      "candidate_freeze_contract_ok": false,
+      "schedule_contract_ok": true,
+      "starter_universe_unchanged": true,
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "schedule_version_missing_fail_close",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:25:30+09:00",
+      "quote_source_event_time": "2026-08-02T18:26:00+09:00",
+      "quote_received_at": "2026-08-02T18:26:20+09:00",
+      "quote_pair_matches": true,
+      "candidate_freeze_contract_ok": true,
+      "schedule_contract_ok": false,
+      "starter_universe_unchanged": true,
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "starter_universe_changed_fail_close",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:25:30+09:00",
+      "quote_source_event_time": "2026-08-02T18:26:00+09:00",
+      "quote_received_at": "2026-08-02T18:26:20+09:00",
+      "quote_pair_matches": true,
+      "candidate_freeze_contract_ok": true,
+      "schedule_contract_ok": true,
+      "starter_universe_unchanged": false,
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "wrong_pair_fail_close",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:25:30+09:00",
+      "quote_source_event_time": "2026-08-02T18:26:00+09:00",
+      "quote_received_at": "2026-08-02T18:26:20+09:00",
+      "quote_pair_matches": false,
+      "candidate_freeze_contract_ok": true,
+      "schedule_contract_ok": true,
+      "starter_universe_unchanged": true,
+      "expected_status": "NO_BET"
+    },
+    {
+      "case_id": "duplicate_capture_is_idempotent",
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "candidate_freeze_persist_ack_at": "2026-08-02T18:20:00+09:00",
+      "odds_join_started_at": "2026-08-02T18:25:30+09:00",
+      "quote_source_event_time": "2026-08-02T18:26:00+09:00",
+      "quote_received_at": "2026-08-02T18:26:20+09:00",
+      "quote_pair_matches": true,
+      "candidate_freeze_contract_ok": true,
+      "schedule_contract_ok": true,
+      "starter_universe_unchanged": true,
+      "expected_status": "ONE_PAPER_EVENT"
+    }
+  ]
+}
