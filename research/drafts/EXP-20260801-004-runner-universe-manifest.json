@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-004",
+  "manifest_type": "prospective_runner_universe_capture_contract",
+  "target_card_id": "2026040204",
+  "target_race_ids": [
+    "202604020401",
+    "202604020402",
+    "202604020403",
+    "202604020404",
+    "202604020405",
+    "202604020406",
+    "202604020407",
+    "202604020408",
+    "202604020409",
+    "202604020410",
+    "202604020411",
+    "202604020412"
+  ],
+  "runner_universe_unknown_before_run": true,
+  "prospective_snapshot_required_per_race": true,
+  "snapshot_must_precede_candidate_freeze": true,
+  "freeze_and_t3_hashes_must_match": true,
+  "known_change_by_t3_action": "NO_BET",
+  "candidate_substitution_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
