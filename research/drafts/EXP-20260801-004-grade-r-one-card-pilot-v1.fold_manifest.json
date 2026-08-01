@@ -1,0 +1,142 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-004",
+  "manifest_type": "synthetic_one_card_grade_r_contract_cases",
+  "timezone": "Asia/Tokyo",
+  "target_card": {
+    "selection_uses_odds": false,
+    "race_date": "2026-08-02",
+    "venue_code": "04",
+    "venue_name": "Niigata",
+    "meeting_no": 2,
+    "day_no": 4,
+    "expected_race_numbers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "expected_race_count": 12,
+    "official_program_url": "https://www.jra.go.jp/keiba/calendar2026/2026/8/0802.html",
+    "program_is_target_selection_only": true,
+    "live_schedule_asof_required_at_run": true
+  },
+  "fixed_policy": {
+    "candidate": "WIDE_1_NON_ODDS_FROZEN",
+    "candidate_substitution_allowed": false,
+    "alternative_pair_search_allowed": false,
+    "paper_actions": [
+      "NO_BET",
+      "PAPER_READY"
+    ],
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0
+  },
+  "cases": [
+    {
+      "case_id": "full_card_all_contracts_valid",
+      "target_rows": 12,
+      "quote_available_rows": 12,
+      "contract_valid_rows": 12,
+      "expected_recorded_rows": 12,
+      "expected_paper_ready_rows": 12,
+      "expected_no_bet_rows": 0,
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "quote_missing_retained_as_no_bet",
+      "target_rows": 12,
+      "quote_available_rows": 11,
+      "contract_valid_rows": 11,
+      "expected_recorded_rows": 12,
+      "expected_paper_ready_rows": 11,
+      "expected_no_bet_rows": 1,
+      "expected_reason_code": "NO_BET_T3_QUOTE_NOT_AVAILABLE",
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "value_below_threshold_retained_as_no_bet",
+      "target_rows": 12,
+      "quote_available_rows": 12,
+      "contract_valid_rows": 12,
+      "value_gate_pass_rows": 7,
+      "expected_recorded_rows": 12,
+      "expected_paper_ready_rows": 7,
+      "expected_no_bet_rows": 5,
+      "expected_reason_code": "NO_BET_VALUE_BELOW_THRESHOLD",
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "late_quote_rejected_without_substitution",
+      "target_rows": 12,
+      "quote_available_rows": 12,
+      "contract_valid_rows": 11,
+      "late_quote_rows": 1,
+      "expected_recorded_rows": 12,
+      "expected_candidate_changes": 0,
+      "expected_no_bet_rows": 1,
+      "expected_reason_code": "NO_BET_T3_QUOTE_ASOF_VIOLATION",
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "candidate_hash_mismatch_fail_close",
+      "target_rows": 12,
+      "candidate_hash_mismatch_rows": 1,
+      "expected_recorded_rows": 12,
+      "expected_candidate_changes": 0,
+      "expected_no_bet_rows": 1,
+      "expected_reason_code": "NO_BET_CANDIDATE_HASH_MISMATCH",
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "schedule_contract_failure_fail_close",
+      "target_rows": 12,
+      "schedule_contract_failure_rows": 1,
+      "expected_recorded_rows": 12,
+      "expected_no_bet_rows": 1,
+      "expected_reason_code": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "starter_universe_change_fail_close",
+      "target_rows": 12,
+      "starter_universe_changed_rows": 1,
+      "expected_recorded_rows": 12,
+      "expected_candidate_changes": 0,
+      "expected_no_bet_rows": 1,
+      "expected_reason_code": "NO_BET_STARTER_UNIVERSE_CHANGED",
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "duplicate_attempt_is_idempotent",
+      "target_rows": 12,
+      "attempted_writes": 13,
+      "expected_recorded_rows": 12,
+      "expected_duplicate_records": 0,
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "worker_restart_preserves_completeness",
+      "target_rows": 12,
+      "restart_after_race_no": 6,
+      "expected_recorded_rows": 12,
+      "expected_duplicate_records": 0,
+      "expected_status": "PASS"
+    },
+    {
+      "case_id": "missing_target_row_invalidates_pilot",
+      "target_rows": 12,
+      "actual_recorded_rows": 11,
+      "expected_status": "INVALID"
+    }
+  ]
+}
