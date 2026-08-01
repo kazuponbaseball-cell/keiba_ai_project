@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-003",
+  "config_id": "race_day_shadow_sidecar_v1",
+  "timezone": "Asia/Tokyo",
+  "coordinator_config_path": "config/realtime_paper_decision_wiring_v1.json",
+  "quote_contract": {
+    "ticket_type": "wide",
+    "strict_cutoff_seconds_before_post": 180,
+    "source_timestamp_resolution_seconds": 60,
+    "source_timestamp_pattern": "(?P<hour>[0-9０-９]{1,2})時(?P<minute>[0-9０-９]{2})分(?:現在)?オッズ",
+    "require_source_time_upper_bound_before_cutoff": true,
+    "require_received_before_cutoff": true,
+    "require_exact_pair": true,
+    "require_open_market": true
+  },
+  "contracts": {
+    "require_candidate_freeze_contract_ok": true,
+    "require_candidate_uses_odds_false": true,
+    "require_freeze_persisted_before_odds_join": true,
+    "require_schedule_record_hash": true,
+    "require_schedule_contract_ok": true,
+    "require_starter_universe_unchanged": true
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "target_handoff": false,
+    "production_dashboard_write": false,
+    "real_data_during_preparation": false
+  }
+}

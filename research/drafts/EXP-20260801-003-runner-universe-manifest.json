@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-003",
+  "manifest_type": "synthetic_runner_universe",
+  "races": [
+    {
+      "race_id": "2026080201010101",
+      "runner_ids": [
+        "01",
+        "02",
+        "03"
+      ],
+      "candidate_pair_key": "1-2"
+    }
+  ],
+  "real_race_data": false
+}
