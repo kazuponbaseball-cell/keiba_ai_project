@@ -241,3 +241,37 @@ fail-closeする。
 には`research/APPROVERS.json`がないため、そのcommitをbaseとする承認は
 fail-closeする。PR #2 merge後のmain commitに対するend-to-end取得・検証は
 未確認事項として残す。本決定はproduction、merge、BUY、注文の承認を追加しない。
+
+## D-022 — PR #2 merge後のrepository stateをreconcileする
+
+- Decision: `POST_MERGE_STATE_RECONCILED`
+- Evidence: GitHub read-only API snapshot + merged PR #2 metadata
+- Observed at: `2026-08-01T13:43:58+09:00`
+
+PR #2は人間判断によりmergeされ、確認時点のGitHub `refs/heads/main`は
+`1eaf364571bd8b9fd27f7de657ce295b563b3f1f`を指している。このobserved main
+snapshotと、既存モデル・production状態を監査した基準commit
+`288dff5e86385908281428d5ed4f077625a43e4b`は役割が異なるため、
+`research/STATE.yaml`で`reconciled_through_main_commit`と
+`model_audit_baseline_commit`に分けて管理する。top-level statusはPR #3の
+review状態ではなく、永続的な`RESEARCH_OS_V1_FOUNDATION_MERGED`とする。
+
+モデル監査基準commitからobserved main commitへのGitHub compareは`ahead`、
+merge-baseはモデル監査基準commitと一致した。observed main commit上の
+`research/APPROVERS.json`はGitHub Contents APIで存在を確認し、blob SHA
+`c973f7d83de78cc0eea09ef6a240e99e4512937e`、decoded content SHA-256
+`ac14971c8d8f6f4502c30c6b6434da9ce061009955461248c95363b36ee137b5`を記録した。
+
+これはallowlist fileのremote存在確認であり、実運用GitHub providerを用いた、実Issue commentによる
+approval transition E2Eは未確認である。`APPROVED_TO_PREPARE`、
+`APPROVED_TO_RUN`、`APPROVED_FOR_SHADOW`の全transitionでfail-close境界を維持する。
+モデル監査基準commitには同fileが存在しないため、そのcommitをproposal baseと
+する承認も引き続きfail-closeする。
+
+PR #3のbranchとopen・Draft・未merge状態は、観測日時を伴うreconciliation
+snapshotへ分離する。これらをResearch OS本体のlive stateとして扱わず、PR #3の
+未確定な将来のmerge commit SHAも記録しない。
+
+このreconciliationはstateとgovernance/template文言だけを更新する。実験、ROI
+仮説、production、予測モデル、候補選択、value、BUY、stake、注文、通知、
+credentialを変更せず、merge判断はDraft PR上の人間に残す。

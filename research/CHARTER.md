@@ -2,10 +2,17 @@
 
 - 制度: Level 3（承認付き自律研究）
 - 発効日: 2026-07-31
-- 基準コミット: `288dff5e86385908281428d5ed4f077625a43e4b`
-- 初期ブランチ: `chore/research-os-v1`
-- 本PRの範囲: 研究ガバナンス、experiment lifecycle、確率契約検査
-- 本PRの範囲外: 予測モデル、候補選択、value判定、正式BUYロジック
+- Research OS foundation status: `RESEARCH_OS_V1_FOUNDATION_MERGED`
+- reconciled-through main commit: `1eaf364571bd8b9fd27f7de657ce295b563b3f1f`
+- モデル監査基準コミット: `288dff5e86385908281428d5ed4f077625a43e4b`
+- Foundation branch（履歴）: `chore/research-os-v1`
+- Reconciliation snapshot（2026-08-01T15:21:25+09:00）: PR #3、branch
+  `chore/research-os-post-merge-reconciliation`、observed open・Draft・未merge
+- Snapshot scope: PR #2 merge後のstate・governance文書・template整合
+- Snapshot scope外: 実験、予測モデル、候補選択、value判定、正式BUYロジック
+
+上記PR #3のbranchとreview状態は観測時点のreconciliation snapshotであり、
+Research OS本体のlive stateではない。
 
 ## 1. 目的
 
@@ -148,9 +155,15 @@ APPROVED_FOR_SHADOW <review_digest>
 - GitHub確認不能、base ancestry/allowlist検証不能、comment欠落・編集・削除・
   再利用、unauthorized authorはfail-closeする。
 - CIは外部通信せずfixtureまたはinjected providerを使う。
-- 監査時点のpre-merge `main` `288dff5e86385908281428d5ed4f077625a43e4b`
-  には`research/APPROVERS.json`がないため、そのcommitをbaseとする承認は
-  fail-closeする。PR #2 merge後のmainでの取得は未確認である。
+- `research/STATE.yaml`のreconciliation snapshotで観測した`main` commit
+  `1eaf364571bd8b9fd27f7de657ce295b563b3f1f`には
+  `research/APPROVERS.json`が存在し、GitHub Contents APIからblob SHAと
+  content SHA-256を取得済みである。これは固定された観測証拠であり、動的な
+  current mainを表さない。ただし、実運用GitHub providerを用いた、実Issue commentによる
+  approval transition E2Eは未確認である。
+- モデル監査基準commit `288dff5e86385908281428d5ed4f077625a43e4b`
+  には`research/APPROVERS.json`がないため、そのcommitをproposal baseとする
+  承認は引き続きfail-closeする。
 
 ### 6.2 Canonical scope digest
 
@@ -198,4 +211,4 @@ positive/negative resultを同じ基準で登録する。pooled平均だけ、1 
 
 ## 9. Research OS v1の完了条件
 
-本PRは、ガバナンス文書、state、scorecard、experiment/PR/issue template、GitHub-backed二段階承認、canonical proposal/run digest、append-only registry CLI、確率contract checkerとtestを提供する。既存baselineの再現、共通outer-fold manifest、odds-free candidate generator、正式BUYのproduction側hard-stop証明は後続の承認済み研究課題であり、本PRでは実装しない。
+PR #2は、ガバナンス文書、state、scorecard、experiment/PR/issue template、GitHub-backed二段階承認、canonical proposal/run digest、append-only registry CLI、確率contract checkerとtestを提供して`main`へmergeされた。PR #3として記録するpost-merge reconciliationはstateと文書上のimmutableなGitHub snapshotだけを整合させる。既存baselineの再現、共通outer-fold manifest、odds-free candidate generator、正式BUYのproduction側hard-stop証明は後続の承認済み研究課題であり、このreconciliationでは実装しない。
