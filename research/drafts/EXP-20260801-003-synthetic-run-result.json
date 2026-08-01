@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-003",
+  "result_type": "synthetic_fixture_execution",
+  "executed_at": "2026-08-01T12:54:02Z",
+  "execution_commit_sha": "8d9b295117632088f11372a5bf69033aeb67db84",
+  "proposal_scope_digest": "b4fd928bec671f721385467abafecafc18c84aa23f6dd96d24b81a73560f08d4",
+  "run_scope_digest": "2e7d4c67bdb933a1b08851a9cb9396025ce0960b71d92ca3fd3792c4060ed358",
+  "prepare_approval_comment_id": 5151403873,
+  "run_approval_comment_id": 5151500214,
+  "exact_execution_command": "C:/Users/kazup/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -m unittest tests.research.test_race_day_shadow_sidecar_v1 tests.research.test_realtime_paper_decision_wiring_v1 -v",
+  "exit_code": 0,
+  "tests_run": 22,
+  "tests_passed": 22,
+  "tests_failed": 0,
+  "tests_errored": 0,
+  "contracts": {
+    "candidate_market_firewall": "PASS",
+    "candidate_freeze_hash_verification": "PASS",
+    "candidate_freeze_before_odds_join": "PASS",
+    "exact_race_ticket_pair_match": "PASS",
+    "jra_displayed_quote_minute_resolution": "PASS",
+    "quote_request_identity_match": "PASS",
+    "quote_value_time_order": "PASS",
+    "missing_or_late_quote_fails_closed": "PASS",
+    "schedule_and_universe_fail_closed": "PASS",
+    "failure_targets_retained": "PASS",
+    "duplicate_capture_is_idempotent": "PASS",
+    "read_only_renderer_is_separate": "PASS",
+    "post_race_input_rejected": "PASS",
+    "unsafe_config_rejected": "PASS"
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "production_path_executed": false,
+    "real_data_executed": false,
+    "live_quote_fetched": false,
+    "roi_calculated": false
+  },
+  "unconfirmed": [
+    "No real race-day candidate ledger was connected",
+    "No live JRA quote page was fetched",
+    "No production dashboard or purchase adapter was connected",
+    "No prospective latency, schedule update, scratch, or quote availability was measured",
+    "One-card Grade-R engineering shadow remains separately approval-gated"
+  ],
+  "decision": "REVIEW_REQUIRED"
+}
