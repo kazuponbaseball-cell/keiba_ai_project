@@ -262,6 +262,293 @@ def load_top3_feature_rows(path: Path) -> tuple[list[str], dict[str, list[dict[s
     return headers, dict(grouped)
 
 
+def _first_value(row: dict[str, str], candidates: Iterable[str]) -> str:
+    for candidate in candidates:
+        value = str(row.get(candidate, "")).strip()
+        if value:
+            return value
+    return ""
+
+
+def _optional_float(row: dict[str, str], candidates: Iterable[str]) -> float | None:
+    raw = _first_value(row, candidates)
+    if not raw:
+        return None
+    try:
+        value = float(raw)
+    except ValueError:
+        return None
+    return value if math.isfinite(value) else None
+
+
+def _required_float(
+    row: dict[str, str], candidates: Iterable[str], field_name: str
+) -> float:
+    value = _optional_float(row, candidates)
+    if value is None:
+        raise CandidateContractError(
+            "CANDIDATE_SOURCE_NOT_READY", f"missing/non-numeric runner feature {field_name}"
+        )
+    return value
+
+
+def _percentile_ranks(values: dict[str, float]) -> dict[str, float]:
+    ordered = sorted(values.items(), key=lambda item: (item[1], _horse_sort_key(item[0])))
+    result: dict[str, float] = {}
+    position = 0
+    while position < len(ordered):
+        end = position + 1
+        while end < len(ordered) and ordered[end][1] == ordered[position][1]:
+            end += 1
+        average_rank = ((position + 1) + end) / 2.0
+        percentile = average_rank / len(ordered)
+        for index in range(position, end):
+            result[ordered[index][0]] = percentile
+        position = end
+    return result
+
+
+def _derive_expected_pace(rows: list[dict[str, str]]) -> str:
+    first = rows[0]
+    pressure = _optional_float(first, ["race_early_pressure_score"])
+    collapse = _optional_float(first, ["race_pace_collapse_risk"])
+    slow = _optional_float(first, ["race_slow_pace_risk"])
+    if pressure is not None and collapse is not None and slow is not None:
+        if pressure >= 0.60 or collapse >= 0.55:
+            return "fast"
+        if slow >= 0.55 and pressure < 0.45:
+            return "slow"
+        return "middle"
+    fallback = _first_value(first, ["expected_pace"]).lower()
+    if fallback:
+        return fallback
+    raise CandidateContractError(
+        "CANDIDATE_SOURCE_NOT_READY", "pace inputs and frozen expected_pace are missing"
+    )
+
+
+def _clip(value: float, low: float, high: float) -> float:
+    return min(max(value, low), high)
+
+
+def _pair_features(
+    left: dict[str, float],
+    right: dict[str, float],
+    *,
+    field_size: int,
+    front_runner_count: float,
+    race_pressure: float,
+    expected_pace: str,
+) -> dict[str, float]:
+    front_density = _clip(front_runner_count / field_size, 0.0, 1.0)
+    pressure = _clip(race_pressure, 0.0, 1.0)
+    front_hold = max(0.01, 0.40 + (1.0 - pressure) * 0.35 + (0.20 if "slow" in expected_pace else 0.0))
+    pace_collapse = max(0.01, 0.20 + pressure * 0.55 + (0.20 if ("fast" in expected_pace or "high" in expected_pace) else 0.0))
+    slow_sprint = max(0.01, 0.25 + (1.0 - pressure) * 0.20 + (0.25 if "slow" in expected_pace else 0.0))
+    neutral = 0.25
+    denominator = front_hold + pace_collapse + slow_sprint + neutral
+    scenario = [
+        front_hold / denominator,
+        pace_collapse / denominator,
+        slow_sprint / denominator,
+        neutral / denominator,
+    ]
+    front_left = _clip(left["front"], 0.0, 1.0)
+    front_right = _clip(right["front"], 0.0, 1.0)
+    closer_left = _clip(left["closer"], 0.0, 1.0)
+    closer_right = _clip(right["closer"], 0.0, 1.0)
+    mid_left = _clip(1.0 - front_left - closer_left, 0.0, 1.0)
+    mid_right = _clip(1.0 - front_right - closer_right, 0.0, 1.0)
+    escape_left = _clip(front_left * left["front_rank_pct"], 0.0, 1.0)
+    escape_right = _clip(front_right * right["front_rank_pct"], 0.0, 1.0)
+    pair_escape_clash = _clip(
+        escape_left * escape_right * pressure * (1.0 + front_density), 0.0, 2.0
+    )
+    pair_front_clash = _clip(
+        front_left * front_right * pressure * (1.0 + front_density), 0.0, 2.0
+    )
+    pair_clash = max(pair_escape_clash, pair_front_clash)
+    fits_left = [
+        front_left,
+        _clip(0.75 * closer_left + 0.25 * mid_left, 0.0, 1.0),
+        _clip(0.70 * closer_left + 0.30 * (1.0 - front_left), 0.0, 1.0),
+        _clip(0.45 * front_left + 0.25 * mid_left + 0.30 * closer_left, 0.0, 1.0),
+    ]
+    fits_right = [
+        front_right,
+        _clip(0.75 * closer_right + 0.25 * mid_right, 0.0, 1.0),
+        _clip(0.70 * closer_right + 0.30 * (1.0 - front_right), 0.0, 1.0),
+        _clip(0.45 * front_right + 0.25 * mid_right + 0.30 * closer_right, 0.0, 1.0),
+    ]
+    joint = [left_fit * right_fit for left_fit, right_fit in zip(fits_left, fits_right)]
+    joint_fit = sum(weight * value for weight, value in zip(scenario, joint))
+    shared_failure = sum(
+        weight * (1.0 - left_fit) * (1.0 - right_fit)
+        for weight, left_fit, right_fit in zip(scenario, fits_left, fits_right)
+    )
+    mean_joint = sum(joint) / len(joint)
+    scenario_variance = sum((value - mean_joint) ** 2 for value in joint) / len(joint)
+    return {
+        "pair_joint_fit": joint_fit,
+        "pair_clash_score": pair_clash,
+        "pair_shared_failure": shared_failure,
+        "pair_scenario_variance": scenario_variance,
+    }
+
+
+def build_top3_features_from_runner_rows(
+    rows: list[dict[str, str]], bundle: dict[str, Any]
+) -> dict[str, list[dict[str, str]]]:
+    grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for row in rows:
+        race_id = str(row.get("race_id", "")).strip()
+        if race_id:
+            grouped[race_id].append(row)
+    output: dict[str, list[dict[str, str]]] = {}
+    for race_id, race_rows in grouped.items():
+        by_horse: dict[str, dict[str, str]] = {}
+        for row in race_rows:
+            horse_id = _first_value(row, ["horse_no", "horse_id"])
+            if not horse_id or horse_id in by_horse:
+                raise CandidateContractError(
+                    "STARTER_UNIVERSE_MISMATCH", f"duplicate/missing runner identity in {race_id}"
+                )
+            by_horse[horse_id] = row
+        runners = sorted(by_horse, key=_horse_sort_key)
+        if len(runners) < 3:
+            continue
+        ai_scores = {
+            horse_id: _required_float(by_horse[horse_id], ["ai_score"], "ai_score")
+            for horse_id in runners
+        }
+        ai_ranks = {
+            horse_id: _required_float(by_horse[horse_id], ["ai_rank"], "ai_rank")
+            for horse_id in runners
+        }
+        primary_strength = _percentile_ranks(ai_scores)
+        denominator = max(1.0, len(runners) - 1.0)
+        rank_strength = {
+            horse_id: _clip(1.0 - (ai_ranks[horse_id] - 1.0) / denominator, 0.0, 1.0)
+            for horse_id in runners
+        }
+        front_values = {
+            horse_id: _optional_float(
+                by_horse[horse_id],
+                ["front_running_tendency_x", "front_running_tendency", "horse_front_run_rate_past5"],
+            )
+            for horse_id in runners
+        }
+        closer_values = {
+            horse_id: _optional_float(
+                by_horse[horse_id],
+                ["closing_tendency_x", "closing_tendency", "horse_closer_rate_past5"],
+            )
+            for horse_id in runners
+        }
+        front_rank_pct = _percentile_ranks(
+            {horse_id: value if value is not None else 0.0 for horse_id, value in front_values.items()}
+        )
+        expected_pace = _derive_expected_pace(race_rows)
+        first = race_rows[0]
+        race_pressure = _optional_float(first, ["race_early_pressure_score"])
+        if race_pressure is None:
+            race_pressure = 0.5
+        front_runner_count = _optional_float(
+            first, ["race_front_runner_count_x", "race_front_runner_count", "race_need_lead_count"]
+        )
+        if front_runner_count is None:
+            front_runner_count = len(runners) * 0.25
+        runner_context = {
+            horse_id: {
+                "front": front_values[horse_id] if front_values[horse_id] is not None else 0.0,
+                "closer": closer_values[horse_id] if closer_values[horse_id] is not None else 0.0,
+                "front_rank_pct": front_rank_pct[horse_id],
+            }
+            for horse_id in runners
+        }
+        pair_lookup = {
+            canonical_pair(left, right): _pair_features(
+                runner_context[left],
+                runner_context[right],
+                field_size=len(runners),
+                front_runner_count=front_runner_count,
+                race_pressure=race_pressure,
+                expected_pace=expected_pace,
+            )
+            for left, right in itertools.combinations(runners, 2)
+        }
+        race_output: list[dict[str, str]] = []
+        for triplet in itertools.combinations(runners, 3):
+            horse_rows = [by_horse[horse_id] for horse_id in triplet]
+            floors = [
+                _optional_float(row, ["ability_floor_score_5"]) for row in horse_rows
+            ]
+            m1c_any_core_missing = float(any(value is None for value in floors))
+            floor_values = [value if value is not None else 0.5 for value in floors]
+            stability = [
+                _optional_float(row, ["ability_stability_score_3"]) for row in horse_rows
+            ]
+            stability_values = [value if value is not None else 0.5 for value in stability]
+            recent_values = [
+                _optional_float(row, ["recent_weighted_score_3"]) for row in horse_rows
+            ]
+            recent_values = [value if value is not None else 0.5 for value in recent_values]
+            condition_values = [
+                _optional_float(row, ["condition_adjusted_recent_ability_score"])
+                for row in horse_rows
+            ]
+            condition_values = [value if value is not None else 0.5 for value in condition_values]
+            experience_values = [
+                _optional_float(row, ["career_shallow_flag"]) for row in horse_rows
+            ]
+            experience_values = [value if value is not None else 0.5 for value in experience_values]
+            growth_values = [
+                _optional_float(row, ["career_growth_zone_flag"]) for row in horse_rows
+            ]
+            growth_values = [value if value is not None else 0.5 for value in growth_values]
+            pair_values = [pair_lookup[canonical_pair(left, right)] for left, right in itertools.combinations(triplet, 2)]
+            sorted_floor = sorted(floor_values)
+            sorted_stability = sorted(stability_values)
+            feature_row: dict[str, str] = {
+                "race_id": race_id,
+                "horse_id_1": triplet[0],
+                "horse_id_2": triplet[1],
+                "horse_id_3": triplet[2],
+                "sum_primary_strength": str(sum(primary_strength[horse_id] for horse_id in triplet)),
+                "triplet_min_ability_floor": str(sorted_floor[0]),
+                "triplet_second_min_ability_floor": str(sorted_floor[1]),
+                "triplet_mean_ability_floor": str(sum(floor_values) / 3.0),
+                "triplet_min_recent_stability": str(sorted_stability[0]),
+                "triplet_second_min_recent_stability": str(sorted_stability[1]),
+                "triplet_mean_recent_weighted": str(sum(recent_values) / 3.0),
+                "triplet_mean_condition_recent": str(sum(condition_values) / 3.0),
+                "triplet_experience_risk_count": str(sum(experience_values)),
+                "triplet_growth_zone_count": str(sum(growth_values)),
+                "m1c_any_core_missing": str(m1c_any_core_missing),
+                "triplet_min_pair_joint_fit": str(min(value["pair_joint_fit"] for value in pair_values)),
+                "triplet_max_pair_clash": str(max(value["pair_clash_score"] for value in pair_values)),
+                "triplet_max_shared_failure": str(max(value["pair_shared_failure"] for value in pair_values)),
+                "triplet_max_pair_scenario_variance": str(max(value["pair_scenario_variance"] for value in pair_values)),
+            }
+            missing_bundle_features = [
+                feature for feature in bundle["feature_cols"] if feature not in feature_row
+            ]
+            if missing_bundle_features:
+                raise CandidateContractError(
+                    "CANDIDATE_SOURCE_NOT_READY",
+                    "runner builder cannot produce bundle feature(s): "
+                    + ", ".join(missing_bundle_features),
+                )
+            race_output.append(feature_row)
+        output[race_id] = race_output
+    return output
+
+
+def load_runner_feature_rows(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8-sig", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle)]
+
+
 def validate_bundle(bundle: dict[str, Any]) -> None:
     if bundle.get("model_kind") != "linear_top3_set_softmax":
         raise CandidateContractError("INFERENCE_BUNDLE_INVALID", "unexpected model kind")
@@ -325,6 +612,7 @@ def _validate_source_record(
     target: dict[str, Any],
     bundle_sha256: str,
     feature_schema_hash: str,
+    input_snapshot_hash: str,
     timezone_name: str,
 ) -> list[str]:
     if source.get("_source_record_hash_valid") is not True:
@@ -340,6 +628,10 @@ def _validate_source_record(
     for field in ("input_snapshot_hash", "starter_universe_hash_at_freeze"):
         if not _is_sha256(source.get(field)):
             raise CandidateContractError("CANDIDATE_SOURCE_NOT_READY", f"invalid {field}")
+    if str(source.get("input_snapshot_hash", "")) != input_snapshot_hash:
+        raise CandidateContractError(
+            "CANDIDATE_SOURCE_NOT_READY", "input snapshot hash mismatch"
+        )
     target_cutoff = parse_time(target["candidate_feature_cutoff_time"], timezone_name)
     source_cutoff = parse_time(source.get("candidate_feature_cutoff_time"), timezone_name)
     source_max = parse_time(source.get("feature_input_max_source_event_time"), timezone_name)
@@ -488,6 +780,7 @@ def build_candidate_record(
     bundle: dict[str, Any],
     bundle_sha256: str,
     feature_schema_hash: str,
+    input_snapshot_hash: str,
     start_time: datetime,
 ) -> dict[str, Any]:
     base = _base_record(
@@ -506,6 +799,7 @@ def build_candidate_record(
             target=target,
             bundle_sha256=bundle_sha256,
             feature_schema_hash=feature_schema_hash,
+            input_snapshot_hash=input_snapshot_hash,
             timezone_name=config["timezone"],
         )
         candidate = derive_candidate(rows, runners=runners, bundle=bundle, config=config)
@@ -642,7 +936,8 @@ def run_adapter(
     *,
     target_manifest_path: Path,
     feature_source_manifest_path: Path,
-    top3_feature_csv_path: Path,
+    top3_feature_csv_path: Path | None,
+    runner_feature_csv_path: Path | None,
     inference_bundle_path: Path,
     output_dir: Path,
     config: dict[str, Any],
@@ -654,7 +949,6 @@ def run_adapter(
         raise ValueError("execution mode and target manifest data_class mismatch")
     targets = validate_target_manifest(target_manifest, config)
     source_records = load_feature_source_records(feature_source_manifest_path)
-    _headers, feature_rows = load_top3_feature_rows(top3_feature_csv_path)
     bundle_sha256 = file_sha256(inference_bundle_path)
     bundle = load_json_object(inference_bundle_path)
     bundle_error: CandidateContractError | None = None
@@ -662,6 +956,21 @@ def run_adapter(
         validate_bundle(bundle)
     except CandidateContractError as exc:
         bundle_error = exc
+    if (top3_feature_csv_path is None) == (runner_feature_csv_path is None):
+        raise ValueError("provide exactly one of top3_feature_csv_path or runner_feature_csv_path")
+    input_path = top3_feature_csv_path or runner_feature_csv_path
+    assert input_path is not None
+    input_snapshot_hash = file_sha256(input_path)
+    if top3_feature_csv_path is not None:
+        _headers, feature_rows = load_top3_feature_rows(top3_feature_csv_path)
+    else:
+        try:
+            feature_rows = build_top3_features_from_runner_rows(
+                load_runner_feature_rows(input_path), bundle
+            )
+        except CandidateContractError as exc:
+            feature_rows = {}
+            bundle_error = bundle_error or exc
     if execution_mode == "real-data":
         expected = str(config["bundle_contract"]["production_bundle_sha256"])
         if bundle_sha256 != expected:
@@ -703,6 +1012,7 @@ def run_adapter(
                 source=source_for_failure,
                 bundle_sha256=bundle_sha256,
                 feature_schema_hash=feature_schema_hash,
+                input_snapshot_hash=input_snapshot_hash,
                 start_time=start_time,
             )
             record.update(
@@ -733,6 +1043,7 @@ def run_adapter(
                 bundle=bundle,
                 bundle_sha256=bundle_sha256,
                 feature_schema_hash=feature_schema_hash,
+                input_snapshot_hash=input_snapshot_hash,
                 start_time=start_time,
             )
         packet_relative = Path("packets") / f"{race_id}.candidate_freeze.json"
@@ -775,7 +1086,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--target-manifest-json", type=Path, required=True)
     parser.add_argument("--feature-source-manifest-json", type=Path, required=True)
-    parser.add_argument("--top3-feature-csv", type=Path, required=True)
+    feature_input = parser.add_mutually_exclusive_group(required=True)
+    feature_input.add_argument("--top3-feature-csv", type=Path)
+    feature_input.add_argument("--runner-feature-csv", type=Path)
     parser.add_argument("--inference-bundle-json", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
@@ -804,6 +1117,7 @@ def main(argv: list[str] | None = None) -> int:
         target_manifest_path=args.target_manifest_json,
         feature_source_manifest_path=args.feature_source_manifest_json,
         top3_feature_csv_path=args.top3_feature_csv,
+        runner_feature_csv_path=args.runner_feature_csv,
         inference_bundle_path=args.inference_bundle_json,
         output_dir=args.output_dir,
         config=config,

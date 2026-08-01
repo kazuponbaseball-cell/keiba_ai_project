@@ -134,9 +134,6 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
         self.target_path.write_text(
             MODULE.canonical_json(self.targets) + "\n", encoding="utf-8"
         )
-        self.source_path.write_text(
-            MODULE.canonical_json(self.sources) + "\n", encoding="utf-8"
-        )
         headers = [
             "race_id",
             "horse_id_1",
@@ -150,6 +147,13 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
             writer = csv.DictWriter(handle, fieldnames=headers)
             writer.writeheader()
             writer.writerows(self.feature_rows)
+        snapshot_hash = MODULE.file_sha256(self.features_path)
+        for record in self.sources["records"]:
+            record["input_snapshot_hash"] = snapshot_hash
+            self._rehash_source(record)
+        self.source_path.write_text(
+            MODULE.canonical_json(self.sources) + "\n", encoding="utf-8"
+        )
 
     def _rehash_source(self, record: dict) -> None:
         record.pop("source_record_hash", None)
@@ -160,6 +164,7 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
             target_manifest_path=self.target_path,
             feature_source_manifest_path=self.source_path,
             top3_feature_csv_path=self.features_path,
+            runner_feature_csv_path=None,
             inference_bundle_path=self.bundle_path,
             output_dir=self.output_dir,
             config=self.config,
@@ -302,6 +307,59 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
         )
         with self.assertRaisesRegex(ValueError, "RUNNING"):
             MODULE.assert_real_data_authorized(registry_root, self.config["experiment_id"])
+
+    def test_runner_rows_build_the_frozen_m1c_feature_schema(self) -> None:
+        feature_cols = [
+            "sum_primary_strength",
+            "triplet_min_ability_floor",
+            "triplet_second_min_ability_floor",
+            "triplet_mean_ability_floor",
+            "triplet_min_recent_stability",
+            "triplet_second_min_recent_stability",
+            "triplet_mean_recent_weighted",
+            "triplet_mean_condition_recent",
+            "triplet_experience_risk_count",
+            "triplet_growth_zone_count",
+            "m1c_any_core_missing",
+            "triplet_min_pair_joint_fit",
+            "triplet_max_pair_clash",
+            "triplet_max_shared_failure",
+            "triplet_max_pair_scenario_variance",
+        ]
+        bundle = {"feature_cols": feature_cols}
+        runner_rows = []
+        for horse_no, ai_score, front, closer in (
+            ("1", "82", "0.8", "0.1"),
+            ("2", "75", "0.6", "0.2"),
+            ("3", "61", "0.2", "0.7"),
+            ("4", "52", "0.1", "0.8"),
+        ):
+            runner_rows.append(
+                {
+                    "race_id": "202604020401",
+                    "horse_no": horse_no,
+                    "ai_score": ai_score,
+                    "ai_rank": horse_no,
+                    "front_running_tendency": front,
+                    "closing_tendency": closer,
+                    "race_front_runner_count": "2",
+                    "race_early_pressure_score": "0.62",
+                    "race_pace_collapse_risk": "0.56",
+                    "race_slow_pace_risk": "0.10",
+                    "ability_floor_score_5": "0.55",
+                    "ability_stability_score_3": "0.60",
+                    "recent_weighted_score_3": "0.58",
+                    "condition_adjusted_recent_ability_score": "0.57",
+                    "career_shallow_flag": "0",
+                    "career_growth_zone_flag": "1",
+                }
+            )
+        generated = MODULE.build_top3_features_from_runner_rows(runner_rows, bundle)
+        self.assertEqual(len(generated["202604020401"]), 4)
+        self.assertEqual(
+            set(feature_cols).difference(generated["202604020401"][0]), set()
+        )
+        self.assertEqual(generated["202604020401"][0]["m1c_any_core_missing"], "0.0")
 
 
 if __name__ == "__main__":
