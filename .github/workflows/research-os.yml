@@ -1,0 +1,93 @@
+name: Research OS
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - chore/research-os-v1
+
+permissions:
+  contents: read
+
+jobs:
+  research-contracts:
+    name: Research contracts (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.11"
+          - "3.12"
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run research unit tests
+        run: python -m unittest discover -s tests/research -p "test_*.py" -v
+
+      - name: Compile research Python files
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import py_compile
+
+          paths = sorted(Path("scripts/research").rglob("*.py"))
+          if not paths:
+              raise SystemExit("No Python files found under scripts/research")
+          for path in paths:
+              py_compile.compile(str(path), doraise=True)
+          print(f"Compiled {len(paths)} research Python files")
+          PY
+
+      - name: Check research CLI help
+        run: |
+          python scripts/research/check_probability_contracts.py --help
+          python scripts/research/create_experiment.py --help
+          python scripts/research/prepare_run_scope.py --help
+          python scripts/research/update_registry.py --help
+          python scripts/research/summarize_experiment.py --help
+
+      - name: Check whitespace in the committed range
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          git diff --check
+
+          if [[ "$EVENT_NAME" == "pull_request" ]]; then
+            test -n "$BASE_SHA"
+            test -n "$HEAD_SHA"
+            git diff --check "$BASE_SHA...$HEAD_SHA"
+          elif [[ "$EVENT_NAME" == "push" ]]; then
+            test -n "$AFTER_SHA"
+            if [[ -n "$BEFORE_SHA" ]] && git cat-file -e "${BEFORE_SHA}^{commit}" 2>/dev/null; then
+              git diff --check "$BEFORE_SHA..$AFTER_SHA"
+            else
+              git rev-parse --verify refs/remotes/origin/main
+              RANGE_BASE="$(git merge-base "$AFTER_SHA" refs/remotes/origin/main)"
+              test -n "$RANGE_BASE"
+              git diff --check "$RANGE_BASE..$AFTER_SHA"
+            fi
+          else
+            echo "Unsupported event: $EVENT_NAME" >&2
+            exit 2
+          fi

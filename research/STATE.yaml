@@ -1,0 +1,480 @@
+schema_version: 1
+state_id: RESEARCH-OS-V1-20260730
+updated_at: "2026-07-31T00:00:00+09:00"
+repository: kazuponbaseball-cell/keiba_ai_project
+base_commit: 288dff5e86385908281428d5ed4f077625a43e4b
+branch: chore/research-os-v1
+status: FOUNDATION_ONLY_REVIEW_REQUIRED
+
+authority:
+  level: 3
+  name: 承認付き自律研究
+  autonomous_actions:
+    - read_only_audit
+    - hypothesis_draft
+    - scorecard_draft
+    - github_approved_research_branch_preparation
+    - github_approved_exact_scope_execution
+    - separately_approved_shadow_artifact_generation
+  human_approval_required_for:
+    - approved_to_prepare
+    - approved_to_run
+    - approved_for_shadow
+    - production_change
+    - formal_buy_resume
+    - merge
+  prohibited_actions:
+    - direct_commit_to_main
+    - automatic_merge
+    - unapproved_experiment_execution
+    - real_data_execution_during_preparation
+    - caller_asserted_or_automation_self_approval
+    - formal_buy_or_order_side_effect
+    - production_model_candidate_value_or_buy_change
+
+invariants:
+  top3_distribution: unordered_set_softmax
+  top3_support: all_combinations_after_runner_universe_freeze
+  top3_mass_per_race: 1.0
+  derived_wide_mass_per_race: 3.0
+  probability_tolerance: 1.0e-10
+  candidate_uses_odds: false
+  split_order: train_lt_validation_lt_calibration_lt_outer_test
+  post_event_information_allowed: false
+  future_information_allowed: false
+  leakage_allowed: false
+  research_formal_buy: false
+  research_send_order: false
+  research_stake: 0
+  direct_main_commit: false
+  production_and_merge_require_human_approval: true
+
+hypothesis_gate:
+  score_total: 100
+  minimum_score_to_request_execution: 75
+  below_threshold_auto_execution: false
+  human_approval_required_at_or_above_threshold: true
+  scorecard: research/HYPOTHESIS_SCORECARD.yaml
+
+approval_system:
+  schema_version: 3
+  lifecycle:
+    - proposed
+    - approved_to_prepare
+    - preparing
+    - run_approval_required
+    - approved_to_run
+    - running
+    - review_required
+    - rejected_or_approved_for_shadow_or_invalid
+  invalid_terminal: true
+  evidence_source: github_issue_comment
+  comment_formats:
+    prepare: "APPROVED_TO_PREPARE <proposal_scope_digest>"
+    run: "APPROVED_TO_RUN <run_scope_digest>"
+    shadow: "APPROVED_FOR_SHADOW <review_digest>"
+  target:
+    repository: kazuponbaseball-cell/keiba_ai_project
+    base_branch: main
+    pinned_as_implementation_constants: true
+    proposal_pins_base_commit: true
+  remote_trust:
+    provider: github_read_only_api
+    current_main_ref: refs/heads/main
+    compare_direction: proposal_base_commit_to_current_main_sha
+    allowed_compare_status:
+      - ahead
+      - identical
+    merge_base_must_equal_proposal_base_commit: true
+    local_origin_main_trusted: false
+    local_git_show_trusted: false
+  allowlist:
+    tracked_path: research/APPROVERS.json
+    trust_source: github_proposal_base_commit_contents
+    github_blob_sha_required: true
+    content_sha256_required: true
+    experiment_branch_copy_trusted: false
+    local_worktree_copy_trusted: false
+  caller_actor_is_identity_proof: false
+  human_approved_flag_supported: false
+  denied_approver_actor_types:
+    - Bot
+    - App
+  denied_approver_login_classes:
+    - codex
+    - bot
+    - automation
+    - github_actions
+  github_base_verification_evidence_fields:
+    - repository_full_name
+    - base_branch
+    - verified_current_main_sha
+    - verified_base_commit
+    - compare_url
+    - compare_status
+    - merge_base_sha
+    - approvers_blob_sha
+    - approvers_content_sha256
+    - verification_time
+  comment_evidence_fields:
+    - approval_type
+    - approval_digest
+    - repository
+    - issue_number
+    - comment_id
+    - url
+    - author
+    - author_type
+    - body
+    - body_sha256
+    - created_at
+    - updated_at
+  event_evidence_fields:
+    new_grant: approval_evidence
+    prior_reverification: revalidated_approval_evidence
+    github_trust: github_trust_evidence
+  grant_comment_ids:
+    scope: registry_wide
+    prepare_run_shadow_distinct: true
+    revalidation_is_not_a_new_grant: true
+  transition_reverification:
+    preparing:
+      - prepare
+    approved_to_run:
+      - prepare
+    running:
+      - prepare
+      - run
+    approved_for_shadow:
+      - prepare
+      - run
+  immutable_comment_fields:
+    - comment_id
+    - issue_number
+    - url
+    - author
+    - author_type
+    - body
+    - approval_type
+    - approval_digest
+    - body_sha256
+    - created_at
+    - updated_at
+  fail_close_on:
+    - github_unavailable
+    - repository_base_branch_or_base_commit_mismatch
+    - base_commit_not_current_main_ancestor
+    - compare_status_or_merge_base_mismatch
+    - github_approvers_missing_or_invalid
+    - approval_comment_missing_edited_or_deleted
+    - approval_comment_id_reused
+  ci_external_network: false
+
+scope_digest_contract:
+  canonical_source: json
+  markdown_authoritative: false
+  serialization:
+    encoding: utf_8
+    object_keys: sorted
+    separators: compact
+    unicode: preserved
+    non_finite_numbers: forbidden
+    set_like_proposal_lists: sorted_unique
+    order_sensitive_lists: preserved
+  proposal_scope_path: research/scopes/<experiment_id>.proposal.json
+  run_scope_path: research/scopes/<experiment_id>.run.json
+  digest: sha256
+  proposal_scope_freezes:
+    - base_commit
+  queue_records_proposal_digest: true
+  experiment_markdown_records_proposal_digest: true
+  registry_records_proposal_and_run_digest: true
+  run_scope_freezes:
+    - proposal_scope_and_digest
+    - exact_execution_commit_sha
+    - config_hashes
+    - data_input_manifest_hashes
+    - fold_manifest_hash
+    - runner_universe_manifest_hash
+    - dependency_environment_manifest
+    - seed
+    - exact_execution_commands
+    - safety_flags
+    - no_uncommitted_code_outside_hash_bound_artifacts
+  post_run_results_separate_from_run_scope: true
+
+evidence_classes:
+  A_HEAD:
+    definition: audited base commitに含まれるtracked code、config、docs
+    promotion_eligible: true
+  B_LOCAL_HASHED:
+    definition: local-onlyまたはignored artifactで、pathまたはhashを監査した暫定証拠
+    promotion_eligible: false
+  C_WORKTREE:
+    definition: pre-existing dirty worktreeまたはlocal operational snapshot
+    promotion_eligible: false
+  D_DOC_CLAIM:
+    definition: tracked documentにあるhistorical claimで、今回再計算していないもの
+    promotion_eligible: false
+
+baseline:
+  baseline_id: BASE-20260730
+  evidence: A_HEAD
+  status: DOCUMENTED_NOT_REPRODUCIBLE_FROM_CLEAN_CLONE
+  active_config: config/baseline_features.json
+  pipeline_config: config/data_pipeline.json
+  configured_model_artifact: models/baseline/baseline_ranker.pkl
+  model_class:
+    name: SimpleRaceRanker
+    implementation: src/train/simple_ranker.py
+    estimator: ridge_linear_ranker
+  targets:
+    implementation: src/features/baseline.py
+    names:
+      - target_score
+      - target_win
+      - target_top3
+  standard_split:
+    type: single_recent_temporal_holdout
+    test_fraction: 0.20
+    chronological: true
+    nested_outer_oos_enforced: false
+  production_ticket_builder:
+    path: scripts/build_current_strongest_tickets.py
+    market_aware: true
+    research_odds_free_candidate_source: false
+    notes:
+      - audited HEAD joins live odds and calculates market overlays and expected ROI
+      - audited HEAD can emit runtime_action BUY
+      - Research OS must not import this path for candidate generation
+  reproducibility:
+    clean_clone_runnable: false
+    tracked_tests_present_at_base: false
+    tracked_ci_present_at_base: false
+    dependency_lock_present_at_base: false
+    tracked_model_and_output_artifacts: false
+    blockers:
+      - .gitignoreのdata/規則がsrc/data/loaders.pyも除外する
+      - HEADの48 Python filesがuntracked src.data.loadersをimportする
+      - data、models、outputsはignoredでimmutable manifestがない
+
+local_baseline_metrics:
+  evidence: B_LOCAL_HASHED
+  source: models/baseline/baseline_metadata.json
+  sha256: 89fa609f5fa313082342cc9cca43424fed97d47a667e48641e94983feaca912a
+  strict_json_parse: false
+  feature_count: 271
+  temporal_test:
+    races: 6749
+    rows: 92986
+    top1_win_rate: 0.23322
+    top1_top3_rate: 0.54778
+    top3_contains_winner_rate: 0.52704
+    mean_winner_predicted_rank: 4.316
+  limitations:
+    - ignored local artifactでclean cloneから再現できない
+    - mojibakeしたfieldまたはpathがありstrict JSONではない
+    - single recent holdoutでstrict outer OOS baselineではない
+
+existing_probability_research:
+  evidence: B_LOCAL_HASHED
+  status: RESEARCH_ONLY_NOT_PROMOTED
+  population:
+    chronological_development_folds: 4
+    outer_test_races: 5336
+    reused_development_oos: true
+  models:
+    - name: M0 linear Top3 set softmax
+      average_set_nll: 4.701877
+      top1_set_hit_rate: 0.0827575
+      wide_top1_hit_rate: 0.275505
+      reported_mass_error: 0.0
+    - name: M1C plus M1A1 variance
+      weighted_set_nll: 4.667477
+      top1_set_hit_rate: 0.0841429
+      wide_top1_hit_rate: 0.2796118
+      decision: research_only
+  ordered_top3_contract:
+    source: outputs/analysis/umaren_wide_rebuild_v1/ordered_top3_contract_v1/summary.json
+    races: 5336
+    top3_sets: 2117093
+    max_top3_mass_error: 1.7763568394002505e-14
+    max_marginal_reference_error: 1.1102230246251565e-16
+    independent_recheck_max_top3_mass_error: 3.64e-14
+    independent_recheck_max_derived_wide_mass_error: 1.09e-13
+    tolerance: 1.0e-10
+    candidate_uses_odds: false
+    formal_buy_changed: false
+  limitations:
+    - implementation、test、artifactの主要部分がbase commitに未追跡
+    - upstream ai_scoreの完全なOOF/as-of lineageは未証明
+    - repeated development OOSでprospective promotion evidenceではない
+
+existing_value_research:
+  evidence: B_LOCAL_HASHED
+  status: NO_STABLE_PROFITABILITY_CONFIRMED
+  source: outputs/analysis/umaren_wide_rebuild_v1/wide_fixed_policy_stability_audit_v1/summary.json
+  policies:
+    - name: candidate_all
+      overall_roi_percent: 94.65
+      decision: NO_STABLE_PROFITABILITY
+    - name: primary_confidence
+      overall_roi_percent: 97.22
+      decision: NO_STABLE_PROFITABILITY
+    - name: sensitivity_confidence
+      overall_roi_percent: 98.34
+      decision: NO_STABLE_PROFITABILITY
+    - name: abc_guard
+      overall_roi_percent: 104.08
+      decision: POSITIVE_BUT_UNSTABLE
+      failed_checks:
+        - threshold_sensitivity
+        - fold_calibration
+  prospective_readiness:
+    strict_event_structure: pass
+    strict_t3_plus_final_rows: 0
+    required_initial_rows: 150
+    feature_registry_count: 1348
+    grade_o_approved_features: 0
+    value_research_authorized: false
+  failure_funnel:
+    source: outputs/analysis/umaren_wide_rebuild_v1/wide_candidate_failure_funnel_v1/summary.json
+    hit: 1492
+    axis_fail: 1474
+    partner_fail: 1403
+    both_fail: 967
+  limitations:
+    - final payoffによるdiagnosticでstrict T-3 replayではない
+    - candidate populationは繰り返し閲覧したdevelopment OOS
+    - formal BUY再開の根拠ではない
+
+rejected_or_held_directions:
+  evidence: B_LOCAL_HASHED
+  items:
+    - id: horse_condition_factor_oos_v1
+      decision: NO_STABLE_INCREMENT_FROM_EXISTING_CONDITION_PROXIES
+      adoption: rejected
+      delta_logloss_challenger_minus_baseline: 0.00021570488408517718
+      source: outputs/analysis/umaren_wide_rebuild_v1/horse_condition_factor_oos_v1/summary.json
+    - id: layoff_return_pair_asymmetry_oos_v1
+      decision: NO_STABLE_LAYOFF_RETURN_PAIR_INCREMENT
+      adoption: rejected
+      delta_logloss: 0.0025041831000190973
+      improved_periods: 1
+      tested_periods: 3
+      source: outputs/analysis/umaren_wide_rebuild_v1/layoff_return_pair_asymmetry_oos_v1/summary.json
+    - id: state_growth_connections_screen_v1
+      decision: NO_STABLE_INCREMENT_KEEP_RESEARCH_ONLY
+      adoption: rejected
+      rejected_blocks:
+        - performance_content_condition_v2
+        - body_workout_state_v1
+        - jockey_trainer_context_v1
+      source: outputs/analysis/umaren_wide_rebuild_v1/state_growth_connections_screen_v1/summary.json
+    - id: race_mechanics_action_residual_v1
+      decision: REJECT_COMBINED_RACE_MECHANICS_ACTION_RESIDUAL_INCREMENT
+      adoption: rejected
+      folds_tested: 2
+      folds_improved: 1
+      bootstrap_q90_delta_logloss: 0.0021593367635362203
+      source: outputs/analysis/umaren_wide_rebuild_v1/race_mechanics_action_residual_v1/summary.json
+    - id: wide_pair_reranker_v1
+      decision: PAIR_RERANKER_REJECT
+      adoption: rejected
+      variants_rejected: 3
+      source: outputs/analysis/umaren_wide_rebuild_v1/wide_pair_reranker_v1/summary.json
+    - id: axis_conditioned_partner_model_v1
+      decision: AXIS_CONDITIONAL_REJECT
+      adoption: rejected
+      bootstrap_gate_pass: false
+      source: outputs/analysis/umaren_wide_rebuild_v1/axis_conditioned_partner_model_v1/decision.json
+    - id: sparse_history_feature_shrinkage_v1
+      decision: RESEARCH_SHRINKAGE_BUILT_NOT_CONNECTED_TO_CURRENT_MODEL
+      adoption: not_adopted
+      raw_separation_outperformed_shrunk_features: 4
+      source: outputs/analysis/umaren_wide_rebuild_v1/sparse_history_feature_shrinkage_v1/summary.json
+    - id: recent_regime_prequential_v1
+      decision: REGIME_ALERT_DIAGNOSTIC_ONLY_SOURCE_TIME_UNPROVEN
+      adoption: deferred
+      observed_races: 36
+      watch_minimum_races: 100
+      source: outputs/analysis/umaren_wide_rebuild_v1/recent_regime_prequential_v1/summary.json
+    - id: fixed_candidate_value_policy_v1
+      decision: INSUFFICIENT_STRICT_T3_DATA
+      adoption: blocked
+      strict_t3_rows: 0
+      required_rows: 150
+      source: outputs/analysis/umaren_wide_rebuild_v1/fixed_candidate_value_policy_v1/summary.json
+  rerun_rule: 新しいdata、lineage、または事前登録した識別可能な変更がなければ再実行しない
+
+formal_buy_state:
+  required_state: STOPPED
+  research_os:
+    formal_buy: false
+    send_order: false
+    stake: 0
+    production_paths_changed_by_this_foundation: false
+  committed_head:
+    evidence: A_HEAD
+    stop_proven: false
+    finding: audited builder contains market-aware strict BUY gates and can emit runtime_action BUY
+  local_worktree:
+    evidence: C_WORKTREE
+    default_stop_observed: true
+    detail: pre-existing uncommitted change makes umaren formal BUY opt-in and returns no selected rows by default
+    opt_in_reenable_path_exists: true
+    included_in_this_change: false
+  local_auto_purchase_snapshot:
+    evidence: C_WORKTREE
+    mode: paper_and_handoff_only
+    real_money_enabled: false
+    send_order: false
+    current_formal_buy_policy_approved: false
+    inserted_orders_observed: 0
+  operational_runtime_verified: false
+  conclusion: local default-stop evidence exists, but committed HEAD and live operational stop are not yet version-controlled guarantees
+
+historical_claims:
+  evidence: D_DOC_CLAIM
+  source: docs/EXTERNAL_AI_PROJECT_BRIEF.md
+  status: CONTEXT_ONLY_NOT_PROMOTION_EVIDENCE
+  reported_roi_range_percent:
+    minimum: 375.9
+    maximum: 716.4
+  caveats:
+    - small_sample
+    - overfitting_risk
+    - payout_concentration_not_revalidated_here
+
+next_research_priorities:
+  - id: ROS-P0-001
+    task: clean clone baselineとimmutable lineage manifestを再現する
+    approval_status: proposed
+  - id: ROS-P0-002
+    task: formal BUY停止をversion-controlled characterizationで証明する
+    approval_status: proposed
+  - id: ROS-P0-003
+    task: 共通chronological outer-fold manifestとfail-close検査を作る
+    approval_status: proposed
+  - id: ROS-P0-004
+    task: odds-free candidate freezeとprice firewallを作る
+    approval_status: proposed
+  - id: ROS-P0-005
+    task: local Top3 baselineをclean checkoutから再現する
+    approval_status: proposed
+  - id: ROS-P0-006
+    task: strict T-3 prospective Grade-O rowsを承認済みshadowで蓄積する
+    approval_status: proposed
+
+unconfirmed_items:
+  - live processが現時点で注文を送らないこと
+  - dirty worktreeの正式BUY停止変更が今後どのcommitで管理されるか
+  - local-only Top3 artifactをclean checkoutから同一hashで再生成できること
+  - upstream ai_scoreが全outer foldで完全OOFかつas-of安全であること
+  - probability artifactとは独立した取消後runner universeのfreezeとhash
+  - standard baselineとresearch Top3 baselineの唯一のsource of truth
+  - strict T-3 plus final-price prospective evidence
+  - branch protection、CODEOWNERS、required reviewのGitHub側設定
+  - GitHub AppまたはCLI実行環境がprivate Issue commentとrepository metadataをread-only取得できるcredentialを持つこと
+  - 監査時点のpre-merge main 288dff5e86385908281428d5ed4f077625a43e4bにはresearch/APPROVERS.jsonがなく、そのcommitをbaseとする承認はfail-closeすること
+  - PR #2 merge後のmain commitをbaseとするproposalでGitHubからAPPROVERS.jsonを取得・検証できること

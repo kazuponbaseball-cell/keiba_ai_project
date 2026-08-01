@@ -1,0 +1,104 @@
+name: Research experiment
+description: Canonical scopeをGitHub-backed二段階承認へ送る
+title: "[EXP] "
+labels:
+  - research
+body:
+  - type: markdown
+    attributes:
+      value: |
+        このIssueのMarkdownは承認scopeの正本ではありません。tracked canonical JSONとdigestを確認してください。対象は `kazuponbaseball-cell/keiba_ai_project` の `main` に固定します。準備・実行・shadowは相互に異なる未使用comment IDによる別grantです。本番、merge、正式BUY、注文は承認できません。
+  - type: input
+    id: experiment_id
+    attributes:
+      label: Experiment ID
+      placeholder: EXP-YYYYMMDD-NNN
+    validations:
+      required: true
+  - type: input
+    id: proposal_scope_path
+    attributes:
+      label: Canonical proposal scope path
+      placeholder: research/scopes/EXP-YYYYMMDD-NNN.proposal.json
+    validations:
+      required: true
+  - type: input
+    id: proposal_scope_digest
+    attributes:
+      label: Proposal scope SHA-256
+      description: queue、experiment Markdown、canonical JSONから一致を確認する
+      placeholder: 64 lowercase hex characters
+    validations:
+      required: true
+  - type: input
+    id: base_commit
+    attributes:
+      label: Proposal base commit
+      description: Canonical proposalに固定した40文字のcommit SHA
+      placeholder: 40 lowercase hex characters
+    validations:
+      required: true
+  - type: textarea
+    id: github_trust_evidence
+    attributes:
+      label: GitHub main and approver trust evidence
+      description: Verified current main SHA、compare URL/status、merge-base SHA、APPROVERS blob SHA/content SHA-256、verification timeを記録する
+      placeholder: GitHub read-only API verification evidence; local origin/main and git show are not authority
+    validations:
+      required: true
+  - type: textarea
+    id: proposal_review
+    attributes:
+      label: Proposal review summary
+      description: 仮説/null、作用機序、対象母集団、scope、data/as-of、fold、metric/gate/stop、budget、scoreを要約する
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        準備を承認するallowlisted humanは、内容確認後に次のexact commentを投稿してください。
+
+        `APPROVED_TO_PREPARE <proposal_scope_digest>`
+
+        これはresearch branch上の実装とsynthetic fixture unit testだけを許可します。実データ学習、backtest、outer OOS、ROI計算は禁止です。
+
+        GitHub current mainとbase commitのancestor性をcompareで検証し、allowlistはGitHub上のbase commitの `research/APPROVERS.json` から取得します。監査時点のpre-merge main `288dff5e86385908281428d5ed4f077625a43e4b` には同fileがないため、そのcommitをbaseとする承認はfail-closeします。
+  - type: input
+    id: run_scope_path
+    attributes:
+      label: Canonical run scope path
+      description: 実装完了後に記入。準備承認時はpendingでよい
+      placeholder: research/scopes/EXP-YYYYMMDD-NNN.run.json or pending
+    validations:
+      required: true
+  - type: input
+    id: run_scope_digest
+    attributes:
+      label: Run scope SHA-256
+      description: exact commit、config/data/fold/runner/environment hash、seed、commandsを含む。準備承認時はpendingでよい
+      placeholder: 64 lowercase hex characters or pending
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        実データ実行を承認するallowlisted humanは、実装後scopeを確認し、次のexact commentを別途投稿してください。
+
+        `APPROVED_TO_RUN <run_scope_digest>`
+
+        run grant前にprepare commentを再検証し、RUNNING直前にはprepareとrunの両commentを再検証します。shadow昇格にはprepare/runと異なる未使用IDの `APPROVED_FOR_SHADOW <review_digest>` が必要で、そのgrant前にもprepareとrunを再検証します。commentの編集・削除・grant ID再利用はfail-closeします。後続transitionで同じ証拠を再検証すること自体は新規grantではありません。
+  - type: checkboxes
+    id: absolute_contracts
+    attributes:
+      label: Absolute contracts
+      options:
+        - label: Top3 unordered-set softmax、Top3 mass=1、derived wide mass=3を維持する
+          required: true
+        - label: 候補選択にodds、人気、market、払戻、ROIを使用しない
+          required: true
+        - label: chronological outer OOS、as-of、lineage、no leakageを維持する
+          required: true
+        - label: formal_buy=false、send_order=false、stake=0を維持する
+          required: true
+        - label: production、merge、BUY、注文、通知、credentialはscope外である
+          required: true

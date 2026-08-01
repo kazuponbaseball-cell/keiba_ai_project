@@ -1,0 +1,121 @@
+version: 3
+name: research_os_v1_hypothesis_scorecard
+total_points: 100
+auto_execution_threshold: 75
+human_approval_required: true
+human_approval_source: github_issue_comment
+caller_asserted_approval_allowed: false
+approval_trust:
+  repository: kazuponbaseball-cell/keiba_ai_project
+  base_branch: main
+  current_main_source: github_read_only_api
+  base_ancestor_rule: compare_ahead_or_identical_and_merge_base_equals_base_commit
+  approvers_source: github_contents_at_proposal_base_commit
+  local_origin_main_trusted: false
+  local_git_show_trusted: false
+  grant_comment_id_scope: registry_wide
+  prepare_run_shadow_comment_ids_distinct: true
+  prior_approval_reverification_required: true
+rules:
+  below_threshold_status: BLOCKED_SCORE
+  threshold_or_above_status: PROPOSED
+  execution_status: APPROVED_TO_RUN
+  preparation_status: APPROVED_TO_PREPARE
+  run_scope_freeze_status: RUN_APPROVAL_REQUIRED
+  shadow_status: APPROVED_FOR_SHADOW
+  below_threshold_auto_execution: false
+  threshold_or_above_auto_execution_without_approval: false
+  production_promotion_supported: false
+criteria:
+  independent_information:
+    label: 既存特徴では代替できない独立情報
+    max_points: 25
+    guidance:
+      0: 既存特徴の名称変更または同義変換である
+      13: 相関・ablationによる部分的な独立性を示す
+      25: as-of安全な新規観測経路と条件付き増分を示す
+  racing_mechanism:
+    label: 競馬上の作用機序
+    max_points: 20
+    guidance:
+      0: データ探索だけで機序がない
+      10: 方向性と対象条件を説明できる
+      20: 反対方向・交絡・適用限界まで事前記述できる
+  outer_oos_failure_evidence:
+    label: outer OOSの失敗分析による根拠
+    max_points: 20
+    guidance:
+      0: in-sampleまたはROI上位だけが根拠である
+      10: 複数foldの失敗segmentと対象母集団を示す
+      20: 凍結baselineのouter OOS residualを再現可能に示す
+  leakage_safety:
+    label: リーク安全性
+    max_points: 15
+    guidance:
+      0: source timeまたは未来情報を証明できない
+      8: as-of ruleと禁止列を定義している
+      15: lineage、availability、negative controlを機械検査できる
+  minimal_falsifiability:
+    label: 最小実験による反証可能性
+    max_points: 10
+    guidance:
+      0: 成功条件だけで棄却条件がない
+      5: primary metricと停止条件を事前登録する
+      10: 1つの変更で短時間にnullを棄却または保持できる
+  acquisition_implementation_cost:
+    label: 取得・実装コスト
+    max_points: 10
+    guidance:
+      0: 高コストまたは権利・運用リスクが不明である
+      5: 既存dataで限定的に検証できる
+      10: 小さく可逆で、失敗時の廃棄コストが低い
+hard_blockers:
+  - score_below_75
+  - missing_github_prepare_approval
+  - missing_github_run_approval
+  - unauthorized_or_automation_approver
+  - github_approval_unavailable
+  - github_current_main_or_compare_unavailable
+  - repository_base_branch_or_base_commit_mismatch
+  - base_commit_not_current_main_ancestor
+  - github_base_commit_approvers_missing_or_invalid
+  - approval_comment_changed
+  - approval_comment_deleted
+  - approval_comment_id_reused
+  - prior_approval_reverification_failed
+  - proposal_scope_digest_mismatch
+  - run_scope_digest_mismatch
+  - execution_commit_or_manifest_hash_changed
+  - execution_command_changed
+  - real_data_execution_during_preparation
+  - odds_used_for_candidate_selection
+  - chronological_outer_oos_not_defined
+  - post_event_or_future_information
+  - top3_or_wide_probability_contract_not_tested
+  - formal_buy_or_order_side_effect
+  - production_or_merge_approval_assumed
+template:
+  experiment_id: EXP-YYYYMMDD-NNN
+  scores:
+    independent_information: 0
+    racing_mechanism: 0
+    outer_oos_failure_evidence: 0
+    leakage_safety: 0
+    minimal_falsifiability: 0
+    acquisition_implementation_cost: 0
+  total: 0
+  auto_execution_eligible: false
+  human_approval:
+    prepare_status: pending
+    prepare_comment_id: null
+    run_status: pending
+    run_comment_id: null
+    shadow_status: pending
+    shadow_comment_id: null
+    comment_ids_distinct: null
+    registry_wide_single_use_verified: null
+    prior_comments_reverified: null
+  scope:
+    proposal_scope_digest: null
+    run_scope_digest: null
+    review_digest: null
