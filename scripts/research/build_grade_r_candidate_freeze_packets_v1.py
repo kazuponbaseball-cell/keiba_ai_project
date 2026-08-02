@@ -62,6 +62,8 @@ RUNNER_SNAPSHOT_ALLOWED_COLUMNS = [
     "horse_no",
     "horse_id",
     "horse_name",
+    "race_domain",
+    "race_domain_source_hash",
     "ai_score",
     "ai_rank",
     "expected_pace",
@@ -218,6 +220,19 @@ def load_adapter_config(path: Path) -> dict[str, Any]:
         raise ValueError("target card must contain race numbers 1 through 12")
     if int(card.get("expected_race_count", 0)) != len(expected):
         raise ValueError("target card count mismatch")
+    domain_contract = config.get("race_domain_contract", {})
+    if domain_contract.get("enabled") is True:
+        allowed = domain_contract.get("allowed_domains")
+        if allowed != ["flat_turf", "flat_dirt"]:
+            raise ValueError("race domain allowlist must be flat turf and dirt")
+        if domain_contract.get("unsupported_reason") != "UNSUPPORTED_RACE_TYPE":
+            raise ValueError("race domain failure reason mismatch")
+    readiness = config.get("batch_readiness_contract", {})
+    if readiness.get("enabled") is True:
+        if readiness.get("deadline") != "earliest_candidate_feature_cutoff_time":
+            raise ValueError("candidate batch readiness deadline mismatch")
+        if readiness.get("late_reason") != "SOURCE_READINESS_DEADLINE_MISSED":
+            raise ValueError("candidate batch readiness failure reason mismatch")
     return config
 
 
@@ -463,6 +478,54 @@ def _parse_track_code(value: str, surface: str) -> str:
         return ""
     text = unicodedata.normalize("NFKC", value)
     return "8" if re.search(r"[\s(]外(?:[\s)]|$)", text) else "0"
+
+
+def normalize_race_domain(value: Any) -> str:
+    text = unicodedata.normalize("NFKC", str(value or "")).strip().lower()
+    if text in {"flat_turf", "turf", "芝"} or text.startswith("芝"):
+        return "flat_turf"
+    if text in {"flat_dirt", "dirt", "ダ", "ダート"} or text.startswith("ダ"):
+        return "flat_dirt"
+    if text in {"obstacle", "jump", "障", "障害"} or text.startswith("障"):
+        return "obstacle"
+    return "unknown"
+
+
+def _race_domain_metadata(
+    frame: Any,
+    *,
+    targets: list[dict[str, Any]],
+    config: dict[str, Any],
+) -> dict[str, dict[str, str]]:
+    contract = config.get("race_domain_contract", {})
+    candidates = contract.get("source_columns") or ("race_domain", "芝・ダ", "surface")
+    source_column = _first_existing_column(frame.columns, candidates)
+    metadata: dict[str, dict[str, str]] = {}
+    for target in targets:
+        race_id = str(target["race_id"])
+        race_rows = frame[frame["race_id"].eq(race_id)]
+        raw_values: list[str] = []
+        if source_column is not None:
+            raw_values = sorted(
+                {
+                    unicodedata.normalize("NFKC", str(value)).strip()
+                    for value in race_rows[source_column].tolist()
+                    if str(value).strip() and str(value).strip().lower() != "nan"
+                }
+            )
+        domains = sorted({normalize_race_domain(value) for value in raw_values})
+        race_domain = domains[0] if len(domains) == 1 else "unknown"
+        payload = {
+            "race_id": race_id,
+            "source_column": str(source_column or ""),
+            "raw_values": raw_values,
+            "race_domain": race_domain,
+        }
+        metadata[race_id] = {
+            "race_domain": race_domain,
+            "race_domain_source_hash": canonical_digest(payload),
+        }
+    return metadata
 
 
 def capture_public_entry_snapshot(
@@ -898,6 +961,13 @@ def finalize_runner_snapshot(
             "enriched runner contains current market data: "
             + ", ".join(sorted(populated_market_columns)),
         )
+    domain_metadata = _race_domain_metadata(frame, targets=targets, config=config)
+    frame["race_domain"] = frame["race_id"].map(
+        lambda race_id: domain_metadata[str(race_id)]["race_domain"]
+    )
+    frame["race_domain_source_hash"] = frame["race_id"].map(
+        lambda race_id: domain_metadata[str(race_id)]["race_domain_source_hash"]
+    )
     for column in RUNNER_SNAPSHOT_ALLOWED_COLUMNS:
         if column not in frame.columns:
             frame[column] = pd.NA
@@ -935,10 +1005,19 @@ def finalize_runner_snapshot(
             "input_snapshot_hash": input_snapshot_hash,
             "inference_bundle_hash": bundle_sha256,
             "feature_schema_hash": feature_schema_hash,
+            "race_domain": domain_metadata[race_id]["race_domain"],
+            "race_domain_source_hash": domain_metadata[race_id][
+                "race_domain_source_hash"
+            ],
             "source_contract_ok": source_contract_ok,
         }
         record["source_record_hash"] = canonical_digest(record)
         records.append(record)
+    earliest_cutoff = min(
+        parse_time(target["candidate_feature_cutoff_time"], config["timezone"])
+        for target in targets
+    )
+    batch_readiness_ok = source_observed_at <= earliest_cutoff
     manifest = {
         "schema_version": 1,
         "experiment_id": config["experiment_id"],
@@ -954,6 +1033,13 @@ def finalize_runner_snapshot(
         "inference_bundle_sha256": bundle_sha256,
         "feature_schema_hash": feature_schema_hash,
         "lineage_artifacts": lineage_artifacts,
+        "candidate_batch_observed_at": source_observed_at.isoformat(
+            timespec="milliseconds"
+        ),
+        "earliest_candidate_feature_cutoff_time": earliest_cutoff.isoformat(
+            timespec="milliseconds"
+        ),
+        "batch_readiness_contract_ok": batch_readiness_ok,
         "records": records,
         "candidate_uses_odds": False,
         "formal_buy": False,
@@ -967,6 +1053,7 @@ def finalize_runner_snapshot(
         "source_contract_ok_races": sum(
             1 for record in records if record["source_contract_ok"]
         ),
+        "batch_readiness_contract_ok": batch_readiness_ok,
         "runner_snapshot_sha256": input_snapshot_hash,
         "source_manifest_sha256": file_sha256(source_manifest_path),
     }
@@ -1450,6 +1537,7 @@ def _validate_source_record(
     feature_schema_hash: str,
     input_snapshot_hash: str,
     timezone_name: str,
+    config: dict[str, Any],
 ) -> list[str]:
     if source.get("_source_record_hash_valid") is not True:
         raise CandidateContractError("CANDIDATE_SOURCE_NOT_READY", "source record hash invalid")
@@ -1468,6 +1556,18 @@ def _validate_source_record(
         raise CandidateContractError(
             "CANDIDATE_SOURCE_NOT_READY", "input snapshot hash mismatch"
         )
+    domain_contract = config.get("race_domain_contract", {})
+    if domain_contract.get("enabled") is True:
+        race_domain = normalize_race_domain(source.get("race_domain"))
+        if not _is_sha256(source.get("race_domain_source_hash")):
+            raise CandidateContractError(
+                "CANDIDATE_SOURCE_NOT_READY", "race domain source hash is invalid"
+            )
+        if race_domain not in set(domain_contract["allowed_domains"]):
+            raise CandidateContractError(
+                str(domain_contract["unsupported_reason"]),
+                f"race domain {race_domain} is outside the flat-race allowlist",
+            )
     target_cutoff = parse_time(target["candidate_feature_cutoff_time"], timezone_name)
     source_cutoff = parse_time(source.get("candidate_feature_cutoff_time"), timezone_name)
     source_max = parse_time(source.get("feature_input_max_source_event_time"), timezone_name)
@@ -1572,6 +1672,9 @@ def _base_record(
     bundle_sha256: str,
     feature_schema_hash: str,
     start_time: datetime,
+    batch_readiness_contract_ok: bool = True,
+    candidate_batch_committed_at: datetime | None = None,
+    candidate_batch_deadline_at: datetime | None = None,
 ) -> dict[str, Any]:
     return {
         "schema_version": 1,
@@ -1597,9 +1700,22 @@ def _base_record(
         ),
         "input_snapshot_hash": str((source or {}).get("input_snapshot_hash", "")),
         "source_record_hash": str((source or {}).get("source_record_hash", "")),
+        "race_domain": str((source or {}).get("race_domain", "unknown")),
+        "race_domain_source_hash": str(
+            (source or {}).get("race_domain_source_hash", "")
+        ),
         "feature_input_max_source_event_time": (source or {}).get("feature_input_max_source_event_time"),
         "starter_universe_hash_at_freeze": str((source or {}).get("starter_universe_hash_at_freeze", "")),
         "runner_count": len((source or {}).get("runner_ids", [])),
+        "candidate_batch_committed_at": (
+            candidate_batch_committed_at or start_time
+        ).isoformat(timespec="milliseconds"),
+        "candidate_batch_deadline_at": (
+            candidate_batch_deadline_at.isoformat(timespec="milliseconds")
+            if candidate_batch_deadline_at is not None
+            else None
+        ),
+        "batch_readiness_contract_ok": batch_readiness_contract_ok,
         "candidate_uses_odds": False,
         "formal_buy": False,
         "send_order": False,
@@ -1618,6 +1734,9 @@ def build_candidate_record(
     feature_schema_hash: str,
     input_snapshot_hash: str,
     start_time: datetime,
+    batch_readiness_contract_ok: bool = True,
+    candidate_batch_committed_at: datetime | None = None,
+    candidate_batch_deadline_at: datetime | None = None,
 ) -> dict[str, Any]:
     base = _base_record(
         config=config,
@@ -1626,6 +1745,9 @@ def build_candidate_record(
         bundle_sha256=bundle_sha256,
         feature_schema_hash=feature_schema_hash,
         start_time=start_time,
+        batch_readiness_contract_ok=batch_readiness_contract_ok,
+        candidate_batch_committed_at=candidate_batch_committed_at,
+        candidate_batch_deadline_at=candidate_batch_deadline_at,
     )
     try:
         if source is None or not rows:
@@ -1637,6 +1759,7 @@ def build_candidate_record(
             feature_schema_hash=feature_schema_hash,
             input_snapshot_hash=input_snapshot_hash,
             timezone_name=config["timezone"],
+            config=config,
         )
         candidate = derive_candidate(rows, runners=runners, bundle=bundle, config=config)
         base.update(candidate)
@@ -1761,6 +1884,15 @@ def _build_summary(
         "duplicate_packet_rows": duplicates,
         "unsafe_rows": unsafe,
         "failure_reason_counts": dict(sorted(reasons.items())),
+        "supported_flat_ready_rows": sum(
+            record.get("record_status") == "CANDIDATE_READY"
+            and record.get("race_domain") in {"flat_turf", "flat_dirt"}
+            for record in relevant
+        ),
+        "batch_readiness_contract_ok": all(
+            record.get("batch_readiness_contract_ok") is not False
+            for record in relevant
+        ),
         "formal_buy": False,
         "send_order": False,
         "stake": 0,
@@ -1832,6 +1964,26 @@ def run_adapter(
         _verify_ledger_record(record, output_dir)
         existing_by_race[race_id] = record
 
+    candidate_batch_deadline_at = min(
+        parse_time(target["candidate_feature_cutoff_time"], config["timezone"])
+        for target in targets
+    )
+    candidate_batch_committed_at = now + timedelta(
+        milliseconds=max(0, len(targets) - 1) * 10 + 3
+    )
+    batch_readiness_contract_ok = True
+    batch_error: CandidateContractError | None = None
+    if config.get("batch_readiness_contract", {}).get("enabled") is True:
+        batch_readiness_contract_ok = (
+            candidate_batch_committed_at <= candidate_batch_deadline_at
+        )
+        if not batch_readiness_contract_ok:
+            batch_error = CandidateContractError(
+                str(config["batch_readiness_contract"]["late_reason"]),
+                "candidate batch was not fully committed before the earliest cutoff",
+            )
+    global_error = bundle_error or batch_error
+
     for index, target in enumerate(targets):
         race_id = str(target["race_id"])
         if race_id in existing_by_race:
@@ -1839,7 +1991,7 @@ def run_adapter(
         start_time = now + timedelta(milliseconds=index * 10)
         source = source_records.get(race_id)
         rows = feature_rows.get(race_id, [])
-        if bundle_error is not None:
+        if global_error is not None:
             source_for_failure = dict(source or {})
             source_for_failure["source_contract_ok"] = False
             record = _base_record(
@@ -1848,15 +2000,17 @@ def run_adapter(
                 source=source_for_failure,
                 bundle_sha256=bundle_sha256,
                 feature_schema_hash=feature_schema_hash,
-                input_snapshot_hash=input_snapshot_hash,
                 start_time=start_time,
+                batch_readiness_contract_ok=batch_readiness_contract_ok,
+                candidate_batch_committed_at=candidate_batch_committed_at,
+                candidate_batch_deadline_at=candidate_batch_deadline_at,
             )
             record.update(
                 {
                     "record_status": "FAILED",
                     "candidate_freeze_contract_ok": False,
-                    "failure_reason_codes": [bundle_error.reason],
-                    "failure_detail": bundle_error.detail,
+                    "failure_reason_codes": [global_error.reason],
+                    "failure_detail": global_error.detail,
                     "candidate_horse_id_1": "",
                     "candidate_horse_id_2": "",
                     "candidate_pair_key": "",
@@ -1881,6 +2035,9 @@ def run_adapter(
                 feature_schema_hash=feature_schema_hash,
                 input_snapshot_hash=input_snapshot_hash,
                 start_time=start_time,
+                batch_readiness_contract_ok=batch_readiness_contract_ok,
+                candidate_batch_committed_at=candidate_batch_committed_at,
+                candidate_batch_deadline_at=candidate_batch_deadline_at,
             )
         packet_relative = Path("packets") / f"{race_id}.candidate_freeze.json"
         packet_path = output_dir / packet_relative
@@ -1897,6 +2054,11 @@ def run_adapter(
             "candidate_freeze_contract_ok": record["candidate_freeze_contract_ok"],
             "failure_reason_codes": record["failure_reason_codes"],
             "candidate_pair_key": record["candidate_pair_key"],
+            "race_domain": record["race_domain"],
+            "race_domain_source_hash": record["race_domain_source_hash"],
+            "batch_readiness_contract_ok": record["batch_readiness_contract_ok"],
+            "candidate_batch_committed_at": record["candidate_batch_committed_at"],
+            "candidate_batch_deadline_at": record["candidate_batch_deadline_at"],
             "candidate_freeze_record_hash": record["candidate_freeze_record_hash"],
             "candidate_freeze_persist_ack_at": ack_time.isoformat(timespec="milliseconds"),
             "packet_path": packet_relative.as_posix(),

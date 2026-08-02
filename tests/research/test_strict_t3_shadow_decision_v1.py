@@ -516,6 +516,179 @@ class StrictT3ShadowDecisionTests(unittest.TestCase):
                 decision["decision_reason"], "NO_BET_T3_QUOTE_NOT_AVAILABLE"
             )
 
+    def test_quote_attempt_ledger_is_append_only_and_idempotent(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "attempts.jsonl"
+            candidate = self.candidate(self.race_id(0, 4), 4)
+            schedule = self.schedule(candidate["race_id"])
+            first = RUNNER._record_quote_attempt(
+                path=path,
+                candidate=candidate,
+                schedule_record=schedule,
+                attempt_index=1,
+                attempted_at=datetime.fromisoformat("2026-08-02T14:56:30+09:00"),
+                decision_reason="NO_BET_T3_QUOTE_STALE",
+                accepted=False,
+                capture_packet=None,
+                config=self.config,
+            )
+            RUNNER._record_quote_attempt(
+                path=path,
+                candidate=candidate,
+                schedule_record=schedule,
+                attempt_index=1,
+                attempted_at=datetime.fromisoformat("2026-08-02T14:56:30+09:00"),
+                decision_reason="NO_BET_T3_QUOTE_STALE",
+                accepted=False,
+                capture_packet=None,
+                config=self.config,
+            )
+            rows = RUNNER._read_jsonl(path)
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0], first)
+
+    def test_exp012_live_worker_retries_stale_quote_and_accepts_fresh(self) -> None:
+        config = CAPTURE.load_config(
+            ROOT / "config" / "race_day_contract_hardening_exp012.json"
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            card_dir = root / "card"
+            packets_dir = card_dir / "packets"
+            packets_dir.mkdir(parents=True)
+            candidate = self.candidate(self.race_id(0, 4), 4)
+            candidate["experiment_id"] = config["source_experiment_id"]
+            candidate["candidate_freeze_record_hash"] = CAPTURE.candidate_record_digest(
+                candidate
+            )
+            relative_packet = Path("packets") / f"{candidate['race_id']}.candidate_freeze.json"
+            candidate_path = card_dir / relative_packet
+            candidate_path.write_text(
+                CAPTURE.canonical_json(candidate) + "\n", encoding="utf-8"
+            )
+            packet_sha = CAPTURE.file_sha256(candidate_path)
+            acknowledgement = self.acknowledgement(
+                candidate, packet_sha, relative_packet.as_posix()
+            )
+            acknowledgement["experiment_id"] = config["source_experiment_id"]
+            ledger_path = card_dir / "candidate_freeze_ledger.jsonl"
+            ledger_path.write_text(
+                CAPTURE.canonical_json(acknowledgement) + "\n", encoding="utf-8"
+            )
+            manifest_path = root / "source_manifest.json"
+            manifest_path.write_text(
+                CAPTURE.canonical_json(
+                    {
+                        "schema_version": 1,
+                        "experiment_id": config["experiment_id"],
+                        "source_experiment_id": config["source_experiment_id"],
+                        "data_class": "synthetic",
+                        "sources": [
+                            {
+                                "card_id": "synthetic-card",
+                                "candidate_ledger_jsonl": str(ledger_path),
+                                "candidate_ledger_sha256": CAPTURE.file_sha256(ledger_path),
+                            }
+                        ],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            venue_cname = "pw15orl012026010420260802/ABCDEF"
+            detail_cname = "pw155abcS301202601040420260802Z/ABCDEF"
+            top_page = (
+                "<a onclick=\"doAction('/JRADB/accessO.html', "
+                f"'{venue_cname}')\">venue</a>"
+            ).encode("cp932")
+            venue_page = (
+                "<a onclick=\"doAction('/JRADB/accessO.html', "
+                f"'{detail_cname}')\">wide</a>"
+            ).encode("cp932")
+            detail_reads = 0
+            odds_fetch_times: list[datetime] = []
+            current = [
+                datetime(2026, 8, 2, 14, 56, 29, 500000, tzinfo=ZoneInfo("Asia/Tokyo"))
+            ]
+
+            def clock() -> datetime:
+                observed = current[0]
+                current[0] = observed + timedelta(milliseconds=50)
+                return observed
+
+            def sleeper(seconds: float) -> None:
+                current[0] += timedelta(seconds=seconds)
+
+            def fetch_cname(cname: str) -> bytes:
+                nonlocal detail_reads
+                odds_fetch_times.append(current[0])
+                if cname == "pw15oli00/6D":
+                    return top_page
+                if cname == venue_cname:
+                    return venue_page
+                if cname != detail_cname:
+                    raise KeyError(cname)
+                detail_reads += 1
+                source_clock = "14:56" if detail_reads == 1 else "14:57"
+                return f"""
+                    <p>発走時刻 15:01</p><p>オッズ {source_clock} 現在</p>
+                    <table class="wide"><caption>1</caption><tbody>
+                      <tr><th>2</th><td><span class="min">4.0</span><span class="max">4.6</span></td></tr>
+                      <tr><th>3</th><td><span class="min">5.0</span><span class="max">5.8</span></td></tr>
+                    </tbody></table>
+                    <table class="wide"><caption>2</caption><tbody>
+                      <tr><th>3</th><td><span class="min">6.0</span><span class="max">6.8</span></td></tr>
+                    </tbody></table>
+                """.encode("cp932")
+
+            schedule_calls: list[datetime] = []
+
+            def fetch_schedule(_candidate: dict) -> dict:
+                schedule_calls.append(current[0])
+                return {
+                    "document": "<p>発走時刻 15:01</p>",
+                    "source_event_time": "2026-08-02T14:56:20+09:00",
+                    "received_at": "2026-08-02T14:56:29+09:00",
+                    "locked_at": "2026-08-02T14:56:30+09:00",
+                    "source_reference": "synthetic-schedule-only",
+                }
+
+            summary = RUNNER.run_live_jra_card(
+                source_manifest_path=manifest_path,
+                capture_packet_dir=root / "captures",
+                raw_html_dir=root / "raw",
+                decision_ledger_path=root / "decisions.jsonl",
+                summary_path=root / "summary.json",
+                config=config,
+                fetch_cname=fetch_cname,
+                fetch_schedule_document=fetch_schedule,
+                clock=clock,
+                sleeper=sleeper,
+                enforce_expected_counts=False,
+            )
+            attempts = RUNNER._read_jsonl(
+                root / "captures" / f"{candidate['race_id']}.quote_attempts.jsonl"
+            )
+            decisions = RUNNER.read_decision_jsonl(root / "decisions.jsonl")
+            self.assertEqual(summary["status"], "PASS")
+            self.assertEqual(len(schedule_calls), 1)
+            self.assertEqual(len(attempts), 2)
+            self.assertEqual(attempts[0]["decision_reason"], "NO_BET_T3_QUOTE_STALE")
+            self.assertFalse(attempts[0]["accepted"])
+            self.assertTrue(attempts[1]["accepted"])
+            self.assertTrue(
+                all(
+                    observed
+                    >= datetime.fromisoformat("2026-08-02T14:57:30+09:00")
+                    for observed in odds_fetch_times
+                )
+            )
+            self.assertEqual(decisions[0]["shadow_action"], "PAPER_READY")
+            self.assertEqual(decisions[0]["candidate_pair_key"], "1-2")
+            self.assertFalse(decisions[0]["formal_buy"])
+            self.assertFalse(decisions[0]["send_order"])
+
 
 if __name__ == "__main__":
     unittest.main()

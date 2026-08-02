@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-012",
+  "source_experiments": [
+    "EXP-20260802-010",
+    "EXP-20260802-011"
+  ],
+  "population_rule": "Preparation uses only deterministic synthetic fixtures representing the contract failures observed on 2026-08-02. No race result, payout, popularity, final odds, or candidate replacement is available to the implementation.",
+  "chronology_rule": "The candidate batch must be committed before the earliest candidate cutoff. A schedule-only observation must be locked before any odds request, and the odds request must satisfy schedule_poll_open <= request < strict_t3_cutoff using that locked schedule version.",
+  "domain_rule": "Only explicitly allowlisted flat turf and dirt race domains may become CANDIDATE_READY. Obstacle or unknown race domains remain in the denominator as deterministic FAILED records with UNSUPPORTED_RACE_TYPE.",
+  "quote_rule": "The existing strict 60-second quote-age and ingestion-delay limits are unchanged. No synthetic case may reinterpret a 90-second-old provider timestamp as strict T-3 eligible.",
+  "synthetic_cases": [
+    {
+      "case_id": "supported_turf_before_first_cutoff",
+      "expected": "CANDIDATE_READY",
+      "purpose": "Prove a supported flat turf row can freeze when the source batch is committed before the earliest cutoff."
+    },
+    {
+      "case_id": "supported_dirt_before_first_cutoff",
+      "expected": "CANDIDATE_READY",
+      "purpose": "Prove a supported flat dirt row can freeze under the same batch-readiness contract."
+    },
+    {
+      "case_id": "obstacle_race_domain",
+      "expected": "UNSUPPORTED_RACE_TYPE",
+      "purpose": "Prove an obstacle row is retained but never passed to the frozen flat-race model."
+    },
+    {
+      "case_id": "unknown_race_domain",
+      "expected": "UNSUPPORTED_RACE_TYPE",
+      "purpose": "Prove an unrecognized domain fails closed rather than becoming an all-zero categorical encoding."
+    },
+    {
+      "case_id": "batch_committed_after_earliest_cutoff",
+      "expected": "SOURCE_READINESS_DEADLINE_MISSED",
+      "purpose": "Prove a late morning batch cannot silently create only the later-race candidates."
+    },
+    {
+      "case_id": "odd_minute_post_unchanged",
+      "expected": "EXACT_POLL_WINDOW",
+      "purpose": "Prove a 15:01 post opens at 14:57:30 and not at a rounded clock minute."
+    },
+    {
+      "case_id": "schedule_moves_one_minute_later_before_odds",
+      "expected": "RESCHEDULE_BEFORE_ODDS_ACCESS",
+      "purpose": "Prove the schedule-only lock moves the poll open from 14:56:30 to 14:57:30 without latching the early quote."
+    },
+    {
+      "case_id": "schedule_update_arrives_after_new_cutoff",
+      "expected": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+      "purpose": "Prove an update that cannot be applied prospectively fails closed."
+    },
+    {
+      "case_id": "provider_quote_source_age_90_seconds",
+      "expected": "NO_BET_T3_QUOTE_STALE",
+      "purpose": "Prove the current strict 60-second freshness contract remains unchanged."
+    },
+    {
+      "case_id": "supported_exact_schedule_and_fresh_quote",
+      "expected": "STRICT_T3_CONTRACTS_PASSED",
+      "purpose": "Prove a supported race can reach PAPER_READY only after domain, source, schedule, and quote contracts all pass."
+    }
+  ],
+  "expected_case_count": 10,
+  "allowed_variant_count": 1,
+  "allowed_threshold_search_count": 0,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

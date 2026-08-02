@@ -354,6 +354,26 @@ class StrictT3CapturePacketTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "alternative pair"):
                 MODULE.load_config(path)
 
+    def test_exp012_schedule_only_source_rejects_odds_content(self) -> None:
+        config = MODULE.load_config(
+            ROOT / "config" / "race_day_contract_hardening_exp012.json"
+        )
+        candidate = self.candidate()
+        candidate["experiment_id"] = config["source_experiment_id"]
+        candidate["candidate_freeze_record_hash"] = MODULE.candidate_record_digest(
+            candidate
+        )
+        with self.assertRaisesRegex(ValueError, "market or result"):
+            MODULE.build_schedule_lock_from_document(
+                candidate=candidate,
+                document="<p>発走時刻 15:01</p><p>オッズ 14:56 現在</p>",
+                schedule_source_event_time="2026-08-02T14:56:20+09:00",
+                schedule_received_at="2026-08-02T14:56:21+09:00",
+                schedule_lock_time="2026-08-02T14:56:22+09:00",
+                source_reference="synthetic",
+                config=config,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

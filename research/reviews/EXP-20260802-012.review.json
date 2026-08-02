@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-012",
+  "reviewed_at": "2026-08-02T11:15:41Z",
+  "review_decision": "PASS_FOR_SHADOW_APPROVAL_REQUEST",
+  "shadow_scope": "Research-only race-day contract implementation and fixed synthetic evidence; no real race-day execution",
+  "proposal_scope_digest": "f8caa65d28048f2d3957962a374ea5135d50a07609f6f784f6c7dfd1456541e2",
+  "run_scope_digest": "58ea077d36a57a3e8340d27beebf238d0a82037efb9c3de5ade0ee05879091cd",
+  "execution_commit_sha": "e69904bfad92118896b293fce05af82726cab147",
+  "audit_commit_sha": "7a25a82406e9233828d86291ef72a8c25624c0fd",
+  "approval_evidence": {
+    "prepare_comment_id": 5157186817,
+    "run_comment_id": 5157433752
+  },
+  "fixed_test_result": {
+    "pre_registered_cases_passed": 10,
+    "pre_registered_cases_failed": 0,
+    "research_tests_passed": 170,
+    "research_tests_failed": 0
+  },
+  "artifact_hashes": {
+    "config/race_day_contract_hardening_exp012.json": "725ba884b46cdaa51716957c6afc1af42da7b02d6dab7cd70e7efd9e2b4d8b98",
+    "scripts/research/build_grade_r_candidate_freeze_packets_v1.py": "f1c07250c3973c07f2727df84bf6abdc1fae61254dc89d6da0055aa1cf16c79e",
+    "scripts/research/build_strict_t3_capture_packet_v1.py": "48766f3f69a5db5882697d9874041a8c66e53e16453721ddd22cb30f6d3ca3d2",
+    "scripts/research/run_strict_t3_shadow_decision_v1.py": "bede9bb38515f242bf697e3cb3de5b28b0c0d7eaa6ccfb5da8b3e3eecdcaf2c2",
+    "tests/research/test_race_day_contract_hardening_v1.py": "509cd565109fecded169ccbfc7435ffff17258134a0873bc89cdc57801aa0696",
+    "research/scopes/EXP-20260802-012.run.json": "7a953caf52cbdcea7ff31f87a6ad2ff63cb2c86965a31b7aa99be1d72b5e2400",
+    "research/drafts/EXP-20260802-012-race-day-contract-hardening.fold_manifest.json": "c4cc7e3c4e7eb08ae7fe111b761d362db6531f0b777aa7d77aa20c983259a57f",
+    "research/drafts/EXP-20260802-012-runner-universe-manifest.json": "ee431a484200be8c6d10d2ec123ac7649524c76b3e2b0bc8d62983255bb7785c",
+    "research/drafts/EXP-20260802-012-environment-manifest.json": "392bdbf66f6cf2d216e1d00bc8f9d00a63ef4c7d4cc53f5b8436f21cc85c8413"
+  },
+  "contract_results": {
+    "supported_turf_before_first_cutoff": "CANDIDATE_READY",
+    "supported_dirt_before_first_cutoff": "CANDIDATE_READY",
+    "obstacle_race_domain": "UNSUPPORTED_RACE_TYPE",
+    "unknown_race_domain": "UNSUPPORTED_RACE_TYPE",
+    "batch_committed_after_earliest_cutoff": "SOURCE_READINESS_DEADLINE_MISSED",
+    "odd_minute_post_unchanged": "EXACT_POLL_WINDOW",
+    "schedule_moves_one_minute_later_before_odds": "RESCHEDULE_BEFORE_ODDS_ACCESS",
+    "schedule_update_arrives_after_new_cutoff": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "provider_quote_source_age_90_seconds": "NO_BET_T3_QUOTE_STALE",
+    "supported_exact_schedule_and_fresh_quote": "STRICT_T3_CONTRACTS_PASSED"
+  },
+  "required_effect_audit": {
+    "case_pass_fraction": 1.0,
+    "candidate_changes_after_odds": 0,
+    "unsupported_races_entering_model": 0,
+    "late_candidate_batches_accepted": 0,
+    "minute_rounded_poll_times": 0,
+    "pre_poll_odds_requests": 0,
+    "stale_quotes_accepted": 0,
+    "formal_buy_true_rows": 0,
+    "send_order_true_rows": 0,
+    "nonzero_stake_rows": 0
+  },
+  "safety_contract": {
+    "candidate_uses_odds": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "real_data_accessed": false,
+    "roi_calculated": false,
+    "production_path_executed": false,
+    "dashboard_mutated": false,
+    "notification_sent": false,
+    "order_path_executed": false
+  },
+  "remaining_blockers": [
+    "A production-independent schedule-only provider is not yet wired into the real-data CLI; the approved run validated the injectable provider boundary only",
+    "Actual race-day filesystem persistence timing and provider latency require a separate engineering pilot",
+    "No real schedule shift, quote availability, scratch, or decision-deadline distribution was measured",
+    "No Grade-O lineage, prospective ROI, formal BUY, or order execution was evaluated"
+  ],
+  "not_validated_by_this_experiment": [
+    "real race-day schedule provider acquisition",
+    "real strict T-3 quote acquisition",
+    "real starter-universe and scratch flow",
+    "official outcome join",
+    "ROI or value policy",
+    "Grade-O lineage",
+    "production deployment, merge, formal BUY, or order execution"
+  ],
+  "shadow_approval_effect": "Approval classifies only the implementation and ten-case synthetic evidence as shadow research. It does not authorize real race-day execution, production, merge, dashboard mutation, credentials, notifications, formal BUY, nonzero stake, or orders."
+}
