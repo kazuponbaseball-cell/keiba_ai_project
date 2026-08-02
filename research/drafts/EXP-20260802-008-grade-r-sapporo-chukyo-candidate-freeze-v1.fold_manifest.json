@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-008",
+  "manifest_type": "synthetic_multi_card_candidate_freeze_contract",
+  "timezone": "Asia/Tokyo",
+  "selection_as_of": "2026-08-02T08:48:52+09:00",
+  "selection_source": {
+    "path": "C:/Users/kazup/Data Lab/TXT/DI260802.CSV",
+    "sha256": "844d7d983f1aafecea519d6e1d3649d67b95e9e650a25bcaae69a4f5118f17d5",
+    "allowed_selection_fields": [
+      "race identity",
+      "race number",
+      "scheduled post time",
+      "venue"
+    ],
+    "market_fields_used": false
+  },
+  "target_cards": [
+    {
+      "card_id": "2026010104",
+      "race_date": "2026-08-02",
+      "venue_code": "01",
+      "venue_name": "Sapporo",
+      "meeting_no": 1,
+      "day_no": 4,
+      "expected_race_count": 12,
+      "races": [
+        {"race_id":"202601010401","race_no":1,"scheduled_post_time_jst":"2026-08-02T10:00:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T09:45:00+09:00"},
+        {"race_id":"202601010402","race_no":2,"scheduled_post_time_jst":"2026-08-02T10:30:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T10:15:00+09:00"},
+        {"race_id":"202601010403","race_no":3,"scheduled_post_time_jst":"2026-08-02T11:00:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T10:45:00+09:00"},
+        {"race_id":"202601010404","race_no":4,"scheduled_post_time_jst":"2026-08-02T11:30:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T11:15:00+09:00"},
+        {"race_id":"202601010405","race_no":5,"scheduled_post_time_jst":"2026-08-02T12:20:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T12:05:00+09:00"},
+        {"race_id":"202601010406","race_no":6,"scheduled_post_time_jst":"2026-08-02T12:50:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T12:35:00+09:00"},
+        {"race_id":"202601010407","race_no":7,"scheduled_post_time_jst":"2026-08-02T13:20:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T13:05:00+09:00"},
+        {"race_id":"202601010408","race_no":8,"scheduled_post_time_jst":"2026-08-02T13:50:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T13:35:00+09:00"},
+        {"race_id":"202601010409","race_no":9,"scheduled_post_time_jst":"2026-08-02T14:20:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T14:05:00+09:00"},
+        {"race_id":"202601010410","race_no":10,"scheduled_post_time_jst":"2026-08-02T14:50:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T14:35:00+09:00"},
+        {"race_id":"202601010411","race_no":11,"scheduled_post_time_jst":"2026-08-02T15:25:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T15:10:00+09:00"},
+        {"race_id":"202601010412","race_no":12,"scheduled_post_time_jst":"2026-08-02T16:00:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T15:45:00+09:00"}
+      ]
+    },
+    {
+      "card_id": "2026070204",
+      "race_date": "2026-08-02",
+      "venue_code": "07",
+      "venue_name": "Chukyo",
+      "meeting_no": 2,
+      "day_no": 4,
+      "expected_race_count": 12,
+      "races": [
+        {"race_id":"202607020401","race_no":1,"scheduled_post_time_jst":"2026-08-02T09:40:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T09:25:00+09:00"},
+        {"race_id":"202607020402","race_no":2,"scheduled_post_time_jst":"2026-08-02T10:10:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T09:55:00+09:00"},
+        {"race_id":"202607020403","race_no":3,"scheduled_post_time_jst":"2026-08-02T10:40:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T10:25:00+09:00"},
+        {"race_id":"202607020404","race_no":4,"scheduled_post_time_jst":"2026-08-02T11:10:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T10:55:00+09:00"},
+        {"race_id":"202607020405","race_no":5,"scheduled_post_time_jst":"2026-08-02T11:40:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T11:25:00+09:00"},
+        {"race_id":"202607020406","race_no":6,"scheduled_post_time_jst":"2026-08-02T15:00:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T14:45:00+09:00"},
+        {"race_id":"202607020407","race_no":7,"scheduled_post_time_jst":"2026-08-02T15:35:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T15:20:00+09:00"},
+        {"race_id":"202607020408","race_no":8,"scheduled_post_time_jst":"2026-08-02T16:10:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T15:55:00+09:00"},
+        {"race_id":"202607020409","race_no":9,"scheduled_post_time_jst":"2026-08-02T16:45:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T16:30:00+09:00"},
+        {"race_id":"202607020410","race_no":10,"scheduled_post_time_jst":"2026-08-02T17:20:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T17:05:00+09:00"},
+        {"race_id":"202607020411","race_no":11,"scheduled_post_time_jst":"2026-08-02T17:50:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T17:35:00+09:00"},
+        {"race_id":"202607020412","race_no":12,"scheduled_post_time_jst":"2026-08-02T18:20:00+09:00","candidate_feature_cutoff_time_jst":"2026-08-02T18:05:00+09:00"}
+      ]
+    }
+  ],
+  "fixed_candidate_contract": {
+    "candidate": "WIDE_1_NON_ODDS_COHERENT_TOP3",
+    "candidate_substitution_allowed": false,
+    "candidate_uses_odds": false,
+    "required_set_probability_mass": 1.0,
+    "required_wide_probability_mass": 3.0,
+    "mass_tolerance": 1e-10,
+    "late_race_action": "FAIL_CLOSE_AND_RETAIN",
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0
+  },
+  "cases": [
+    {"case_id":"complete_two_card_candidate_freeze","target_rows":24,"candidate_ready_rows":24,"expected_packet_rows":24,"expected_failed_rows":0,"expected_status":"PASS"},
+    {"case_id":"one_card_source_unavailable_retained","target_rows":24,"candidate_ready_rows":12,"expected_packet_rows":24,"expected_failed_rows":12,"expected_status":"PASS"},
+    {"case_id":"late_cutoff_retained_as_failure","target_rows":24,"late_rows":1,"expected_packet_rows":24,"expected_failed_rows":1,"expected_status":"PASS"},
+    {"case_id":"duplicate_attempt_is_idempotent","target_rows":24,"attempted_writes":25,"expected_packet_rows":24,"expected_duplicate_rows":0,"expected_status":"PASS"},
+    {"case_id":"missing_target_row_invalidates_batch","target_rows":24,"actual_packet_rows":23,"expected_status":"INVALID"}
+  ]
+}

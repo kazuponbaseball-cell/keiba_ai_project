@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import re
 from pathlib import Path
@@ -97,10 +98,7 @@ def add_basic_history_features(history: pd.DataFrame) -> pd.DataFrame:
 
 
 def find_entry_file_for_date(date_key: str, entry_globs: list[str]) -> Path | None:
-    candidates: list[Path] = []
-    for pattern in entry_globs:
-        pat = str(ROOT / pattern) if not Path(pattern).is_absolute() else pattern
-        candidates.extend(Path().glob(pat) if not Path(pat).is_absolute() else sorted(Path(pat).parent.glob(Path(pat).name)))
+    candidates = expand_globs(entry_globs)
     matching = [p for p in candidates if date_key in p.name]
     if not matching:
         return None
@@ -158,10 +156,8 @@ def expand_globs(patterns: list[str]) -> list[Path]:
     paths: list[Path] = []
     for pattern in patterns:
         pat = Path(pattern)
-        if pat.is_absolute():
-            paths.extend(sorted(pat.parent.glob(pat.name)))
-        else:
-            paths.extend(sorted(ROOT.glob(pattern)))
+        expanded_pattern = str(pat if pat.is_absolute() else ROOT / pat)
+        paths.extend(Path(value) for value in glob.glob(expanded_pattern, recursive=True))
     return sorted({p.resolve(): p for p in paths if p.exists()}.values())
 
 
@@ -521,10 +517,16 @@ def enrich_prediction(
     recent_result_globs: list[str] | None = None,
     entry_globs: list[str] | None = None,
 ) -> dict[str, object]:
+    effective_recent_result_globs = recent_result_globs or DEFAULT_RECENT_RESULT_GLOBS
+    matched_recent_result_paths = expand_globs(effective_recent_result_globs)
     prediction = read_csv(prediction_path, dtype=str)
     entry = read_csv(entry_path, dtype=str) if entry_path is not None and entry_path.exists() else pd.DataFrame()
     current = prepare_current_keys(prediction, entry)
-    history = load_history(history_dir, recent_result_globs=recent_result_globs, entry_globs=entry_globs)
+    history = load_history(
+        history_dir,
+        recent_result_globs=effective_recent_result_globs,
+        entry_globs=entry_globs,
+    )
     hist_features = latest_history_before(history, current)
     out = current.merge(hist_features, on=["race_id", "horse_no"], how="left", suffixes=("", "_hist"))
     out = add_time_value_refinements(add_row_level_transforms(out))
@@ -548,6 +550,8 @@ def enrich_prediction(
         )
         if not history.empty
         else 0,
+        "matched_recent_result_file_count": len(matched_recent_result_paths),
+        "matched_recent_result_files": [str(path) for path in matched_recent_result_paths],
     }
     summary_path = output_path.with_suffix(".basic_ability_summary.json")
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8")

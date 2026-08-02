@@ -1,0 +1,168 @@
+{
+    "schema_version":  1,
+    "experiment_id":  "EXP-20260802-006",
+    "manifest_type":  "synthetic_candidate_freeze_adapter_contract_cases",
+    "timezone":  "Asia/Tokyo",
+    "target_card":  {
+                        "selection_uses_odds":  false,
+                        "race_date":  "2026-08-02",
+                        "venue_code":  "04",
+                        "venue_name":  "Niigata",
+                        "meeting_no":  2,
+                        "day_no":  4,
+                        "expected_race_count":  12,
+                        "races":  [
+                                      {
+                                          "race_id":  "202604020401",
+                                          "race_no":  1,
+                                          "scheduled_post_time_jst":  "2026-08-02T09:50:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020402",
+                                          "race_no":  2,
+                                          "scheduled_post_time_jst":  "2026-08-02T10:20:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020403",
+                                          "race_no":  3,
+                                          "scheduled_post_time_jst":  "2026-08-02T10:50:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020404",
+                                          "race_no":  4,
+                                          "scheduled_post_time_jst":  "2026-08-02T11:20:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020405",
+                                          "race_no":  5,
+                                          "scheduled_post_time_jst":  "2026-08-02T11:50:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020406",
+                                          "race_no":  6,
+                                          "scheduled_post_time_jst":  "2026-08-02T15:10:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020407",
+                                          "race_no":  7,
+                                          "scheduled_post_time_jst":  "2026-08-02T15:45:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020408",
+                                          "race_no":  8,
+                                          "scheduled_post_time_jst":  "2026-08-02T16:20:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020409",
+                                          "race_no":  9,
+                                          "scheduled_post_time_jst":  "2026-08-02T16:55:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020410",
+                                          "race_no":  10,
+                                          "scheduled_post_time_jst":  "2026-08-02T17:30:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020411",
+                                          "race_no":  11,
+                                          "scheduled_post_time_jst":  "2026-08-02T18:00:00+09:00"
+                                      },
+                                      {
+                                          "race_id":  "202604020412",
+                                          "race_no":  12,
+                                          "scheduled_post_time_jst":  "2026-08-02T18:30:00+09:00"
+                                      }
+                                  ],
+                        "official_program_url":  "https://www.jra.go.jp/keiba/calendar2026/2026/8/0802.html",
+                        "live_schedule_asof_required_at_run":  true
+                    },
+    "fixed_candidate_contract":  {
+                                     "candidate":  "WIDE_1_NON_ODDS_COHERENT_TOP3",
+                                     "candidate_substitution_allowed":  false,
+                                     "candidate_uses_odds":  false,
+                                     "required_set_probability_mass":  1.0,
+                                     "required_wide_probability_mass":  3.0,
+                                     "mass_tolerance":  1E-10,
+                                     "formal_buy":  false,
+                                     "send_order":  false,
+                                     "stake":  0
+                                 },
+    "cases":  [
+                  {
+                      "case_id":  "complete_card_candidate_freeze",
+                      "target_rows":  12,
+                      "candidate_ready_rows":  12,
+                      "expected_packet_rows":  12,
+                      "expected_failed_rows":  0,
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "missing_runner_snapshot_retained",
+                      "target_rows":  12,
+                      "candidate_ready_rows":  11,
+                      "expected_packet_rows":  12,
+                      "expected_failed_rows":  1,
+                      "expected_reason_code":  "CANDIDATE_SOURCE_NOT_READY",
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "forbidden_market_column_fail_close",
+                      "target_rows":  12,
+                      "forbidden_market_rows":  1,
+                      "expected_packet_rows":  12,
+                      "expected_failed_rows":  1,
+                      "expected_reason_code":  "FORBIDDEN_CANDIDATE_INPUT_COLUMN",
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "late_feature_source_fail_close",
+                      "target_rows":  12,
+                      "late_feature_source_rows":  1,
+                      "expected_packet_rows":  12,
+                      "expected_failed_rows":  1,
+                      "expected_reason_code":  "FEATURE_SOURCE_TIME_VIOLATION",
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "runner_universe_mismatch_fail_close",
+                      "target_rows":  12,
+                      "universe_mismatch_rows":  1,
+                      "expected_packet_rows":  12,
+                      "expected_failed_rows":  1,
+                      "expected_reason_code":  "STARTER_UNIVERSE_MISMATCH",
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "probability_mass_violation_fail_close",
+                      "target_rows":  12,
+                      "probability_contract_failure_rows":  1,
+                      "expected_packet_rows":  12,
+                      "expected_failed_rows":  1,
+                      "expected_reason_code":  "PROBABILITY_CONTRACT_VIOLATION",
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "artifact_hash_mismatch_fail_close",
+                      "target_rows":  12,
+                      "artifact_hash_mismatch_rows":  1,
+                      "expected_packet_rows":  12,
+                      "expected_failed_rows":  1,
+                      "expected_reason_code":  "INFERENCE_BUNDLE_HASH_MISMATCH",
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "duplicate_attempt_is_idempotent",
+                      "target_rows":  12,
+                      "attempted_writes":  13,
+                      "expected_packet_rows":  12,
+                      "expected_duplicate_rows":  0,
+                      "expected_status":  "PASS"
+                  },
+                  {
+                      "case_id":  "missing_target_row_invalidates_batch",
+                      "target_rows":  12,
+                      "actual_packet_rows":  11,
+                      "expected_status":  "INVALID"
+                  }
+              ]
+}

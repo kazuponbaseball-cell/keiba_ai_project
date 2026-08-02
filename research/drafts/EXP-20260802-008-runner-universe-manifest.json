@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-008",
+  "manifest_type": "prospective_multi_card_candidate_runner_universe_contract",
+  "target_card_ids": ["2026010104", "2026070204"],
+  "target_race_ids": [
+    "202601010401", "202601010402", "202601010403", "202601010404",
+    "202601010405", "202601010406", "202601010407", "202601010408",
+    "202601010409", "202601010410", "202601010411", "202601010412",
+    "202607020401", "202607020402", "202607020403", "202607020404",
+    "202607020405", "202607020406", "202607020407", "202607020408",
+    "202607020409", "202607020410", "202607020411", "202607020412"
+  ],
+  "runner_universe_unknown_before_run": true,
+  "public_entry_snapshot_is_identity_source_only": true,
+  "current_market_fields_blank_before_inference": true,
+  "snapshot_hash_required_per_race": true,
+  "candidate_freeze_must_precede_odds_join": true,
+  "late_or_unavailable_target_action": "FAIL_CLOSE_AND_RETAIN",
+  "post_freeze_universe_change_action": "NO_BET",
+  "candidate_substitution_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
