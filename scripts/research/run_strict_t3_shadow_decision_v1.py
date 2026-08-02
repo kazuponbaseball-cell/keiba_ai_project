@@ -7,6 +7,7 @@ import os
 import sys
 import time
 from collections import Counter
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -83,6 +84,16 @@ def _decision_digest(record: dict[str, Any]) -> str:
     return canonical_digest(payload)
 
 
+def _decision_semantic_digest(record: dict[str, Any]) -> str:
+    return canonical_digest(
+        {
+            key: value
+            for key, value in record.items()
+            if key not in {"t3_decision_committed_at", "t3_decision_record_hash"}
+        }
+    )
+
+
 def _idempotency_key(config: dict[str, Any], race_id: str) -> str:
     return canonical_digest(
         {
@@ -113,29 +124,117 @@ def verify_decision_record(record: dict[str, Any]) -> None:
         raise ValueError("decision idempotency key is missing")
 
 
+@contextmanager
+def _exclusive_ledger_lock(path: Path):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+b") as handle:
+        handle.seek(0, os.SEEK_END)
+        if handle.tell() == 0:
+            handle.write(b"\0")
+            handle.flush()
+            os.fsync(handle.fileno())
+        handle.seek(0)
+        if os.name == "nt":
+            import msvcrt
+
+            msvcrt.locking(handle.fileno(), msvcrt.LK_LOCK, 1)
+            try:
+                yield
+            finally:
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
+def _decision_marker_path(path: Path, idempotency_key: str) -> Path:
+    return path.parent / f".{path.name}.ids" / idempotency_key
+
+
+def _verify_decision_marker(marker: Path, idempotency_key: str) -> None:
+    try:
+        observed = marker.read_text(encoding="ascii").strip()
+    except OSError as exc:
+        raise ValueError("decision idempotency marker cannot be read") from exc
+    if observed != idempotency_key:
+        raise ValueError("decision idempotency marker mismatch")
+
+
+def _write_decision_marker(marker: Path, idempotency_key: str) -> None:
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    descriptor = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    with os.fdopen(descriptor, "w", encoding="ascii") as handle:
+        handle.write(idempotency_key)
+        handle.flush()
+        os.fsync(handle.fileno())
+
+
 def append_decision_jsonl(path: Path, record: dict[str, Any]) -> bool:
     verify_decision_record(record)
     path.parent.mkdir(parents=True, exist_ok=True)
-    marker_dir = path.parent / f".{path.name}.ids"
-    marker_dir.mkdir(parents=True, exist_ok=True)
-    marker = marker_dir / str(record["idempotency_key"])
-    try:
-        descriptor = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-    except FileExistsError:
-        return False
-    try:
-        with os.fdopen(descriptor, "w", encoding="ascii") as handle:
-            handle.write(str(record["idempotency_key"]))
-            handle.flush()
-            os.fsync(handle.fileno())
-        with path.open("a", encoding="utf-8", newline="\n") as ledger:
-            ledger.write(canonical_json(record) + "\n")
-            ledger.flush()
-            os.fsync(ledger.fileno())
-    except Exception:
-        marker.unlink(missing_ok=True)
-        raise
-    return True
+    idempotency_key = str(record["idempotency_key"])
+    marker = _decision_marker_path(path, idempotency_key)
+    lock_path = path.parent / f".{path.name}.lock"
+
+    with _exclusive_ledger_lock(lock_path):
+        matches = [
+            existing
+            for existing in read_decision_jsonl(path)
+            if str(existing.get("idempotency_key", "")) == idempotency_key
+        ]
+        if len(matches) > 1:
+            raise ValueError("duplicate decision idempotency key in ledger")
+        if matches:
+            if _decision_semantic_digest(matches[0]) != _decision_semantic_digest(
+                record
+            ):
+                raise ValueError("conflicting decision for idempotency key")
+            if marker.exists():
+                _verify_decision_marker(marker, idempotency_key)
+            else:
+                _write_decision_marker(marker, idempotency_key)
+            return False
+
+        if marker.exists():
+            _verify_decision_marker(marker, idempotency_key)
+            marker.unlink()
+
+        _write_decision_marker(marker, idempotency_key)
+        original_size = path.stat().st_size if path.exists() else 0
+        append_completed = False
+        try:
+            with path.open("a", encoding="utf-8", newline="\n") as ledger:
+                ledger.write(canonical_json(record) + "\n")
+                ledger.flush()
+                os.fsync(ledger.fileno())
+            append_completed = True
+            read_back = [
+                existing
+                for existing in read_decision_jsonl(path)
+                if str(existing.get("idempotency_key", "")) == idempotency_key
+            ]
+            if len(read_back) != 1:
+                raise ValueError("decision append read-back count mismatch")
+            if (
+                read_back[0].get("t3_decision_record_hash")
+                != record.get("t3_decision_record_hash")
+            ):
+                raise ValueError("decision append read-back hash mismatch")
+        except Exception:
+            if not append_completed and path.exists():
+                with path.open("r+b") as ledger:
+                    ledger.truncate(original_size)
+                    ledger.flush()
+                    os.fsync(ledger.fileno())
+                marker.unlink(missing_ok=True)
+            raise
+        return True
 
 
 def read_decision_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -703,10 +802,62 @@ def _capture_failure_path(capture_packet_dir: Path, race_id: str) -> Path:
     return capture_packet_dir / f"{race_id}.capture_failure.json"
 
 
-def _failure_decision_reason(path: Path) -> str:
+def _capture_failure_digest(record: dict[str, Any]) -> str:
+    return canonical_digest(
+        {
+            key: value
+            for key, value in record.items()
+            if key != "capture_failure_record_hash"
+        }
+    )
+
+
+def verify_capture_failure_marker(
+    marker: dict[str, Any],
+    *,
+    candidate: dict[str, Any],
+    config: dict[str, Any],
+) -> None:
+    if marker.get("experiment_id") != config["experiment_id"]:
+        raise ValueError("capture failure experiment mismatch")
+    if marker.get("cohort_id") != config["cohort_id"]:
+        raise ValueError("capture failure cohort mismatch")
+    if str(marker.get("race_id", "")) != str(candidate.get("race_id", "")):
+        raise ValueError("capture failure race mismatch")
+    if marker.get("candidate_freeze_record_hash") != candidate.get(
+        "candidate_freeze_record_hash"
+    ):
+        raise ValueError("capture failure candidate hash mismatch")
+    if marker.get("candidate_uses_odds") is not False:
+        raise ValueError("capture failure odds-firewall violation")
+    if marker.get("formal_buy") is not False or marker.get("send_order") is not False:
+        raise ValueError("capture failure safety violation")
+    if marker.get("stake") != 0:
+        raise ValueError("capture failure stake violation")
+    reason = str(marker.get("capture_failure_reason", ""))
+    if not reason.startswith("NO_BET_") and reason not in {
+        "PUBLIC_QUOTE_UNAVAILABLE",
+        "PUBLIC_SOURCE_ACCESS_RESTRICTED",
+    }:
+        raise ValueError("capture failure reason is invalid")
+    parse_time(marker.get("observed_at"), config["timezone"])
+    if marker.get("capture_failure_record_hash") != _capture_failure_digest(marker):
+        raise ValueError("capture failure record hash mismatch")
+
+
+def _failure_decision_reason(
+    path: Path,
+    *,
+    candidate: dict[str, Any],
+    config: dict[str, Any],
+) -> str:
     if not path.is_file():
         return "NO_BET_T3_QUOTE_NOT_AVAILABLE"
-    marker = load_json_object(path)
+    try:
+        marker = load_json_object(path)
+        verify_capture_failure_marker(marker, candidate=candidate, config=config)
+    except (OSError, TypeError, ValueError):
+        return "NO_BET_CAPTURE_PACKET_INVALID"
     reason = str(marker.get("capture_failure_reason", ""))
     if reason.startswith("NO_BET_"):
         return reason
@@ -782,7 +933,9 @@ def run_shadow_decisions(
                         card_id=row["card_id"],
                         config=config,
                         committed_at=now,
-                        reason=_failure_decision_reason(failure_path),
+                        reason=_failure_decision_reason(
+                            failure_path, candidate=candidate, config=config
+                        ),
                     )
                     append_decision_jsonl(decision_ledger_path, decision)
                     existing_ids.add(race_id)
@@ -850,7 +1003,9 @@ def run_shadow_decisions(
             config=config,
             committed_at=now,
             reason=_failure_decision_reason(
-                _capture_failure_path(capture_packet_dir, race_id)
+                _capture_failure_path(capture_packet_dir, race_id),
+                candidate=candidate,
+                config=config,
             ),
         )
         append_decision_jsonl(decision_ledger_path, decision)
@@ -885,7 +1040,7 @@ def _capture_failure_marker(
         "send_order": False,
         "stake": 0,
     }
-    payload["capture_failure_record_hash"] = canonical_digest(payload)
+    payload["capture_failure_record_hash"] = _capture_failure_digest(payload)
     write_json_atomic_immutable(path, payload)
 
 
