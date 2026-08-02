@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-012",
+  "manifest_type": "race_day_contract_fixed_synthetic_case_universe",
+  "case_ids": [
+    "supported_turf_before_first_cutoff",
+    "supported_dirt_before_first_cutoff",
+    "obstacle_race_domain",
+    "unknown_race_domain",
+    "batch_committed_after_earliest_cutoff",
+    "odd_minute_post_unchanged",
+    "schedule_moves_one_minute_later_before_odds",
+    "schedule_update_arrives_after_new_cutoff",
+    "provider_quote_source_age_90_seconds",
+    "supported_exact_schedule_and_fresh_quote"
+  ],
+  "registered_case_count": 10,
+  "real_race_rows_allowed": false,
+  "odds_endpoint_access_allowed": false,
+  "candidate_substitution_allowed": false,
+  "alternative_pair_search_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
