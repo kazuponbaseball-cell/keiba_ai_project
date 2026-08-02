@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-008",
+  "reviewed_at": "2026-08-02T01:04:36Z",
+  "review_decision": "PASS_FOR_SHADOW_APPROVAL_REQUEST",
+  "shadow_scope": "Sapporo and Chukyo candidate-freeze artifacts only",
+  "proposal_scope_digest": "0b26aa5cfb9a301b2eaeef582c8ddcd7729bcf9e7f69db15fc9146d3e151c255",
+  "run_scope_digest": "f7e4b91989be242b4b5a771c3b6f2cd66e86ace1f2bde8a0352de9b40c5e5398",
+  "execution_commit_sha": "914d7ee7ec578140d715876336c3636bac8dc418",
+  "audit_commit_sha": "d465676db63915977e091a0606e219000d8a7275",
+  "approval_evidence": {
+    "prepare_comment_id": 5154166315,
+    "run_comment_id": 5154256449
+  },
+  "fixed_test_result": {
+    "passed": 77,
+    "failed": 0
+  },
+  "artifact_hashes": {
+    "outputs/research/EXP-20260802-008/sapporo/raw_entry/entry_snapshot_20260802.csv": "32a5bb242b721166f205a22150a613bebd0d96268682cee743d85ddf4819a8cd",
+    "outputs/research/EXP-20260802-008/sapporo/raw_entry/capture_manifest_20260802.json": "e8b855e3fa7ae9f86d0a41ec27991b63e48810e63f7b1da2d009f748716c5a86",
+    "outputs/research/EXP-20260802-008/sapporo/runner_snapshot/runner_snapshot_20260802.csv": "62b85192e27266698ddbc0a840b6f32dfbe5f2aaa812dd2d3b8d5a66b65177e3",
+    "outputs/research/EXP-20260802-008/sapporo/runner_snapshot/feature_source_manifest_20260802.json": "369d36f7e808d4833acb7b23e2553e31e218ef3df308748084d89298dd228aca",
+    "outputs/research/EXP-20260802-008/sapporo/candidate_freeze/candidate_freeze_ledger.jsonl": "5b7c364e9c387fc38410d8b019a0ec4abd56978fa27214e370f12fb9ff51e06a",
+    "outputs/research/EXP-20260802-008/sapporo/candidate_freeze/candidate_freeze_summary.json": "7482887dce36c1b6d48d2a361803b40fd67ebd708f82b2f82face79d9b613578",
+    "outputs/research/EXP-20260802-008/chukyo/raw_entry/entry_snapshot_20260802.csv": "94e8df6f1e4df2a81fb5e0429e4dabd2ef99795d9d872c9627e76fb161ee7706",
+    "outputs/research/EXP-20260802-008/chukyo/raw_entry/capture_manifest_20260802.json": "82bebd0f7244e07ad7b044a3d46709c030779d5d0ce27e6544444229d4581983",
+    "outputs/research/EXP-20260802-008/chukyo/runner_snapshot/runner_snapshot_20260802.csv": "69c0f226ebcdf7a8a47378b32e398887e655c4d5c4fc7e4216b6bfcbf597c50e",
+    "outputs/research/EXP-20260802-008/chukyo/runner_snapshot/feature_source_manifest_20260802.json": "53481823035977ab295bfc311b6ef3296c6b0627413802cabf107ba82dd1dc86",
+    "outputs/research/EXP-20260802-008/chukyo/candidate_freeze/candidate_freeze_ledger.jsonl": "6c4da4ca09d9ec87c9aeca4cfc2d1edfe1df28a4dca7138c682edfbc7e90f0d2",
+    "outputs/research/EXP-20260802-008/chukyo/candidate_freeze/candidate_freeze_summary.json": "2aba5da115ab4be01c7707625efec4c2011a32bdb8b77ae4d55c5a48f621e5b3"
+  },
+  "packet_batch_root": {
+    "algorithm": "sha256(canonical_json(packet_file_sha256_list_in_card_and_ledger_order))",
+    "sha256": "a0131e8ba3e3345610c61323914a0f9d0b82acb7909071429d61d68c82ddba55"
+  },
+  "review_metrics": {
+    "sapporo": {
+      "capture": {
+        "target_races": 12,
+        "captured_races": 12,
+        "runner_rows": 149,
+        "unavailable_races": 0,
+        "duplicate_race_horse_rows": 0,
+        "current_market_nonblank_values": 0
+      },
+      "runner_snapshot": {
+        "target_races": 12,
+        "source_contract_ok_races": 11,
+        "runner_rows": 149,
+        "duplicate_race_horse_rows": 0
+      },
+      "candidate_freeze": {
+        "expected_target_rows": 12,
+        "recorded_target_rows": 12,
+        "candidate_ready_rows": 11,
+        "failed_rows": 1,
+        "failure_reason_counts": {
+          "CANDIDATE_SOURCE_NOT_READY": 1
+        },
+        "duplicate_packet_rows": 0,
+        "max_set_probability_mass_error": 1.1102230246251565e-16,
+        "max_wide_probability_mass_error": 0.0,
+        "packet_file_hash_contract_ok": true,
+        "candidate_record_hash_contract_ok": true,
+        "event_time_order_contract_ok": true
+      }
+    },
+    "chukyo": {
+      "capture": {
+        "target_races": 12,
+        "captured_races": 12,
+        "runner_rows": 138,
+        "unavailable_races": 0,
+        "duplicate_race_horse_rows": 0,
+        "current_market_nonblank_values": 0
+      },
+      "runner_snapshot": {
+        "target_races": 12,
+        "source_contract_ok_races": 11,
+        "runner_rows": 138,
+        "duplicate_race_horse_rows": 0
+      },
+      "candidate_freeze": {
+        "expected_target_rows": 12,
+        "recorded_target_rows": 12,
+        "candidate_ready_rows": 11,
+        "failed_rows": 1,
+        "failure_reason_counts": {
+          "CANDIDATE_SOURCE_NOT_READY": 1
+        },
+        "duplicate_packet_rows": 0,
+        "max_set_probability_mass_error": 1.1102230246251565e-16,
+        "max_wide_probability_mass_error": 4.440892098500626e-16,
+        "packet_file_hash_contract_ok": true,
+        "candidate_record_hash_contract_ok": true,
+        "event_time_order_contract_ok": true
+      }
+    }
+  },
+  "safety_contract": {
+    "candidate_uses_odds": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "roi_calculated": false,
+    "production_path_executed": false,
+    "dashboard_mutated": false,
+    "notification_sent": false,
+    "order_path_executed": false
+  },
+  "deterministic_failure_rows": [
+    {
+      "card": "Sapporo",
+      "race_no": 1,
+      "reason": "CANDIDATE_SOURCE_NOT_READY"
+    },
+    {
+      "card": "Chukyo",
+      "race_no": 1,
+      "reason": "CANDIDATE_SOURCE_NOT_READY"
+    }
+  ],
+  "not_validated_by_this_experiment": [
+    "strict T-3 quote capture",
+    "T-3 schedule and scratch decision contracts",
+    "T-3 decision commit",
+    "official outcome join",
+    "ROI or value policy",
+    "Grade-O lineage",
+    "formal BUY or order execution"
+  ],
+  "shadow_approval_effect": "Approval permits classification of the 22 ready candidate-freeze artifacts and two deterministic failure rows as shadow-only evidence. It does not authorize a T-3 run, production, merge, formal BUY, notifications, credentials, or orders."
+}
