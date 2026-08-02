@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260803-015",
+  "design": "deterministic_synthetic_clean_checkout_and_multiprocess_terminal_ledger_readiness",
+  "data_class": "synthetic",
+  "approved_stack_head": "8e02b8575f57c33fc95f2d5df542e9dd3267f7f8",
+  "real_race_rows": 0,
+  "cases": [
+    {
+      "case_id": "CLEAN_ARCHIVE_IMPORT_AND_RESEARCH_SUITE",
+      "expected_status": "ALL_FIXED_TESTS_PASS_WITHOUT_IGNORED_OR_UNTRACKED_INPUTS"
+    },
+    {
+      "case_id": "TWO_PROCESSES_SAME_RACE_SAME_DECISION",
+      "expected_status": "ONE_TERMINAL_DECISION"
+    },
+    {
+      "case_id": "EIGHT_PROCESSES_SAME_RACE_SAME_DECISION",
+      "expected_status": "ONE_TERMINAL_DECISION"
+    },
+    {
+      "case_id": "TWO_PROCESSES_SAME_KEY_CONFLICTING_RECORD",
+      "expected_status": "ONE_VERIFIED_DECISION_AND_CONFLICT_FAIL_CLOSED"
+    },
+    {
+      "case_id": "FOUR_PROCESSES_DISTINCT_RACES_SHARED_LEDGER",
+      "expected_status": "FOUR_UNIQUE_TERMINAL_DECISIONS"
+    },
+    {
+      "case_id": "TWELVE_RACE_FOUR_WORKER_CARD",
+      "expected_status": "TWELVE_UNIQUE_TERMINAL_DECISIONS"
+    },
+    {
+      "case_id": "CONTENDER_AFTER_MARKER_BEFORE_APPEND",
+      "expected_status": "RECOVERED_ONE_TERMINAL_DECISION"
+    },
+    {
+      "case_id": "CONTENDER_AFTER_APPEND_BEFORE_SUMMARY",
+      "expected_status": "ONE_TERMINAL_DECISION_AND_REBUILT_SUMMARY"
+    },
+    {
+      "case_id": "PROCESS_EXIT_RELEASES_LEDGER_LOCK",
+      "expected_status": "NEXT_WORKER_COMMITS_ONE_TERMINAL_DECISION"
+    },
+    {
+      "case_id": "BOUNDED_LOCK_WAIT_EXPIRES",
+      "expected_status": "TIMEOUT_FAILS_CLOSED_WITHOUT_PARTIAL_APPEND"
+    },
+    {
+      "case_id": "CORRUPT_IDEMPOTENCY_MARKER_UNDER_CONTENTION",
+      "expected_status": "FAIL_CLOSED_WITHOUT_LEDGER_CORRUPTION"
+    },
+    {
+      "case_id": "TRUNCATED_LEDGER_TAIL_UNDER_RESTART",
+      "expected_status": "FAIL_CLOSED_WITHOUT_SILENT_RECORD_LOSS"
+    },
+    {
+      "case_id": "CONCURRENT_SUMMARY_REBUILD",
+      "expected_status": "SUMMARY_MATCHES_VERIFIED_LEDGER"
+    },
+    {
+      "case_id": "REPEATED_FIXED_STRESS_RUN",
+      "expected_status": "DETERMINISTIC_TERMINAL_RECORD_SET"
+    },
+    {
+      "case_id": "PRETERMINAL_FAILURE_ODDS_FIREWALL",
+      "expected_status": "ZERO_ODDS_CALLBACKS"
+    }
+  ],
+  "process_contract": {
+    "maximum_concurrent_processes": 8,
+    "maximum_repetitions_per_case": 20,
+    "fixed_lock_wait_seconds": 2.0,
+    "process_start_method": "spawn",
+    "no_unbounded_waits": true
+  },
+  "clean_checkout_contract": "The canonical execution commit must pass the fixed research suite from a git-archive extraction containing tracked files only.",
+  "denominator_contract": "Every registered synthetic race has exactly one hash-valid terminal decision after bounded contention and restart recovery.",
+  "persistence_contract": "Cross-process locking, marker reconciliation, atomic append, read-back verification, and summary rebuild cannot silently drop, duplicate, or mutate a decision.",
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "odds_access": false,
+    "real_data_access": false,
+    "production_write": false
+  }
+}
