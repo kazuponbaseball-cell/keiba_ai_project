@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-010",
+  "manifest_type": "target_manifest_projection_and_fresh_history_regeneration",
+  "timezone": "Asia/Tokyo",
+  "proposal_registered_at": "2026-08-02T10:53:30+09:00",
+  "selection_uses_market_data": false,
+  "source_target_manifests": [
+    {
+      "venue": "Niigata",
+      "path": "research/drafts/EXP-20260802-007-real-card-target-manifest.json",
+      "sha256": "9e049fece42b203622959c895c66fb16a907bb348e6a7e9825d8c249d4bcfe61",
+      "registered_race_count": 12
+    },
+    {
+      "venue": "Sapporo",
+      "path": "research/drafts/EXP-20260802-008-sapporo-target-manifest.json",
+      "sha256": "c69f15bc51230a0a1a3975d333176cd1d71e49a2ccf6850047b36ff1667d1b6d",
+      "registered_race_count": 12
+    },
+    {
+      "venue": "Chukyo",
+      "path": "research/drafts/EXP-20260802-008-chukyo-target-manifest.json",
+      "sha256": "81b1ec35c385130bd312ee27b9d15c8ebd4b6af147a78cad0949695e37f22ac9",
+      "registered_race_count": 12
+    }
+  ],
+  "projection_contract": {
+    "mutable_fields": ["experiment_id", "cohort_id"],
+    "immutable_fields": ["data_class", "manifest_type", "target_selection_uses_odds", "target_card", "records", "formal_buy", "send_order", "stake"],
+    "race_id_or_cutoff_change_allowed": false,
+    "record_addition_or_removal_allowed": false
+  },
+  "registered_target_count": 36,
+  "prospectively_eligible_at_registration_count": 27,
+  "prospectively_eligible_race_ids": [
+    "202601010404", "202601010405", "202601010406", "202601010407",
+    "202601010408", "202601010409", "202601010410", "202601010411", "202601010412",
+    "202604020404", "202604020405", "202604020406", "202604020407",
+    "202604020408", "202604020409", "202604020410", "202604020411", "202604020412",
+    "202607020404", "202607020405", "202607020406", "202607020407",
+    "202607020408", "202607020409", "202607020410", "202607020411", "202607020412"
+  ],
+  "chronological_contract": {
+    "late_race_action": "FAIL_CLOSE_AND_RETAIN",
+    "past_race_backfill_allowed": false,
+    "candidate_ready_requires_persist_ack_before_registered_cutoff": true,
+    "all_36_registered_targets_remain_in_denominator": true
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "odds_join_allowed": false,
+    "roi_allowed": false,
+    "dashboard_mutation_allowed": false,
+    "order_path_allowed": false
+  }
+}
