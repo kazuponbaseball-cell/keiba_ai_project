@@ -784,6 +784,41 @@ def _run_basic_ability_enrichment(
     return output_path, summary
 
 
+def _validate_recent_result_freshness(
+    summary: dict[str, Any], config: dict[str, Any]
+) -> None:
+    contract = (
+        config.get("runner_snapshot_contract", {}).get("recent_result_freshness", {})
+    )
+    if not contract or not contract.get("required", False):
+        return
+
+    minimum_files = int(contract.get("minimum_matched_file_count", 1))
+    minimum_rows = int(contract.get("minimum_joined_rows", 1))
+    matched_files = int(summary.get("matched_recent_result_file_count", 0) or 0)
+    joined_rows = int(summary.get("recent_result_history_rows", 0) or 0)
+    history_date_max = str(summary.get("history_date_max", "")).strip()
+    minimum_date = str(contract.get("minimum_history_date", "")).strip()
+    maximum_date = str(contract.get("maximum_history_date", "")).strip()
+
+    failures: list[str] = []
+    if matched_files < minimum_files:
+        failures.append(
+            f"matched_recent_result_file_count={matched_files} < {minimum_files}"
+        )
+    if joined_rows < minimum_rows:
+        failures.append(f"recent_result_history_rows={joined_rows} < {minimum_rows}")
+    if minimum_date and (not history_date_max or history_date_max < minimum_date):
+        failures.append(f"history_date_max={history_date_max or '<missing>'} < {minimum_date}")
+    if maximum_date and (not history_date_max or history_date_max > maximum_date):
+        failures.append(f"history_date_max={history_date_max or '<missing>'} > {maximum_date}")
+    if failures:
+        raise CandidateContractError(
+            "CANDIDATE_SOURCE_NOT_READY",
+            "recent-result freshness contract failed: " + "; ".join(failures),
+        )
+
+
 def _hash_files(paths: Iterable[Path]) -> list[dict[str, Any]]:
     records: list[dict[str, Any]] = []
     for path in sorted({value.resolve() for value in paths if value.is_file()}, key=str):
@@ -1005,6 +1040,7 @@ def prepare_runner_snapshot(
             entry_globs=entry_globs or [],
             work_dir=work_dir,
         )
+        _validate_recent_result_freshness(ability_summary, config)
         details["ability"] = ability_summary
         lineage_paths.extend(
             [baseline_config_path, baseline_model_path, historical_csv_path, prediction_path]
