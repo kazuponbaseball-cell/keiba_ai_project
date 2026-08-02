@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-007",
+  "invalidated_at": "2026-08-02T01:13:33Z",
+  "lifecycle_status": "INVALID",
+  "previous_status": "APPROVED_FOR_SHADOW",
+  "invalidates_review_artifact": "research/reviews/EXP-20260802-007.review.json",
+  "invalidates_review_digest": "d66d253d684da15b681a06f72ce172d9ea1bae795a16ab832f326a26b3cbb079",
+  "reason_code": "RECENT_RESULT_GLOB_EXPANSION_FAILED",
+  "finding": "No recent result file reached the ability-history join because wildcard directory segments were not expanded.",
+  "evidence": {
+    "recent_result_history_rows": 0,
+    "effective_history_date_max": "2026-02-15",
+    "later_result_files_present": true,
+    "summary_path": "outputs/research/EXP-20260802-007/runner_snapshot/work/baseline_predictions_basic_ability.basic_ability_summary.json"
+  },
+  "effect": "The prior shadow approval is revoked. EXP007 candidates are retained only as invalid-run diagnostics and are not current BUY evidence.",
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "roi_calculated": false
+  }
+}
