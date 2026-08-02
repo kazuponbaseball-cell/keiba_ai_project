@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-013",
+  "manifest_type": "schedule_provider_fixed_synthetic_case_universe",
+  "case_ids": [
+    "VALID_UNIQUE_SCHEDULE",
+    "ODD_MINUTE_POST_PRESERVED",
+    "LATEST_RECEIVED_VERSION_SELECTED",
+    "DUPLICATE_IDENTICAL_VERSION_IDEMPOTENT",
+    "CONFLICTING_DUPLICATE_VERSION",
+    "MISSING_SOURCE_EVENT_TIME",
+    "RECEIVED_BEFORE_SOURCE_EVENT",
+    "UPDATE_RECEIVED_AFTER_NEW_CUTOFF",
+    "FORBIDDEN_ODDS_FIELD_PRESENT",
+    "PROVIDER_UNAVAILABLE"
+  ],
+  "registered_case_count": 10,
+  "real_race_rows_allowed": false,
+  "real_schedule_access_allowed": false,
+  "odds_endpoint_access_allowed": false,
+  "candidate_substitution_allowed": false,
+  "alternative_pair_search_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

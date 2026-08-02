@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-013",
+  "reviewed_at": "2026-08-02T13:21:00Z",
+  "review_decision": "PASS_FOR_SHADOW_APPROVAL_REQUEST",
+  "shadow_scope": "Research-only file-backed schedule-provider wiring and fixed synthetic evidence; no real race-day execution",
+  "proposal_scope_digest": "8496d48474114d42516a0f818882fbdd8ad52c3bfca35c09dbd0b9ae1497d405",
+  "run_scope_digest": "e687186ce3302fc85d7708da5e6e9665496ca53085f7abd142d07d1ae492facf",
+  "execution_commit_sha": "ea225763f54b35b552e70a9541683f03043b47af",
+  "audit_commit_sha": "8c669152f4bddc4f215f7adcc445e4009ea2ea4f",
+  "approval_evidence": {
+    "prepare_comment_id": 5157912187,
+    "run_comment_id": 5158133176
+  },
+  "fixed_test_result": {
+    "pre_registered_cases_passed": 10,
+    "pre_registered_cases_failed": 0,
+    "research_tests_passed": 180,
+    "research_tests_failed": 0
+  },
+  "artifact_hashes": {
+    "config/schedule_only_provider_exp013.json": "dcb66bc0b98eef14f5c5e633ca91c21851825b9c474c306ee0bc0e16191aa5dc",
+    "scripts/research/build_strict_t3_capture_packet_v1.py": "9fe2be74d958d27dee792fc4ee42b6ae3da124d4698150f842972d2953058ccd",
+    "scripts/research/run_strict_t3_shadow_decision_v1.py": "935e02b51e8c0b747a83b41dfbf7ef945501ebb189ee20e7279e4a3f553dba52",
+    "scripts/research/schedule_only_provider_v1.py": "03a2f261983ba34a15a0378320533239ea0835d5ce88c816b16c9aad3aee2c28",
+    "tests/research/test_schedule_only_provider_v1.py": "eaf8a9093087a5ef0759ba38610adf14fd40eb36c8da228defa293108313705c",
+    "research/scopes/EXP-20260802-013.run.json": "3dafc35ffdd90045ce7cad540bad1a8ba9eec703a7de1b27cdc52cd04f063bfe",
+    "research/drafts/EXP-20260802-013-schedule-provider.fold_manifest.json": "ccb0a246d03aba435a9a1dc91e2f10516896bdfeff50e41926122dd6baffea45",
+    "research/drafts/EXP-20260802-013-runner-universe-manifest.json": "1c57eff679ff798bd123ba523b192bcb6f899f4000c5d68161b2a85f224f5045",
+    "research/drafts/EXP-20260802-013-environment-manifest.json": "14369e8c842a231f84070fb475168fa56b203b86f724a14617f792af05fcffae"
+  },
+  "contract_results": {
+    "valid_unique_schedule": "SCHEDULE_LOCKED",
+    "odd_minute_post_preserved": "SCHEDULE_LOCKED",
+    "latest_received_version_selected": "SCHEDULE_LOCKED",
+    "duplicate_identical_version": "IDEMPOTENT",
+    "conflicting_duplicate_version": "REJECTED_AT_PROVIDER_BOUNDARY",
+    "missing_source_event_time": "REJECTED_AT_PROVIDER_BOUNDARY",
+    "received_before_source_event": "REJECTED_AT_PROVIDER_BOUNDARY",
+    "update_received_after_new_cutoff": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "forbidden_odds_field_present": "REJECTED_AT_PROVIDER_BOUNDARY",
+    "provider_unavailable": "REJECTED_AT_PROVIDER_BOUNDARY"
+  },
+  "required_effect_audit": {
+    "case_pass_fraction": 1.0,
+    "real_data_rows": 0,
+    "ambiguous_versions_accepted": 0,
+    "forbidden_payloads_accepted": 0,
+    "late_schedule_updates_accepted": 0,
+    "missing_registered_races": 0,
+    "pre_lock_odds_requests": 0,
+    "formal_buy_true_rows": 0,
+    "send_order_true_rows": 0,
+    "nonzero_stake_rows": 0
+  },
+  "safety_contract": {
+    "candidate_uses_odds": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "real_data_accessed": false,
+    "roi_calculated": false,
+    "production_path_executed": false,
+    "dashboard_mutated": false,
+    "notification_sent": false,
+    "order_path_executed": false
+  },
+  "review_limitations": [
+    "Provider exception-to-terminal-ledger mapping exists in the worker but was not independently exercised for every malformed fixture in EXP013"
+  ],
+  "remaining_blockers": [
+    "A real schedule observation producer and source are not yet implemented or validated; EXP013 covers the file-backed reader and worker wiring only",
+    "All malformed and unavailable provider cases still need full worker-to-terminal-ledger integration tests before an engineering pilot",
+    "Actual race-day filesystem persistence timing and provider latency require a separate engineering pilot",
+    "Real schedule-shift, quote-freshness, quote-availability, scratch, and decision-deadline distributions remain unmeasured",
+    "No Grade-O lineage, prospective ROI, formal BUY, or order execution was evaluated"
+  ],
+  "not_validated_by_this_experiment": [
+    "real race-day schedule acquisition",
+    "real strict T-3 quote acquisition",
+    "real starter-universe and scratch flow",
+    "final candidate quote or official outcome join",
+    "ROI or value policy",
+    "Grade-O lineage",
+    "production deployment, merge, formal BUY, or order execution"
+  ],
+  "shadow_approval_effect": "Approval classifies only the file-backed provider implementation, worker wiring, and ten-case synthetic evidence as shadow research. It does not authorize real race-day execution, production, merge, dashboard mutation, credentials, notifications, formal BUY, nonzero stake, or orders."
+}

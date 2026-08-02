@@ -1,0 +1,158 @@
+{
+  "experiment_id": "EXP-20260802-013",
+  "title": "Wire a research-only schedule provider into the strict T-3 worker",
+  "hypothesis": "A research-only file-backed schedule provider can supply race-specific scheduled post-time observations with explicit source and receive clocks, select one deterministic as-of version, persist a hash-bound schedule-only lock, and inject it into the strict T-3 worker before any odds access while retaining every unavailable or invalid race as an explicit fail-closed record.",
+  "null_hypothesis": "A production-independent schedule source cannot be connected to the strict T-3 worker without exposing odds, accepting ambiguous or late schedule versions, dropping unavailable races, weakening chronology, or touching production and order paths.",
+  "racing_mechanism": "The exact T-3 cutoff depends on the scheduled post time known before the quote window. A race-specific schedule observation with source and receive timestamps is therefore required to distinguish legitimately available timing information from retrospective schedule changes, while keeping candidate identity and all model probabilities frozen before market access.",
+  "target_population": "Ten deterministic synthetic cases covering one supported flat-race candidate, exact and odd-minute schedules, multiple versions, identical and conflicting duplicates, missing or reversed timestamps, a late schedule update, a forbidden odds field, and provider unavailability. No real race-day row, quote, result, payout, or ROI is authorized.",
+  "in_scope": [
+    "Add a research-only file-backed schedule observation provider with no network or odds capability",
+    "Add deterministic race_id lookup and as-of version selection using source and receive timestamps",
+    "Add append-only schedule lock and fail-closed provider status records",
+    "Inject the verified schedule-only record into the existing strict T-3 research worker before quote access",
+    "Reject payloads containing odds, popularity, market, result, payout, or order fields",
+    "Retain every registered candidate as either SCHEDULE_LOCKED or an explicit NO_BET schedule failure",
+    "Test only the ten pre-registered synthetic contract cases during preparation"
+  ],
+  "out_of_scope": [
+    "Any real race-day provider access during preparation",
+    "Any odds request, quote parsing, price join, result join, payout, ROI, or backtest",
+    "Any model, feature, calibrator, confidence threshold, candidate pair, value threshold, or action change",
+    "Any dashboard, notification, credential, target handoff, purchase adapter, formal BUY, nonzero stake, or order transmission",
+    "Any production scheduler or production data-path modification",
+    "Any retrospective use of actual post time or a schedule update received after its newly implied cutoff"
+  ],
+  "expected_changed_paths": [
+    "config/schedule_only_provider_exp013.json",
+    "scripts/research/build_strict_t3_capture_packet_v1.py",
+    "scripts/research/run_strict_t3_shadow_decision_v1.py",
+    "scripts/research/schedule_only_provider_v1.py",
+    "tests/research/test_race_day_contract_hardening_v1.py",
+    "tests/research/test_schedule_only_provider_v1.py"
+  ],
+  "raw_data_sources": [
+    "EXP012 approved shadow implementation commit e69904bfad92118896b293fce05af82726cab147",
+    "EXP012 review digest 993b1ac97548386b68fe97c76450e7d8b4d2d87d45ff662f4fe957e3d82ed2e7",
+    "research/drafts/EXP-20260802-013-schedule-provider.fold_manifest.json synthetic fixtures only"
+  ],
+  "data_as_of": "2026-08-02T21:25:59+09:00. Proposal construction uses only the approved EXP012 contract artifacts and deterministic synthetic schedule fixtures. Odds, results, payouts, ROI, candidate alternatives, credentials, and production sources are forbidden.",
+  "allowed_columns": [
+    "candidate_freeze_record_hash",
+    "failure_reason_codes",
+    "formal_buy",
+    "provider_status",
+    "race_id",
+    "record_status",
+    "schedule_contract_ok",
+    "schedule_failure_reason",
+    "schedule_lock_time",
+    "schedule_observation_id",
+    "schedule_only",
+    "schedule_provider_id",
+    "schedule_received_at",
+    "schedule_record_hash",
+    "schedule_source_event_time",
+    "schedule_version",
+    "scheduled_post_time_used",
+    "send_order",
+    "source_payload_sha256",
+    "source_reference",
+    "stake"
+  ],
+  "forbidden_columns": [
+    "alternative_pair",
+    "current_odds",
+    "current_popularity",
+    "final_odds",
+    "formal_stake_yen",
+    "market_rank",
+    "official_result",
+    "order_payload",
+    "payout",
+    "result_derived_candidate_change",
+    "roi"
+  ],
+  "lineage_hash_requirements": [
+    "Every provider payload is bound to a SHA-256 digest before schedule selection",
+    "Every schedule lock references the frozen candidate record hash and selected observation digest",
+    "Identical repeated observations are idempotent and conflicting duplicate versions fail closed",
+    "Schedule and failure records are append-only and preserve every registered race",
+    "The schedule provider cannot import or call an odds, result, credential, notification, or order module",
+    "Every output sets schedule_only true where applicable, formal_buy false, send_order false, and stake zero"
+  ],
+  "chronological_fold_design": {
+    "design": "One deterministic synthetic component suite with ten pre-registered cases; no fitting, fold selection, model comparison, threshold search, ROI calculation, or real-data access.",
+    "candidate_clock": "The candidate record is already frozen and hash-verified before any provider observation is selected.",
+    "schedule_clock": "Only an observation satisfying source_event_time <= received_at <= lock_time may be selected. A version received after its newly implied strict cutoff fails closed.",
+    "odds_clock": "The test provider has no odds capability, and the integration test asserts zero odds calls before a valid persisted schedule lock exists.",
+    "denominator_rule": "Provider unavailability, ambiguity, invalid timestamps, forbidden fields, and late updates remain represented as explicit NO_BET schedule records.",
+    "real_data_rule": "APPROVED_TO_PREPARE permits implementation preparation and synthetic fixtures only."
+  },
+  "fold_manifest": {
+    "path": "research/drafts/EXP-20260802-013-schedule-provider.fold_manifest.json",
+    "sha256": "ccb0a246d03aba435a9a1dc91e2f10516896bdfeff50e41926122dd6baffea45"
+  },
+  "purge_embargo": {
+    "race_overlap_allowed": false,
+    "candidate_embargo": "No candidate may be created, replaced, or re-ranked by the provider.",
+    "schedule_embargo": "No schedule version received after its newly implied strict cutoff may be selected or applied retrospectively.",
+    "quote_embargo": "No odds or market field is allowed in the provider payload or provider module.",
+    "result_embargo": "No result, payout, final odds, or ROI information is available to implementation or fixtures."
+  },
+  "primary_metric": {
+    "name": "pre_registered_schedule_provider_case_pass_fraction",
+    "unit": "fraction",
+    "baseline": "EXP012 proved an injectable schedule-only callback in synthetic tests but did not wire a production-independent provider into the real-data research CLI.",
+    "evaluation": "Fraction of the ten fixed synthetic cases producing the exact expected schedule status while chronology, zero-odds-access, denominator retention, hash, idempotency, and safety assertions all pass."
+  },
+  "required_effect": {
+    "expected_case_pass_fraction": 1.0,
+    "expected_synthetic_cases": 10,
+    "real_data_rows": 0,
+    "pre_lock_odds_requests": 0,
+    "forbidden_payloads_accepted": 0,
+    "ambiguous_versions_accepted": 0,
+    "late_schedule_updates_accepted": 0,
+    "missing_registered_races": 0,
+    "formal_buy_true_rows": 0,
+    "send_order_true_rows": 0,
+    "nonzero_stake_rows": 0
+  },
+  "rejection_gate": [
+    "Any odds, popularity, market, result, payout, ROI, credential, notification, or order field reaches the provider output",
+    "Any odds request occurs before a valid schedule lock is persisted and read back",
+    "Any ambiguous, conflicting, timestamp-invalid, or retrospectively late schedule version is accepted",
+    "Any registered race disappears instead of receiving a lock or explicit fail-closed record",
+    "Any candidate identity, probability, confidence result, pair, or action threshold changes",
+    "Any production, dashboard, notification, purchase, formal BUY, nonzero stake, or order side effect occurs",
+    "Any test reads a real race-day source or computes ROI"
+  ],
+  "stop_conditions": [
+    "A credential, login challenge, CAPTCHA, access restriction, protected endpoint, or order-capable path is encountered",
+    "A real schedule, odds, result, payout, or production source would need to be accessed during preparation",
+    "The existing candidate, schedule chronology, strict T-3, or 60-second quote contract would need to be weakened",
+    "A model, feature, calibrator, candidate, confidence, value, or BUY policy change would be required",
+    "Any safety flag cannot remain false or stake cannot remain zero"
+  ],
+  "compute_budget": {
+    "cpu_only": true,
+    "maximum_synthetic_cases": 10,
+    "maximum_real_target_races": 0,
+    "maximum_wall_clock_minutes": 30,
+    "random_seeds": [20260802]
+  },
+  "allowed_variant_count": 1,
+  "allowed_threshold_search_count": 0,
+  "base_commit": "385a418827fd6d1cbf9868507d53ad7a04fe172d",
+  "score_components": {
+    "independent_information": 22,
+    "racing_mechanism": 15,
+    "outer_oos_failure_evidence": 20,
+    "leakage_safety": 15,
+    "minimal_falsifiability": 10,
+    "acquisition_implementation_cost": 10
+  },
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
