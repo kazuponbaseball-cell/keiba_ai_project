@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-014",
+  "source_experiment_id": "EXP-20260802-012",
+  "config_id": "schedule_terminal_ledger_e2e_exp014",
+  "cohort_id": "grade_r_schedule_terminal_ledger_e2e_exp014_v1",
+  "base_runner_config": "config/schedule_only_provider_exp013.json",
+  "case_manifest": {
+    "path": "research/drafts/EXP-20260802-014-terminal-ledger.fold_manifest.json",
+    "sha256": "9b8fa227b9c4b6b6828a271546c9ac67c295d61cc8286e6db799b79f93b19245"
+  },
+  "expected_case_ids": [
+    "PROVIDER_UNAVAILABLE_TO_TERMINAL_DECISION",
+    "CONFLICTING_VERSION_TO_TERMINAL_DECISION",
+    "MISSING_SOURCE_TIME_TO_TERMINAL_DECISION",
+    "REVERSED_SOURCE_RECEIVE_TIME_TO_TERMINAL_DECISION",
+    "FORBIDDEN_ODDS_FIELD_TO_TERMINAL_DECISION",
+    "LATE_SCHEDULE_UPDATE_TO_TERMINAL_DECISION",
+    "CORRUPT_PERSISTED_SCHEDULE_LOCK_TO_TERMINAL_DECISION",
+    "DUPLICATE_WORKER_INVOCATION_IDEMPOTENT",
+    "RESTART_AFTER_FAILURE_MARKER_BEFORE_DECISION",
+    "ORPHAN_IDEMPOTENCY_MARKER_RECOVERED",
+    "RESTART_AFTER_LEDGER_APPEND_BEFORE_SUMMARY",
+    "MIXED_FAILURE_CARD_DENOMINATOR_COMPLETE"
+  ],
+  "terminal_ledger_contract": {
+    "expected_case_count": 12,
+    "expected_terminal_decisions_per_registered_race": 1,
+    "recover_matching_orphan_idempotency_marker": true,
+    "reject_conflicting_idempotency_marker": true,
+    "verify_failure_marker_hash": true,
+    "rebuild_summary_from_verified_ledger": true,
+    "maximum_missing_registered_races": 0,
+    "maximum_duplicate_terminal_decisions": 0,
+    "maximum_odds_requests": 0
+  },
+  "safety": {
+    "data_class": "synthetic",
+    "real_data_access": false,
+    "odds_access": false,
+    "result_access": false,
+    "roi_calculation": false,
+    "production_write": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0
+  }
+}
