@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-014",
+  "manifest_type": "terminal_ledger_e2e_synthetic_runtime_environment",
+  "python_version": "3.12.13",
+  "implementation": "CPython",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "executable": "C:/Users/kazup/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+  "packages": {},
+  "external_network_required_during_run": false,
+  "external_network_used_during_preparation": false,
+  "cpu_only": true,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

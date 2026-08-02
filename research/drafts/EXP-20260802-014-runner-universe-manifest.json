@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-014",
+  "manifest_type": "terminal_ledger_fixed_synthetic_case_universe",
+  "case_ids": [
+    "PROVIDER_UNAVAILABLE_TO_TERMINAL_DECISION",
+    "CONFLICTING_VERSION_TO_TERMINAL_DECISION",
+    "MISSING_SOURCE_TIME_TO_TERMINAL_DECISION",
+    "REVERSED_SOURCE_RECEIVE_TIME_TO_TERMINAL_DECISION",
+    "FORBIDDEN_ODDS_FIELD_TO_TERMINAL_DECISION",
+    "LATE_SCHEDULE_UPDATE_TO_TERMINAL_DECISION",
+    "CORRUPT_PERSISTED_SCHEDULE_LOCK_TO_TERMINAL_DECISION",
+    "DUPLICATE_WORKER_INVOCATION_IDEMPOTENT",
+    "RESTART_AFTER_FAILURE_MARKER_BEFORE_DECISION",
+    "ORPHAN_IDEMPOTENCY_MARKER_RECOVERED",
+    "RESTART_AFTER_LEDGER_APPEND_BEFORE_SUMMARY",
+    "MIXED_FAILURE_CARD_DENOMINATOR_COMPLETE"
+  ],
+  "registered_case_count": 12,
+  "real_race_rows_allowed": false,
+  "real_schedule_access_allowed": false,
+  "odds_endpoint_access_allowed": false,
+  "result_access_allowed": false,
+  "roi_calculation_allowed": false,
+  "candidate_substitution_allowed": false,
+  "alternative_pair_search_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
