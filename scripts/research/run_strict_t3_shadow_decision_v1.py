@@ -5,6 +5,7 @@ import json
 import math
 import os
 import sys
+import time
 from collections import Counter
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -17,7 +18,10 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from build_strict_t3_capture_packet_v1 import (  # noqa: E402
+    JraAccessRestrictionError,
+    JraOfficialCaptureError,
     assert_real_data_authorized,
+    build_jra_official_capture_packet,
     canonical_digest,
     canonical_json,
     canonical_pair_key,
@@ -30,6 +34,7 @@ from build_strict_t3_capture_packet_v1 import (  # noqa: E402
     schedule_record_digest,
     verify_candidate_record,
     verify_capture_packet,
+    write_json_atomic_immutable,
 )
 
 
@@ -472,12 +477,12 @@ def evaluate_ready_capture(
 
     if not schedule_source <= schedule_received <= odds_join:
         return finish("NO_BET_SCHEDULE_CONTRACT_FAILURE")
-    if not freeze_ack < odds_join <= request <= received <= selected <= captured <= committed_at:
+    if any(value > cutoff for value in (source_time, received, selected)):
+        return finish("NO_BET_T3_QUOTE_ASOF_VIOLATION")
+    if not freeze_ack < request <= received <= odds_join <= selected <= captured <= committed_at:
         return finish("NO_BET_SOURCE_TIME_CONTRACT_FAILURE")
     if request < poll_open:
         return finish("NO_BET_POLL_WINDOW_CONTRACT_FAILURE")
-    if any(value > cutoff for value in (source_time, received, selected)):
-        return finish("NO_BET_T3_QUOTE_ASOF_VIOLATION")
     if committed_at > decision_deadline:
         return finish("NO_BET_DECISION_DEADLINE_MISSED")
     if not heartbeat_source <= heartbeat_received <= selected:
@@ -699,7 +704,9 @@ def run_shadow_decisions(
             continue
 
         capture_path = capture_packet_dir / f"{race_id}.strict_t3_capture.json"
-        if capture_path.is_file():
+        post_time = parse_time(candidate.get("scheduled_post_time_asof"), config["timezone"])
+        cutoff = post_time - timedelta(seconds=cutoff_seconds)
+        if capture_path.is_file() and now >= cutoff:
             capture = load_json_object(capture_path)
             decision = evaluate_ready_capture(
                 candidate=candidate,
@@ -713,9 +720,6 @@ def run_shadow_decisions(
             append_decision_jsonl(decision_ledger_path, decision)
             existing_ids.add(race_id)
             continue
-
-        post_time = parse_time(candidate.get("scheduled_post_time_asof"), config["timezone"])
-        cutoff = post_time - timedelta(seconds=cutoff_seconds)
         if now < cutoff:
             pending.append(race_id)
             continue
@@ -737,6 +741,207 @@ def run_shadow_decisions(
     return summary
 
 
+def _capture_failure_marker(
+    *,
+    path: Path,
+    candidate: dict[str, Any],
+    reason: str,
+    observed_at: datetime,
+    config: dict[str, Any],
+) -> None:
+    payload = {
+        "schema_version": 1,
+        "experiment_id": config["experiment_id"],
+        "cohort_id": config["cohort_id"],
+        "race_id": str(candidate["race_id"]),
+        "candidate_freeze_record_hash": candidate["candidate_freeze_record_hash"],
+        "capture_failure_reason": reason,
+        "observed_at": observed_at.isoformat(timespec="milliseconds"),
+        "candidate_uses_odds": False,
+        "formal_buy": False,
+        "send_order": False,
+        "stake": 0,
+    }
+    payload["capture_failure_record_hash"] = canonical_digest(payload)
+    write_json_atomic_immutable(path, payload)
+
+
+def run_live_jra_card(
+    *,
+    source_manifest_path: Path,
+    capture_packet_dir: Path,
+    raw_html_dir: Path,
+    decision_ledger_path: Path,
+    summary_path: Path,
+    config: dict[str, Any],
+    fetch_cname,
+    clock,
+    sleeper=time.sleep,
+    max_consecutive_unavailable: int = 3,
+    enforce_expected_counts: bool = True,
+) -> dict[str, Any]:
+    manifest, population = load_candidate_population(
+        source_manifest_path, config, enforce_expected_counts=enforce_expected_counts
+    )
+    data_class = str(manifest.get("data_class", ""))
+    if data_class not in {"synthetic", "real-data"}:
+        raise ValueError("live-card source manifest data class is invalid")
+    capture_packet_dir.mkdir(parents=True, exist_ok=True)
+    raw_html_dir.mkdir(parents=True, exist_ok=True)
+    consecutive_unavailable = 0
+
+    while True:
+        now = clock()
+        summary = run_shadow_decisions(
+            source_manifest_path=source_manifest_path,
+            capture_packet_dir=capture_packet_dir,
+            decision_ledger_path=decision_ledger_path,
+            summary_path=summary_path,
+            config=config,
+            now=now,
+            enforce_expected_counts=enforce_expected_counts,
+        )
+        if summary["status"] in {"PASS", "INVALID"}:
+            return summary
+
+        decided_ids = {
+            str(row.get("race_id", ""))
+            for row in read_decision_jsonl(decision_ledger_path)
+            if row.get("experiment_id") == config["experiment_id"]
+            and row.get("cohort_id") == config["cohort_id"]
+        }
+        next_event_times: list[datetime] = []
+        captured_in_cycle = False
+        for row in population:
+            candidate = row["candidate"]
+            race_id = str(candidate["race_id"])
+            if race_id in decided_ids or candidate.get("record_status") != "CANDIDATE_READY":
+                continue
+            post_time = parse_time(
+                candidate.get("scheduled_post_time_asof"), config["timezone"]
+            )
+            poll_open = post_time - timedelta(
+                seconds=int(config["timing"]["poll_window_opens_seconds_before_post"])
+            )
+            cutoff = post_time - timedelta(
+                seconds=int(config["timing"]["strict_t3_cutoff_seconds_before_post"])
+            )
+            capture_path = capture_packet_dir / f"{race_id}.strict_t3_capture.json"
+            failure_path = capture_packet_dir / f"{race_id}.capture_failure.json"
+            if capture_path.is_file() or failure_path.is_file():
+                next_event_times.append(cutoff)
+                continue
+            current = clock()
+            if current < poll_open:
+                next_event_times.append(poll_open)
+                continue
+            if current >= cutoff:
+                next_event_times.append(current)
+                continue
+            try:
+                packet = build_jra_official_capture_packet(
+                    candidate=candidate,
+                    acknowledgement=row["acknowledgement"],
+                    candidate_packet_sha256=row["candidate_packet_sha256"],
+                    output_raw_html=raw_html_dir / f"{race_id}.wide.html",
+                    fetch_cname=fetch_cname,
+                    clock=clock,
+                    data_class=data_class,
+                    config=config,
+                )
+                verify_capture_packet(packet, config)
+                write_json_atomic_immutable(capture_path, packet)
+                consecutive_unavailable = 0
+                captured_in_cycle = True
+                print(
+                    canonical_json(
+                        {
+                            "event": "T3_QUOTE_CAPTURED",
+                            "race_id": race_id,
+                            "candidate_pair_key": candidate["candidate_pair_key"],
+                            "formal_buy": False,
+                            "send_order": False,
+                            "stake": 0,
+                        }
+                    ),
+                    flush=True,
+                )
+            except JraAccessRestrictionError as exc:
+                _capture_failure_marker(
+                    path=failure_path,
+                    candidate=candidate,
+                    reason="PUBLIC_SOURCE_ACCESS_RESTRICTED",
+                    observed_at=clock(),
+                    config=config,
+                )
+                stopped = dict(summary)
+                stopped["status"] = "STOPPED_ACCESS_RESTRICTION"
+                stopped["stop_race_id"] = race_id
+                stopped["stop_reason"] = str(exc)
+                _write_json_atomic(summary_path, stopped)
+                return stopped
+            except (JraOfficialCaptureError, RuntimeError, TimeoutError) as exc:
+                consecutive_unavailable += 1
+                _capture_failure_marker(
+                    path=failure_path,
+                    candidate=candidate,
+                    reason="PUBLIC_QUOTE_UNAVAILABLE",
+                    observed_at=clock(),
+                    config=config,
+                )
+                print(
+                    canonical_json(
+                        {
+                            "event": "T3_QUOTE_FETCH_FAILED",
+                            "race_id": race_id,
+                            "error": str(exc),
+                            "consecutive_unavailable": consecutive_unavailable,
+                        }
+                    ),
+                    flush=True,
+                )
+                if consecutive_unavailable >= max_consecutive_unavailable:
+                    stopped = dict(summary)
+                    stopped["status"] = "STOPPED_CONSECUTIVE_UNAVAILABLE"
+                    stopped["stop_race_id"] = race_id
+                    stopped["stop_reason"] = str(exc)
+                    _write_json_atomic(summary_path, stopped)
+                    return stopped
+            next_event_times.append(cutoff)
+
+        current = clock()
+        summary = run_shadow_decisions(
+            source_manifest_path=source_manifest_path,
+            capture_packet_dir=capture_packet_dir,
+            decision_ledger_path=decision_ledger_path,
+            summary_path=summary_path,
+            config=config,
+            now=current,
+            enforce_expected_counts=enforce_expected_counts,
+        )
+        if summary["status"] in {"PASS", "INVALID"}:
+            return summary
+        future_events = [value for value in next_event_times if value > current]
+        if not future_events:
+            if captured_in_cycle:
+                continue
+            sleeper(0.25)
+            continue
+        sleep_seconds = max(0.0, (min(future_events) - current).total_seconds())
+        if sleep_seconds:
+            print(
+                canonical_json(
+                    {
+                        "event": "WAITING_FOR_NEXT_T3_EVENT",
+                        "seconds": round(sleep_seconds, 3),
+                        "pending": summary["pending_target_race_ids"],
+                    }
+                ),
+                flush=True,
+            )
+            sleeper(sleep_seconds)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Commit strict-T3 research-only shadow decisions."
@@ -754,6 +959,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--execution-mode", choices=("synthetic", "real-data"), default="synthetic"
     )
     parser.add_argument("--now", default="")
+    parser.add_argument("--live-jra-official", action="store_true")
+    parser.add_argument("--raw-html-dir", type=Path)
     return parser
 
 
@@ -765,19 +972,41 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("execution mode and source manifest data_class mismatch")
     if args.execution_mode == "real-data":
         assert_real_data_authorized(ROOT, config["experiment_id"])
-    now = (
-        parse_time(args.now, config["timezone"])
-        if args.now
-        else datetime.now(ZoneInfo(config["timezone"]))
-    )
-    summary = run_shadow_decisions(
-        source_manifest_path=args.source_manifest_json,
-        capture_packet_dir=args.capture_packet_dir,
-        decision_ledger_path=args.decision_ledger_jsonl,
-        summary_path=args.summary_json,
-        config=config,
-        now=now,
-    )
+    if args.live_jra_official:
+        if args.execution_mode != "real-data":
+            raise ValueError("live JRA card mode requires real-data execution")
+        if args.now:
+            raise ValueError("live JRA card mode does not accept --now")
+        if args.raw_html_dir is None:
+            raise ValueError("live JRA card mode requires --raw-html-dir")
+        import fetch_jra_official_odds as jra_odds
+
+        summary = run_live_jra_card(
+            source_manifest_path=args.source_manifest_json,
+            capture_packet_dir=args.capture_packet_dir,
+            raw_html_dir=args.raw_html_dir,
+            decision_ledger_path=args.decision_ledger_jsonl,
+            summary_path=args.summary_json,
+            config=config,
+            fetch_cname=lambda cname: jra_odds.post_cname(
+                cname, timeout=5.0, retries=0
+            ),
+            clock=lambda: datetime.now(ZoneInfo(config["timezone"])),
+        )
+    else:
+        now = (
+            parse_time(args.now, config["timezone"])
+            if args.now
+            else datetime.now(ZoneInfo(config["timezone"]))
+        )
+        summary = run_shadow_decisions(
+            source_manifest_path=args.source_manifest_json,
+            capture_packet_dir=args.capture_packet_dir,
+            decision_ledger_path=args.decision_ledger_jsonl,
+            summary_path=args.summary_json,
+            config=config,
+            now=now,
+        )
     print(canonical_json(summary))
     return 0 if summary["status"] != "INVALID" else 2
 

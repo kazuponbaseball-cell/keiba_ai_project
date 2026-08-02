@@ -5,7 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -57,7 +57,9 @@ class StrictT3ShadowDecisionTests(unittest.TestCase):
             "p_wide_coherent_raw": 0.39 if ready else None,
             "p_action_calibrated": 0.40 if ready else None,
             "confidence_gate_pass": confidence if ready else False,
-            "starter_universe_hash_at_freeze": f"universe-{race_id}",
+            "starter_universe_hash_at_freeze": CAPTURE.canonical_digest(
+                {"race_id": race_id, "runners": ["1", "2", "3"]}
+            ),
             "candidate_uses_odds": False,
             "formal_buy": False,
             "send_order": False,
@@ -104,7 +106,11 @@ class StrictT3ShadowDecisionTests(unittest.TestCase):
         return {
             "race_id": race_id,
             "starter_universe_hash_at_t3": (
-                "changed-universe" if changed else f"universe-{race_id}"
+                "changed-universe"
+                if changed
+                else CAPTURE.canonical_digest(
+                    {"race_id": race_id, "runners": ["1", "2", "3"]}
+                )
             ),
             "starter_universe_unchanged": not changed,
             "scratch_known_by_t3": scratch,
@@ -118,7 +124,7 @@ class StrictT3ShadowDecisionTests(unittest.TestCase):
             "ticket_type": "wide",
             "quote_pair_key": "1-2",
             "quote_unique": True,
-            "odds_join_started_at": "2026-08-02T14:56:30+09:00",
+            "odds_join_started_at": "2026-08-02T14:56:51+09:00",
             "quote_request_started_at": "2026-08-02T14:56:31+09:00",
             "t3_quote_source_event_time": "2026-08-02T14:56:45+09:00",
             "t3_quote_received_at": "2026-08-02T14:56:50+09:00",
@@ -311,6 +317,92 @@ class StrictT3ShadowDecisionTests(unittest.TestCase):
                 row for row in decisions if row["decision_reason"] == "NO_BET_SOURCE_NOT_READY"
             ]
             self.assertTrue(all(row["candidate_pair_key"] == "" for row in failures))
+
+    def test_captured_quote_is_not_committed_before_strict_t3(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest_path, rows = self.write_source_population(root, only_one=True)
+            capture_dir = root / "captures"
+            self.write_capture(capture_dir, rows[0])
+            kwargs = {
+                "source_manifest_path": manifest_path,
+                "capture_packet_dir": capture_dir,
+                "decision_ledger_path": root / "decisions.jsonl",
+                "summary_path": root / "summary.json",
+                "config": self.config,
+                "enforce_expected_counts": False,
+            }
+            before = RUNNER.run_shadow_decisions(
+                **kwargs,
+                now=datetime(2026, 8, 2, 14, 56, 59, tzinfo=ZoneInfo("Asia/Tokyo")),
+            )
+            self.assertEqual(before["status"], "IN_PROGRESS")
+            self.assertEqual(before["recorded_target_rows"], 0)
+            at_cutoff = RUNNER.run_shadow_decisions(
+                **kwargs,
+                now=datetime(2026, 8, 2, 14, 57, 0, tzinfo=ZoneInfo("Asia/Tokyo")),
+            )
+            self.assertEqual(at_cutoff["status"], "PASS")
+            self.assertEqual(at_cutoff["recorded_target_rows"], 1)
+
+    def test_live_card_worker_captures_then_commits_at_t3(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest_path, _rows = self.write_source_population(root, only_one=True)
+            venue_cname = "pw15orl012026010420260802/ABCDEF"
+            detail_cname = "pw155abcS301202601040420260802Z/ABCDEF"
+            pages = {
+                "pw15oli00/6D": (
+                    "<a onclick=\"doAction('/JRADB/accessO.html', "
+                    f"'{venue_cname}')\">venue</a>"
+                ).encode("cp932"),
+                venue_cname: (
+                    "<a onclick=\"doAction('/JRADB/accessO.html', "
+                    f"'{detail_cname}')\">wide</a>"
+                ).encode("cp932"),
+                detail_cname: """
+                    <p>発走時刻 15:00</p><p>オッズ 14:56 現在</p>
+                    <table class="wide"><caption>1</caption><tbody>
+                      <tr><th>2</th><td><span class="min">4.0</span><span class="max">4.6</span></td></tr>
+                      <tr><th>3</th><td><span class="min">5.0</span><span class="max">5.8</span></td></tr>
+                    </tbody></table>
+                    <table class="wide"><caption>2</caption><tbody>
+                      <tr><th>3</th><td><span class="min">6.0</span><span class="max">6.8</span></td></tr>
+                    </tbody></table>
+                """.encode("cp932"),
+            }
+
+            current = [
+                datetime(2026, 8, 2, 14, 56, 30, tzinfo=ZoneInfo("Asia/Tokyo"))
+            ]
+
+            def clock() -> datetime:
+                observed = current[0]
+                current[0] = observed + timedelta(milliseconds=100)
+                return observed
+
+            def sleeper(seconds: float) -> None:
+                current[0] += timedelta(seconds=seconds)
+
+            summary = RUNNER.run_live_jra_card(
+                source_manifest_path=manifest_path,
+                capture_packet_dir=root / "captures",
+                raw_html_dir=root / "raw",
+                decision_ledger_path=root / "decisions.jsonl",
+                summary_path=root / "summary.json",
+                config=self.config,
+                fetch_cname=lambda cname: pages[cname],
+                clock=clock,
+                sleeper=sleeper,
+                enforce_expected_counts=False,
+            )
+            decisions = RUNNER.read_decision_jsonl(root / "decisions.jsonl")
+            self.assertEqual(summary["status"], "PASS")
+            self.assertEqual(len(decisions), 1)
+            self.assertEqual(decisions[0]["shadow_action"], "PAPER_READY")
+            self.assertEqual(decisions[0]["candidate_pair_key"], "1-2")
+            self.assertFalse(decisions[0]["formal_buy"])
+            self.assertFalse(decisions[0]["send_order"])
 
     def test_confidence_fail_is_measurement_only_no_bet(self) -> None:
         row = self.evaluate_one(confidence=False)

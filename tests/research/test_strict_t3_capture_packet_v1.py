@@ -6,7 +6,9 @@ import sys
 import tempfile
 import unittest
 from copy import deepcopy
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -249,6 +251,99 @@ class StrictT3CapturePacketTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(ValueError, "RUNNING"):
                 MODULE.assert_real_data_authorized(root, self.config["experiment_id"])
+
+    @staticmethod
+    def jra_pages() -> dict[str, bytes]:
+        top_cname = "pw15oli00/6D"
+        venue_cname = "pw15orl012026010420260802/ABCDEF"
+        detail_cname = "pw155abcS301202601040120260802Z/ABCDEF"
+        top = (
+            "<html><body><a onclick=\"doAction('/JRADB/accessO.html', "
+            f"'{venue_cname}')\">venue</a></body></html>"
+        )
+        venue = (
+            "<html><body><a onclick=\"doAction('/JRADB/accessO.html', "
+            f"'{detail_cname}')\">wide</a></body></html>"
+        )
+        detail = """
+        <html><body>
+          <p>発走時刻 15:00</p><p>オッズ 14:56 現在</p>
+          <table class="wide"><caption>1</caption><tbody>
+            <tr><th>2</th><td><span class="min">4.0</span><span class="max">4.6</span></td></tr>
+            <tr><th>3</th><td><span class="min">5.0</span><span class="max">5.8</span></td></tr>
+          </tbody></table>
+          <table class="wide"><caption>2</caption><tbody>
+            <tr><th>3</th><td><span class="min">6.0</span><span class="max">6.8</span></td></tr>
+          </tbody></table>
+        </body></html>
+        """
+        return {
+            top_cname: top.encode("cp932"),
+            venue_cname: venue.encode("cp932"),
+            detail_cname: detail.encode("cp932"),
+        }
+
+    def test_jra_public_capture_uses_only_exact_frozen_pair(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            candidate = self.candidate()
+            candidate["starter_universe_hash_at_freeze"] = MODULE.canonical_digest(
+                {"race_id": candidate["race_id"], "runners": ["1", "2", "3"]}
+            )
+            candidate["candidate_freeze_record_hash"] = MODULE.candidate_record_digest(
+                candidate
+            )
+            _path, packet_sha = self.write_candidate(root, candidate)
+            pages = self.jra_pages()
+            moments = iter(
+                datetime.fromisoformat(value)
+                for value in (
+                    "2026-08-02T14:56:20+09:00",
+                    "2026-08-02T14:56:21+09:00",
+                    "2026-08-02T14:56:22+09:00",
+                    "2026-08-02T14:56:23+09:00",
+                    "2026-08-02T14:56:30+09:00",
+                    "2026-08-02T14:56:31+09:00",
+                    "2026-08-02T14:56:32+09:00",
+                    "2026-08-02T14:56:33+09:00",
+                    "2026-08-02T14:56:34+09:00",
+                )
+            )
+            packet = MODULE.build_jra_official_capture_packet(
+                candidate=candidate,
+                acknowledgement=self.acknowledgement(candidate, packet_sha),
+                candidate_packet_sha256=packet_sha,
+                output_raw_html=root / "source.html",
+                fetch_cname=lambda cname: pages[cname],
+                clock=lambda: next(moments),
+                data_class="synthetic",
+                config=self.config,
+            )
+            MODULE.verify_capture_packet(packet, self.config)
+            quote = packet["quote_observation"]
+            self.assertEqual(quote["quote_pair_key"], "1-2")
+            self.assertEqual(quote["t3_wide_odds_low"], 4.0)
+            self.assertEqual(quote["t3_wide_odds_high"], 4.6)
+            self.assertEqual(packet["public_source"]["request_count"], 3)
+            self.assertTrue(packet["universe_observation"]["starter_universe_unchanged"])
+            self.assertEqual(
+                MODULE.extract_jra_quote_source_time(
+                    pages[next(key for key in pages if key.startswith("pw155"))].decode("cp932"),
+                    source_race_key="2026080201202601",
+                    timezone_name="Asia/Tokyo",
+                ),
+                datetime(2026, 8, 2, 14, 56, tzinfo=ZoneInfo("Asia/Tokyo")),
+            )
+
+    def test_jra_source_time_missing_and_access_challenge_fail_closed(self) -> None:
+        with self.assertRaisesRegex(ValueError, "missing or ambiguous"):
+            MODULE.extract_jra_quote_source_time(
+                "<html>時刻なし</html>",
+                source_race_key="2026080201010401",
+                timezone_name="Asia/Tokyo",
+            )
+        with self.assertRaises(MODULE.JraAccessRestrictionError):
+            MODULE.assert_public_jra_page_available("<html>CAPTCHA challenge</html>")
 
     def test_unsafe_config_is_rejected(self) -> None:
         unsafe = deepcopy(self.config)

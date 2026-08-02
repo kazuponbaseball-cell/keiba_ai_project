@@ -15,8 +15,8 @@
     "poll_window_opens_seconds_before_post": 210,
     "strict_t3_cutoff_seconds_before_post": 180,
     "decision_deadline_seconds_before_post": 170,
-    "maximum_quote_age_seconds": 30,
-    "maximum_quote_ingestion_delay_seconds": 30,
+    "maximum_quote_age_seconds": 60,
+    "maximum_quote_ingestion_delay_seconds": 60,
     "maximum_feed_heartbeat_age_seconds": 30
   },
   "quote_contract": {

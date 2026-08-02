@@ -6,13 +6,19 @@ import json
 import math
 import os
 import re
+import sys
+import unicodedata
 from datetime import datetime, timedelta
+from html import unescape
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parents[2]
+SCRIPTS_DIR = ROOT / "scripts"
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
 HASH_FIELDS = {"candidate_freeze_record_hash", "packet_file_sha256"}
 FORBIDDEN_INPUT_FIELDS = {
     "actual_order_acknowledgement",
@@ -29,6 +35,14 @@ FORBIDDEN_INPUT_FIELDS = {
     "result",
     "roi",
 }
+
+
+class JraOfficialCaptureError(ValueError):
+    """Public JRA capture failed without producing an eligible quote."""
+
+
+class JraAccessRestrictionError(JraOfficialCaptureError):
+    """The public source displayed a challenge or access restriction."""
 
 
 def canonical_json(payload: Any) -> str:
@@ -83,6 +97,359 @@ def canonical_pair_key(value: Any) -> str:
         raise ValueError("pair key must contain two distinct positive horse numbers")
     low, high = sorted((first, second))
     return f"{low}-{high}"
+
+
+def _visible_text(document: str) -> str:
+    without_script = re.sub(
+        r"<(?:script|style)\b[^>]*>.*?</(?:script|style)>",
+        " ",
+        document,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    text = re.sub(r"<[^>]+>", " ", without_script)
+    normalized = unicodedata.normalize("NFKC", unescape(text))
+    return re.sub(r"\s+", " ", normalized).strip()
+
+
+def _clock_on_date(
+    *,
+    race_id: str,
+    hour: str,
+    minute: str,
+    timezone_name: str,
+) -> datetime:
+    digits = re.sub(r"\D", "", race_id)
+    if len(digits) < 8:
+        raise ValueError("race key does not contain a date")
+    race_date = datetime.strptime(digits[:8], "%Y%m%d").date()
+    hour_value = int(hour)
+    minute_value = int(minute)
+    if hour_value > 23 or minute_value > 59:
+        raise ValueError("clock value is outside the valid range")
+    return datetime(
+        race_date.year,
+        race_date.month,
+        race_date.day,
+        hour_value,
+        minute_value,
+        tzinfo=ZoneInfo(timezone_name),
+    )
+
+
+def extract_jra_quote_source_time(
+    document: str, *, source_race_key: str, timezone_name: str
+) -> datetime:
+    text = _visible_text(document)
+    patterns = (
+        r"(?P<hour>\d{1,2})時(?P<minute>\d{1,2})分現在(?:の)?オッズ",
+        r"オッズ[^。]{0,24}?(?P<hour>\d{1,2})時(?P<minute>\d{1,2})分現在",
+        r"オッズ[^。]{0,24}?(?P<hour>\d{1,2}):(?P<minute>\d{2})\s*現在",
+        r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s*現在(?:の)?オッズ",
+        r"(?<!\d)(?P<hour>\d{1,2}):(?P<minute>\d{2})\s*現在(?!\d)",
+        r"(?<!\d)(?P<hour>\d{1,2})時(?P<minute>\d{1,2})分現在(?!\d)",
+    )
+    observed: set[tuple[str, str]] = set()
+    for pattern in patterns:
+        for match in re.finditer(pattern, text):
+            observed.add((match.group("hour"), match.group("minute")))
+    if len(observed) != 1:
+        raise JraOfficialCaptureError("JRA quote source time is missing or ambiguous")
+    hour, minute = next(iter(observed))
+    return _clock_on_date(
+        race_id=source_race_key,
+        hour=hour,
+        minute=minute,
+        timezone_name=timezone_name,
+    )
+
+
+def extract_jra_scheduled_post_time(
+    document: str, *, source_race_key: str, timezone_name: str
+) -> datetime:
+    text = _visible_text(document)
+    patterns = (
+        r"発走時刻\s*[:：]?\s*(?P<hour>\d{1,2})時(?P<minute>\d{1,2})分",
+        r"発走時刻\s*[:：]?\s*(?P<hour>\d{1,2}):(?P<minute>\d{2})",
+        r"(?P<hour>\d{1,2})時(?P<minute>\d{1,2})分\s*発走",
+        r"(?P<hour>\d{1,2}):(?P<minute>\d{2})\s*発走",
+    )
+    observed: set[tuple[str, str]] = set()
+    for pattern in patterns:
+        for match in re.finditer(pattern, text):
+            observed.add((match.group("hour"), match.group("minute")))
+    if len(observed) != 1:
+        raise JraOfficialCaptureError("JRA scheduled post time is missing or ambiguous")
+    hour, minute = next(iter(observed))
+    return _clock_on_date(
+        race_id=source_race_key,
+        hour=hour,
+        minute=minute,
+        timezone_name=timezone_name,
+    )
+
+
+def jra_source_race_key(candidate: dict[str, Any], timezone_name: str) -> str:
+    race_id = re.sub(r"\D", "", str(candidate.get("race_id", "")))
+    if len(race_id) != 12:
+        raise ValueError("candidate race_id must be a 12-digit race key")
+    post_time = parse_time(candidate.get("scheduled_post_time_asof"), timezone_name)
+    return f"{post_time:%Y%m%d}{race_id[4:]}"
+
+
+def assert_public_jra_page_available(document: str) -> None:
+    text = _visible_text(document).lower()
+    restriction_markers = (
+        "captcha",
+        "access denied",
+        "cloudflare",
+        "challenge",
+        "アクセスが制限",
+        "アクセスを制限",
+        "不正なアクセス",
+        "しばらく時間をおいて",
+    )
+    if any(marker in text for marker in restriction_markers):
+        raise JraAccessRestrictionError("JRA public page is access-limited")
+
+
+def _market_status_from_jra_page(document: str) -> str:
+    text = _visible_text(document)
+    suspended_markers = (
+        "発売中止",
+        "発売を中止",
+        "発売を停止",
+        "投票を締め切りました",
+    )
+    return "SUSPENDED" if any(marker in text for marker in suspended_markers) else "OPEN"
+
+
+def _write_text_atomic_immutable(path: Path, text_value: str) -> None:
+    encoded = text_value.encode("utf-8")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        if path.read_bytes() != encoded:
+            raise ValueError(f"immutable source artifact differs: {path}")
+        return
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_bytes(encoded)
+    os.replace(temporary, path)
+    if path.read_bytes() != encoded:
+        raise ValueError("source artifact read-back verification failed")
+
+
+def _canonical_runner_ids_from_pair_rows(rows: list[dict[str, Any]]) -> list[str]:
+    runners: set[int] = set()
+    for row in rows:
+        for field in ("a_no", "b_no"):
+            value = int(row[field])
+            if value < 1:
+                raise JraOfficialCaptureError("JRA WIDE page contains an invalid horse number")
+            runners.add(value)
+    if len(runners) < 3:
+        raise JraOfficialCaptureError("JRA WIDE page does not expose a valid runner universe")
+    return [str(value) for value in sorted(runners)]
+
+
+def fetch_jra_official_wide_page(
+    *,
+    source_race_key: str,
+    fetch_cname: Callable[[str], bytes],
+    clock: Callable[[], datetime],
+) -> dict[str, Any]:
+    import fetch_jra_official_odds as jra_odds
+
+    if len(source_race_key) != 16 or not source_race_key.isdigit():
+        raise ValueError("JRA source race key must contain 16 digits")
+    request_count = 0
+
+    def request(cname: str) -> tuple[str, datetime, datetime]:
+        nonlocal request_count
+        if request_count >= 3:
+            raise JraOfficialCaptureError("JRA request budget exceeded")
+        started_at = clock()
+        raw = fetch_cname(cname)
+        received_at = clock()
+        request_count += 1
+        text_value = jra_odds.decode_jra_html(raw)
+        assert_public_jra_page_available(text_value)
+        return text_value, started_at, received_at
+
+    top_text, _top_started, _top_received = request(jra_odds.ODDS_TOP_CNAME)
+    venues = [
+        venue
+        for venue in jra_odds.parse_venue_links(
+            top_text, target_date=source_race_key[:8]
+        )
+        if venue.race_prefix == source_race_key[:14]
+    ]
+    if len(venues) != 1:
+        raise JraOfficialCaptureError("JRA target venue page is missing or ambiguous")
+
+    venue_text, _venue_started, _venue_received = request(venues[0].cname)
+    links = [
+        link
+        for link in jra_odds.parse_race_odds_links(
+            venue_text, bet_types={"wide"}
+        )
+        if link.race_id == source_race_key and link.ticket_type == "wide"
+    ]
+    if len(links) != 1:
+        raise JraOfficialCaptureError("JRA exact WIDE detail link is missing or ambiguous")
+
+    detail_text, request_started_at, received_at = request(links[0].cname)
+    rows = jra_odds.parse_pair_page(
+        detail_text,
+        race_id=source_race_key,
+        ticket_type="wide",
+        snapshot_at=received_at.isoformat(timespec="milliseconds"),
+        cname=links[0].cname,
+    )
+    if not rows:
+        raise JraOfficialCaptureError("JRA exact WIDE page contains no valid quote rows")
+    return {
+        "detail_cname": links[0].cname,
+        "detail_html": detail_text,
+        "pair_rows": rows,
+        "quote_request_started_at": request_started_at,
+        "quote_received_at": received_at,
+        "request_count": request_count,
+    }
+
+
+def build_jra_official_capture_packet(
+    *,
+    candidate: dict[str, Any],
+    acknowledgement: dict[str, Any],
+    candidate_packet_sha256: str,
+    output_raw_html: Path,
+    fetch_cname: Callable[[str], bytes],
+    clock: Callable[[], datetime],
+    data_class: str,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    verify_candidate_record(
+        candidate,
+        acknowledgement,
+        candidate_packet_sha256=candidate_packet_sha256,
+        config=config,
+    )
+    if candidate.get("record_status") != "CANDIDATE_READY":
+        raise ValueError("JRA quote capture requires a candidate-ready row")
+
+    source_race_key = jra_source_race_key(candidate, config["timezone"])
+    fetched = fetch_jra_official_wide_page(
+        source_race_key=source_race_key,
+        fetch_cname=fetch_cname,
+        clock=clock,
+    )
+    detail_html = str(fetched["detail_html"])
+    source_time = extract_jra_quote_source_time(
+        detail_html,
+        source_race_key=source_race_key,
+        timezone_name=config["timezone"],
+    )
+    scheduled_post = extract_jra_scheduled_post_time(
+        detail_html,
+        source_race_key=source_race_key,
+        timezone_name=config["timezone"],
+    )
+    received_at = fetched["quote_received_at"]
+    if not isinstance(received_at, datetime):
+        raise TypeError("JRA quote receive clock is invalid")
+
+    rows = list(fetched["pair_rows"])
+    runners = _canonical_runner_ids_from_pair_rows(rows)
+    race_id = str(candidate["race_id"])
+    freeze_universe_hash = str(candidate.get("starter_universe_hash_at_freeze", ""))
+    t3_universe_hash = canonical_digest({"race_id": race_id, "runners": runners})
+    universe_unchanged = bool(freeze_universe_hash) and (
+        freeze_universe_hash == t3_universe_hash
+    )
+
+    frozen_pair = canonical_pair_key(candidate.get("candidate_pair_key"))
+    matching_rows = [
+        row
+        for row in rows
+        if canonical_pair_key(f"{row.get('a_no')}-{row.get('b_no')}") == frozen_pair
+    ]
+    if len(matching_rows) != 1:
+        raise JraOfficialCaptureError("JRA exact frozen candidate quote is missing or ambiguous")
+    quote_row = matching_rows[0]
+    odds_low = float(quote_row["live_odds_min"])
+    odds_high = float(quote_row["live_odds_max"])
+    if not all(math.isfinite(value) for value in (odds_low, odds_high)):
+        raise JraOfficialCaptureError("JRA exact WIDE quote is not finite")
+    if odds_low <= 0 or odds_high < odds_low:
+        raise JraOfficialCaptureError("JRA exact WIDE quote range is invalid")
+
+    odds_join_started_at = clock()
+    selected_at = clock()
+    page_sha256 = hashlib.sha256(detail_html.encode("utf-8")).hexdigest()
+    _write_text_atomic_immutable(output_raw_html, detail_html)
+    if file_sha256(output_raw_html) != page_sha256:
+        raise ValueError("JRA raw source artifact hash mismatch")
+
+    schedule_record = {
+        "race_id": race_id,
+        "scheduled_post_time_used": iso_time(scheduled_post),
+        "schedule_version": canonical_digest(
+            {
+                "source": "jra_official",
+                "source_race_key": source_race_key,
+                "scheduled_post_time_used": iso_time(scheduled_post),
+                "source_page_sha256": page_sha256,
+            }
+        ),
+        "schedule_source_event_time": iso_time(source_time),
+        "schedule_received_at": iso_time(received_at),
+        "schedule_contract_ok": True,
+    }
+    schedule_record["schedule_record_hash"] = schedule_record_digest(schedule_record)
+    universe_observation = {
+        "race_id": race_id,
+        "starter_universe_hash_at_t3": t3_universe_hash,
+        "starter_universe_unchanged": universe_unchanged,
+        "scratch_known_by_t3": not universe_unchanged,
+        "universe_observed_at": iso_time(selected_at),
+    }
+    quote_observation = {
+        "race_id": race_id,
+        "ticket_type": "wide",
+        "quote_pair_key": frozen_pair,
+        "quote_unique": True,
+        "odds_join_started_at": iso_time(odds_join_started_at),
+        "quote_request_started_at": iso_time(fetched["quote_request_started_at"]),
+        "t3_quote_source_event_time": iso_time(source_time),
+        "t3_quote_received_at": iso_time(received_at),
+        "t3_quote_selected_asof_time": iso_time(selected_at),
+        "feed_heartbeat_source_event_time": iso_time(source_time),
+        "feed_heartbeat_received_at": iso_time(received_at),
+        "feed_sequence_id": page_sha256,
+        "market_status": _market_status_from_jra_page(detail_html),
+        "t3_wide_odds_low": odds_low,
+        "t3_wide_odds_high": odds_high,
+    }
+    captured_at = clock()
+    packet = build_capture_packet(
+        candidate=candidate,
+        acknowledgement=acknowledgement,
+        candidate_packet_sha256=candidate_packet_sha256,
+        schedule_record=schedule_record,
+        universe_observation=universe_observation,
+        quote_observation=quote_observation,
+        captured_at=captured_at,
+        data_class=data_class,
+        config=config,
+    )
+    packet["public_source"] = {
+        "provider": "jra_official",
+        "source_race_key": source_race_key,
+        "request_count": int(fetched["request_count"]),
+        "source_page_sha256": page_sha256,
+        "raw_html_path": str(output_raw_html),
+    }
+    packet["capture_packet_hash"] = capture_packet_digest(packet)
+    return packet
 
 
 def _recursive_keys(value: Any) -> Iterable[str]:
@@ -411,8 +778,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--schedule-json", type=Path)
     parser.add_argument("--universe-json", type=Path)
     parser.add_argument("--quote-json", type=Path)
-    parser.add_argument("--captured-at", required=True)
+    parser.add_argument("--captured-at", default="")
     parser.add_argument("--output-json", type=Path, required=True)
+    parser.add_argument(
+        "--jra-official-live",
+        action="store_true",
+        help="Fetch only the exact frozen WIDE pair from the public JRA odds path.",
+    )
+    parser.add_argument("--raw-html-output", type=Path)
     parser.add_argument(
         "--config",
         type=Path,
@@ -431,19 +804,47 @@ def main(argv: list[str] | None = None) -> int:
         assert_real_data_authorized(ROOT, config["experiment_id"])
     candidate = load_json_object(args.candidate_json)
     acknowledgement = load_json_object(args.candidate_ack_json)
-    packet = build_capture_packet(
-        candidate=candidate,
-        acknowledgement=acknowledgement,
-        candidate_packet_sha256=file_sha256(args.candidate_json),
-        schedule_record=load_json_object(args.schedule_json) if args.schedule_json else None,
-        universe_observation=(
-            load_json_object(args.universe_json) if args.universe_json else None
-        ),
-        quote_observation=load_json_object(args.quote_json) if args.quote_json else None,
-        captured_at=args.captured_at,
-        data_class=args.execution_mode,
-        config=config,
-    )
+    if args.jra_official_live:
+        if args.execution_mode != "real-data":
+            raise ValueError("JRA official live capture is real-data only")
+        if any((args.schedule_json, args.universe_json, args.quote_json, args.captured_at)):
+            raise ValueError("JRA official live capture does not accept injected observations")
+        if args.raw_html_output is None:
+            raise ValueError("JRA official live capture requires --raw-html-output")
+        import fetch_jra_official_odds as jra_odds
+
+        packet = build_jra_official_capture_packet(
+            candidate=candidate,
+            acknowledgement=acknowledgement,
+            candidate_packet_sha256=file_sha256(args.candidate_json),
+            output_raw_html=args.raw_html_output,
+            fetch_cname=lambda cname: jra_odds.post_cname(
+                cname, timeout=5.0, retries=0
+            ),
+            clock=lambda: datetime.now(ZoneInfo(config["timezone"])),
+            data_class=args.execution_mode,
+            config=config,
+        )
+    else:
+        if not args.captured_at:
+            raise ValueError("injected capture requires --captured-at")
+        packet = build_capture_packet(
+            candidate=candidate,
+            acknowledgement=acknowledgement,
+            candidate_packet_sha256=file_sha256(args.candidate_json),
+            schedule_record=(
+                load_json_object(args.schedule_json) if args.schedule_json else None
+            ),
+            universe_observation=(
+                load_json_object(args.universe_json) if args.universe_json else None
+            ),
+            quote_observation=(
+                load_json_object(args.quote_json) if args.quote_json else None
+            ),
+            captured_at=args.captured_at,
+            data_class=args.execution_mode,
+            config=config,
+        )
     verify_capture_packet(packet, config)
     write_json_atomic_immutable(args.output_json, packet)
     print(canonical_json({"output": str(args.output_json), "packet": packet}))
