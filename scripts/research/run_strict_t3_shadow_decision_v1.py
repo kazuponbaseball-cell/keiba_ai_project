@@ -22,6 +22,7 @@ from build_strict_t3_capture_packet_v1 import (  # noqa: E402
     JraOfficialCaptureError,
     ScheduleContractError,
     assert_real_data_authorized,
+    build_schedule_lock_record,
     build_schedule_lock_from_document,
     build_jra_official_capture_packet,
     canonical_digest,
@@ -39,6 +40,11 @@ from build_strict_t3_capture_packet_v1 import (  # noqa: E402
     verify_capture_packet,
     verify_schedule_lock_record,
     write_json_atomic_immutable,
+)
+from schedule_only_provider_v1 import (  # noqa: E402
+    FileBackedScheduleProvider,
+    ScheduleProviderContractError,
+    ScheduleProviderUnavailable,
 )
 
 
@@ -989,7 +995,16 @@ def _schedule_observation(
         source_event_time = received_at
         locked_at = clock()
         source_reference = "schedule_only_callback"
-    elif isinstance(observed, dict):
+        return build_schedule_lock_from_document(
+            candidate=candidate,
+            document=document,
+            schedule_source_event_time=source_event_time,
+            schedule_received_at=received_at,
+            schedule_lock_time=locked_at,
+            source_reference=source_reference,
+            config=config,
+        )
+    if isinstance(observed, dict):
         document_value = observed.get("document", "")
         if isinstance(document_value, bytes):
             document = document_value.decode("utf-8")
@@ -1001,19 +1016,44 @@ def _schedule_observation(
         source_reference = str(
             observed.get("source_reference", "schedule_only_callback")
         )
-    else:
-        raise ScheduleContractError("schedule-only callback returned an invalid payload")
-    if not document.strip():
-        raise ScheduleContractError("schedule-only callback returned an empty document")
-    return build_schedule_lock_from_document(
-        candidate=candidate,
-        document=document,
-        schedule_source_event_time=source_event_time,
-        schedule_received_at=received_at,
-        schedule_lock_time=locked_at,
-        source_reference=source_reference,
-        config=config,
-    )
+        if str(observed.get("scheduled_post_time", "")).strip():
+            record = build_schedule_lock_record(
+                candidate=candidate,
+                scheduled_post_time=observed["scheduled_post_time"],
+                schedule_source_event_time=source_event_time,
+                schedule_received_at=received_at,
+                schedule_lock_time=locked_at,
+                source_reference=source_reference,
+                source_payload_sha256=str(observed.get("source_payload_sha256", "")),
+                config=config,
+            )
+            for field in (
+                "schedule_provider_id",
+                "schedule_observation_id",
+                "provider_status",
+            ):
+                if str(observed.get(field, "")).strip():
+                    record[field] = observed[field]
+            record["source_payload_sha256"] = record[
+                "schedule_source_payload_sha256"
+            ]
+            record["source_reference"] = record["schedule_source_reference"]
+            record["schedule_record_hash"] = schedule_record_digest(record)
+            return record
+        if not document.strip():
+            raise ScheduleContractError(
+                "schedule-only callback returned neither a time nor a document"
+            )
+        return build_schedule_lock_from_document(
+            candidate=candidate,
+            document=document,
+            schedule_source_event_time=source_event_time,
+            schedule_received_at=received_at,
+            schedule_lock_time=locked_at,
+            source_reference=source_reference,
+            config=config,
+        )
+    raise ScheduleContractError("schedule-only callback returned an invalid payload")
 
 
 def _quote_attempt_is_eligible(decision: dict[str, Any]) -> bool:
@@ -1126,6 +1166,26 @@ def _run_live_jra_card_hardened(
                     )
                     write_json_atomic_immutable(schedule_path, schedule_record)
                     progressed = True
+                except ScheduleProviderUnavailable as exc:
+                    _capture_failure_marker(
+                        path=failure_path,
+                        candidate=candidate,
+                        reason="NO_BET_SCHEDULE_SOURCE_UNAVAILABLE",
+                        observed_at=clock(),
+                        config=config,
+                    )
+                    print(
+                        canonical_json(
+                            {
+                                "event": "SCHEDULE_SOURCE_UNAVAILABLE",
+                                "race_id": race_id,
+                                "error": str(exc),
+                            }
+                        ),
+                        flush=True,
+                    )
+                    progressed = True
+                    continue
                 except JraAccessRestrictionError as exc:
                     _capture_failure_marker(
                         path=failure_path,
@@ -1140,7 +1200,12 @@ def _run_live_jra_card_hardened(
                     stopped["stop_reason"] = str(exc)
                     _write_json_atomic(summary_path, stopped)
                     return stopped
-                except (ScheduleContractError, TypeError, ValueError) as exc:
+                except (
+                    ScheduleProviderContractError,
+                    ScheduleContractError,
+                    TypeError,
+                    ValueError,
+                ) as exc:
                     _capture_failure_marker(
                         path=failure_path,
                         candidate=candidate,
@@ -1511,6 +1576,25 @@ def run_live_jra_card(
             sleeper(sleep_seconds)
 
 
+def build_file_schedule_provider(
+    path: Path,
+    *,
+    config: dict[str, Any],
+    clock,
+) -> FileBackedScheduleProvider:
+    provider_config = config.get("schedule_provider", {})
+    if provider_config.get("kind") != "file_backed_jsonl":
+        raise ValueError("file-backed schedule provider is not configured")
+    return FileBackedScheduleProvider(
+        path,
+        timezone_name=config["timezone"],
+        clock=clock,
+        provider_id=str(
+            provider_config.get("provider_id", "file_backed_schedule_v1")
+        ),
+    )
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Commit strict-T3 research-only shadow decisions."
@@ -1530,6 +1614,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--now", default="")
     parser.add_argument("--live-jra-official", action="store_true")
     parser.add_argument("--raw-html-dir", type=Path)
+    parser.add_argument(
+        "--schedule-observations-jsonl",
+        type=Path,
+        help="Local append-only schedule observations; required by EXP013 live research mode.",
+    )
     return parser
 
 
@@ -1550,6 +1639,18 @@ def main(argv: list[str] | None = None) -> int:
             raise ValueError("live JRA card mode requires --raw-html-dir")
         import fetch_jra_official_odds as jra_odds
 
+        live_clock = lambda: datetime.now(ZoneInfo(config["timezone"]))
+        schedule_provider = None
+        if config.get("schedule_contract", {}).get("require_schedule_only_lock") is True:
+            if args.schedule_observations_jsonl is None:
+                raise ValueError(
+                    "hardened live research mode requires --schedule-observations-jsonl"
+                )
+            schedule_provider = build_file_schedule_provider(
+                args.schedule_observations_jsonl,
+                config=config,
+                clock=live_clock,
+            )
         summary = run_live_jra_card(
             source_manifest_path=args.source_manifest_json,
             capture_packet_dir=args.capture_packet_dir,
@@ -1560,7 +1661,8 @@ def main(argv: list[str] | None = None) -> int:
             fetch_cname=lambda cname: jra_odds.post_cname(
                 cname, timeout=5.0, retries=0
             ),
-            clock=lambda: datetime.now(ZoneInfo(config["timezone"])),
+            fetch_schedule_document=schedule_provider,
+            clock=live_clock,
         )
     else:
         now = (

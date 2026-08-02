@@ -662,11 +662,13 @@ def load_config(path: Path) -> dict[str, Any]:
     if config.get("experiment_id") not in {
         "EXP-20260802-011",
         "EXP-20260802-012",
+        "EXP-20260802-013",
     }:
         raise ValueError("unexpected experiment_id")
     expected_source = {
         "EXP-20260802-011": "EXP-20260802-010",
         "EXP-20260802-012": "EXP-20260802-012",
+        "EXP-20260802-013": "EXP-20260802-012",
     }[config["experiment_id"]]
     if config.get("source_experiment_id") != expected_source:
         raise ValueError("unexpected source_experiment_id")
@@ -703,16 +705,24 @@ def load_config(path: Path) -> dict[str, Any]:
     deadline = int(timing.get("decision_deadline_seconds_before_post", 0))
     if not poll > cutoff > deadline > 0:
         raise ValueError("timing contract must satisfy poll > cutoff > deadline")
-    if config.get("experiment_id") == "EXP-20260802-012":
+    if config.get("experiment_id") in {"EXP-20260802-012", "EXP-20260802-013"}:
         schedule_contract = config.get("schedule_contract", {})
         if schedule_contract.get("require_schedule_only_lock") is not True:
-            raise ValueError("EXP012 requires a schedule-only lock")
+            raise ValueError("hardened research worker requires a schedule-only lock")
         if schedule_contract.get("source_must_not_contain_odds") is not True:
-            raise ValueError("EXP012 schedule source must exclude odds")
+            raise ValueError("hardened schedule source must exclude odds")
         synthetic_schedule = {
             "scheduled_post_time_used": "2026-08-02T15:01:00+09:00"
         }
         quote_attempt_times(synthetic_schedule, config)
+    if config.get("experiment_id") == "EXP-20260802-013":
+        provider = config.get("schedule_provider", {})
+        if provider.get("kind") != "file_backed_jsonl":
+            raise ValueError("EXP013 requires the file-backed schedule provider")
+        if provider.get("network_access_allowed") is not False:
+            raise ValueError("EXP013 schedule provider must not access the network")
+        if provider.get("odds_access_allowed") is not False:
+            raise ValueError("EXP013 schedule provider must not access odds")
     return config
 
 
