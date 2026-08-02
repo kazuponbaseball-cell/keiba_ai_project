@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-008",
+  "invalidated_at": "2026-08-02T01:11:30Z",
+  "lifecycle_status": "INVALID",
+  "invalidates_review_artifact": "research/reviews/EXP-20260802-008.review.json",
+  "invalidates_review_digest": "38f9f469bfd80ea557943a6c8e98e818c026e17a33f1d58704d1388d5b3180f8",
+  "reason_code": "RECENT_RESULT_GLOB_EXPANSION_FAILED",
+  "finding": "The approved recent-result glob patterns used wildcard directory segments, but scripts/enrich_prediction_basic_ability_features.expand_globs only expanded the final path component. No recent result file reached the ability-history join.",
+  "evidence": {
+    "sapporo_recent_result_history_rows": 0,
+    "chukyo_recent_result_history_rows": 0,
+    "effective_history_date_max": "2026-02-15",
+    "later_result_files_present": true,
+    "sapporo_summary_path": "outputs/research/EXP-20260802-008/sapporo/runner_snapshot/work/baseline_predictions_basic_ability.basic_ability_summary.json",
+    "chukyo_summary_path": "outputs/research/EXP-20260802-008/chukyo/runner_snapshot/work/baseline_predictions_basic_ability.basic_ability_summary.json"
+  },
+  "contracts_that_still_passed": [
+    "public entry capture completeness",
+    "market-column firewall",
+    "source-time ordering for eligible races",
+    "candidate record and packet hashes",
+    "Top3 mass equals 1 within tolerance",
+    "WIDE mass equals 3 within tolerance",
+    "formal_buy=false",
+    "send_order=false",
+    "stake=0"
+  ],
+  "effect": "All EXP008 candidates are retained only as invalid-run diagnostics. They are not current shadow evidence, value evidence, or BUY candidates.",
+  "required_successor_work": [
+    "replace intermediate-wildcard handling with full-pattern glob expansion",
+    "add a regression test covering wildcard directory segments",
+    "assert recent result rows and history_date_max against the registered as-of contract",
+    "regenerate only races whose candidate cutoffs remain in the future"
+  ]
+}
