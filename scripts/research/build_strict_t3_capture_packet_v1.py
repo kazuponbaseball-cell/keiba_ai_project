@@ -45,6 +45,10 @@ class JraAccessRestrictionError(JraOfficialCaptureError):
     """The public source displayed a challenge or access restriction."""
 
 
+class ScheduleContractError(ValueError):
+    """A schedule-only observation could not be locked prospectively."""
+
+
 def canonical_json(payload: Any) -> str:
     return json.dumps(
         payload,
@@ -212,6 +216,160 @@ def assert_public_jra_page_available(document: str) -> None:
         raise JraAccessRestrictionError("JRA public page is access-limited")
 
 
+def assert_schedule_only_document(document: str) -> None:
+    assert_public_jra_page_available(document)
+    text = _visible_text(document).lower()
+    forbidden_markers = (
+        "オッズ",
+        "odds",
+        "人気",
+        "払戻",
+        "着順",
+        "レース結果",
+    )
+    if any(marker in text for marker in forbidden_markers):
+        raise ScheduleContractError("schedule-only source contains market or result data")
+
+
+def build_schedule_lock_record(
+    *,
+    candidate: dict[str, Any],
+    scheduled_post_time: Any,
+    schedule_source_event_time: Any,
+    schedule_received_at: Any,
+    schedule_lock_time: Any,
+    source_reference: str,
+    source_payload_sha256: str,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    timezone_name = config["timezone"]
+    post_time = parse_time(scheduled_post_time, timezone_name)
+    source_time = parse_time(schedule_source_event_time, timezone_name)
+    received_at = parse_time(schedule_received_at, timezone_name)
+    locked_at = parse_time(schedule_lock_time, timezone_name)
+    if not re.fullmatch(r"[0-9a-f]{64}", str(source_payload_sha256 or "")):
+        raise ScheduleContractError("schedule-only source hash is invalid")
+    if not source_time <= received_at <= locked_at:
+        raise ScheduleContractError("schedule-only source chronology is invalid")
+    cutoff = post_time - timedelta(
+        seconds=int(config["timing"]["strict_t3_cutoff_seconds_before_post"])
+    )
+    poll_open = post_time - timedelta(
+        seconds=int(config["timing"]["poll_window_opens_seconds_before_post"])
+    )
+    contract_ok = locked_at < cutoff
+    record = {
+        "race_id": str(candidate["race_id"]),
+        "scheduled_post_time_used": iso_time(post_time),
+        "schedule_version": canonical_digest(
+            {
+                "race_id": str(candidate["race_id"]),
+                "scheduled_post_time_used": iso_time(post_time),
+                "source_payload_sha256": str(source_payload_sha256),
+                "source_reference": str(source_reference),
+            }
+        ),
+        "schedule_source_event_time": iso_time(source_time),
+        "schedule_received_at": iso_time(received_at),
+        "schedule_lock_time": iso_time(locked_at),
+        "schedule_poll_open_time": iso_time(poll_open),
+        "t3_cutoff_time": iso_time(cutoff),
+        "schedule_source_reference": str(source_reference),
+        "schedule_source_payload_sha256": str(source_payload_sha256),
+        "schedule_only": True,
+        "schedule_contract_ok": contract_ok,
+        "schedule_failure_reason": (
+            None if contract_ok else "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+        ),
+    }
+    record["schedule_record_hash"] = schedule_record_digest(record)
+    return record
+
+
+def build_schedule_lock_from_document(
+    *,
+    candidate: dict[str, Any],
+    document: str,
+    schedule_source_event_time: Any,
+    schedule_received_at: Any,
+    schedule_lock_time: Any,
+    source_reference: str,
+    config: dict[str, Any],
+) -> dict[str, Any]:
+    assert_schedule_only_document(document)
+    source_race_key = jra_source_race_key(candidate, config["timezone"])
+    post_time = extract_jra_scheduled_post_time(
+        document,
+        source_race_key=source_race_key,
+        timezone_name=config["timezone"],
+    )
+    payload_sha256 = hashlib.sha256(document.encode("utf-8")).hexdigest()
+    return build_schedule_lock_record(
+        candidate=candidate,
+        scheduled_post_time=post_time,
+        schedule_source_event_time=schedule_source_event_time,
+        schedule_received_at=schedule_received_at,
+        schedule_lock_time=schedule_lock_time,
+        source_reference=source_reference,
+        source_payload_sha256=payload_sha256,
+        config=config,
+    )
+
+
+def verify_schedule_lock_record(
+    record: dict[str, Any], *, candidate: dict[str, Any], config: dict[str, Any]
+) -> None:
+    if str(record.get("race_id", "")) != str(candidate.get("race_id", "")):
+        raise ScheduleContractError("schedule lock race identity mismatch")
+    if record.get("schedule_record_hash") != schedule_record_digest(record):
+        raise ScheduleContractError("schedule lock hash mismatch")
+    if record.get("schedule_only") is not True:
+        raise ScheduleContractError("schedule lock is not schedule-only")
+    timezone_name = config["timezone"]
+    source_time = parse_time(record.get("schedule_source_event_time"), timezone_name)
+    received_at = parse_time(record.get("schedule_received_at"), timezone_name)
+    locked_at = parse_time(record.get("schedule_lock_time"), timezone_name)
+    post_time = parse_time(record.get("scheduled_post_time_used"), timezone_name)
+    poll_open = post_time - timedelta(
+        seconds=int(config["timing"]["poll_window_opens_seconds_before_post"])
+    )
+    cutoff = post_time - timedelta(
+        seconds=int(config["timing"]["strict_t3_cutoff_seconds_before_post"])
+    )
+    if not source_time <= received_at <= locked_at:
+        raise ScheduleContractError("schedule lock chronology is invalid")
+    if parse_time(record.get("schedule_poll_open_time"), timezone_name) != poll_open:
+        raise ScheduleContractError("schedule poll-open derivation mismatch")
+    if parse_time(record.get("t3_cutoff_time"), timezone_name) != cutoff:
+        raise ScheduleContractError("schedule cutoff derivation mismatch")
+    if record.get("schedule_contract_ok") is True and not locked_at < cutoff:
+        raise ScheduleContractError("late schedule lock was marked eligible")
+
+
+def quote_attempt_times(
+    schedule_record: dict[str, Any], config: dict[str, Any]
+) -> list[datetime]:
+    post_time = parse_time(
+        schedule_record.get("scheduled_post_time_used"), config["timezone"]
+    )
+    offsets = [
+        int(value)
+        for value in config["timing"].get(
+            "quote_attempt_offsets_seconds_before_post", []
+        )
+    ]
+    maximum = int(config["timing"].get("maximum_quote_attempts", len(offsets)))
+    if len(offsets) != maximum or maximum < 1 or maximum > 3:
+        raise ValueError("quote attempt schedule must contain one to three fixed offsets")
+    if offsets != sorted(offsets, reverse=True) or len(set(offsets)) != len(offsets):
+        raise ValueError("quote attempt offsets must be unique and descending")
+    poll = int(config["timing"]["poll_window_opens_seconds_before_post"])
+    cutoff = int(config["timing"]["strict_t3_cutoff_seconds_before_post"])
+    if any(offset > poll or offset <= cutoff for offset in offsets):
+        raise ValueError("quote attempt offset is outside the strict polling window")
+    return [post_time - timedelta(seconds=offset) for offset in offsets]
+
+
 def _market_status_from_jra_page(document: str) -> str:
     text = _visible_text(document)
     suspended_markers = (
@@ -274,7 +432,7 @@ def fetch_jra_official_wide_page(
         assert_public_jra_page_available(text_value)
         return text_value, started_at, received_at
 
-    top_text, _top_started, _top_received = request(jra_odds.ODDS_TOP_CNAME)
+    top_text, odds_join_started_at, _top_received = request(jra_odds.ODDS_TOP_CNAME)
     venues = [
         venue
         for venue in jra_odds.parse_venue_links(
@@ -312,6 +470,7 @@ def fetch_jra_official_wide_page(
         "pair_rows": rows,
         "quote_request_started_at": request_started_at,
         "quote_received_at": received_at,
+        "odds_join_started_at": odds_join_started_at,
         "request_count": request_count,
     }
 
@@ -326,6 +485,7 @@ def build_jra_official_capture_packet(
     clock: Callable[[], datetime],
     data_class: str,
     config: dict[str, Any],
+    schedule_record: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     verify_candidate_record(
         candidate,
@@ -335,6 +495,28 @@ def build_jra_official_capture_packet(
     )
     if candidate.get("record_status") != "CANDIDATE_READY":
         raise ValueError("JRA quote capture requires a candidate-ready row")
+
+    require_schedule_lock = (
+        config.get("schedule_contract", {}).get("require_schedule_only_lock") is True
+    )
+    if require_schedule_lock:
+        if schedule_record is None:
+            raise ScheduleContractError("schedule-only lock is required before odds access")
+        verify_schedule_lock_record(
+            schedule_record, candidate=candidate, config=config
+        )
+        scheduled_post = parse_time(
+            schedule_record["scheduled_post_time_used"], config["timezone"]
+        )
+        access_guard_time = clock()
+        poll_open = parse_time(
+            schedule_record["schedule_poll_open_time"], config["timezone"]
+        )
+        cutoff = parse_time(schedule_record["t3_cutoff_time"], config["timezone"])
+        if not poll_open <= access_guard_time < cutoff:
+            raise ScheduleContractError(
+                "odds access is outside the locked strict polling window"
+            )
 
     source_race_key = jra_source_race_key(candidate, config["timezone"])
     fetched = fetch_jra_official_wide_page(
@@ -348,11 +530,12 @@ def build_jra_official_capture_packet(
         source_race_key=source_race_key,
         timezone_name=config["timezone"],
     )
-    scheduled_post = extract_jra_scheduled_post_time(
-        detail_html,
-        source_race_key=source_race_key,
-        timezone_name=config["timezone"],
-    )
+    if not require_schedule_lock:
+        scheduled_post = extract_jra_scheduled_post_time(
+            detail_html,
+            source_race_key=source_race_key,
+            timezone_name=config["timezone"],
+        )
     received_at = fetched["quote_received_at"]
     if not isinstance(received_at, datetime):
         raise TypeError("JRA quote receive clock is invalid")
@@ -382,29 +565,32 @@ def build_jra_official_capture_packet(
     if odds_low <= 0 or odds_high < odds_low:
         raise JraOfficialCaptureError("JRA exact WIDE quote range is invalid")
 
-    odds_join_started_at = clock()
+    odds_join_started_at = (
+        fetched["odds_join_started_at"] if require_schedule_lock else clock()
+    )
     selected_at = clock()
     page_sha256 = hashlib.sha256(detail_html.encode("utf-8")).hexdigest()
     _write_text_atomic_immutable(output_raw_html, detail_html)
     if file_sha256(output_raw_html) != page_sha256:
         raise ValueError("JRA raw source artifact hash mismatch")
 
-    schedule_record = {
-        "race_id": race_id,
-        "scheduled_post_time_used": iso_time(scheduled_post),
-        "schedule_version": canonical_digest(
-            {
-                "source": "jra_official",
-                "source_race_key": source_race_key,
-                "scheduled_post_time_used": iso_time(scheduled_post),
-                "source_page_sha256": page_sha256,
-            }
-        ),
-        "schedule_source_event_time": iso_time(source_time),
-        "schedule_received_at": iso_time(received_at),
-        "schedule_contract_ok": True,
-    }
-    schedule_record["schedule_record_hash"] = schedule_record_digest(schedule_record)
+    if schedule_record is None:
+        schedule_record = {
+            "race_id": race_id,
+            "scheduled_post_time_used": iso_time(scheduled_post),
+            "schedule_version": canonical_digest(
+                {
+                    "source": "jra_official",
+                    "source_race_key": source_race_key,
+                    "scheduled_post_time_used": iso_time(scheduled_post),
+                    "source_page_sha256": page_sha256,
+                }
+            ),
+            "schedule_source_event_time": iso_time(source_time),
+            "schedule_received_at": iso_time(received_at),
+            "schedule_contract_ok": True,
+        }
+        schedule_record["schedule_record_hash"] = schedule_record_digest(schedule_record)
     universe_observation = {
         "race_id": race_id,
         "starter_universe_hash_at_t3": t3_universe_hash,
@@ -473,9 +659,16 @@ def assert_no_forbidden_fields(*records: dict[str, Any]) -> None:
 
 def load_config(path: Path) -> dict[str, Any]:
     config = load_json_object(path)
-    if config.get("experiment_id") != "EXP-20260802-011":
+    if config.get("experiment_id") not in {
+        "EXP-20260802-011",
+        "EXP-20260802-012",
+    }:
         raise ValueError("unexpected experiment_id")
-    if config.get("source_experiment_id") != "EXP-20260802-010":
+    expected_source = {
+        "EXP-20260802-011": "EXP-20260802-010",
+        "EXP-20260802-012": "EXP-20260802-012",
+    }[config["experiment_id"]]
+    if config.get("source_experiment_id") != expected_source:
         raise ValueError("unexpected source_experiment_id")
     safety = config.get("safety", {})
     for field in (
@@ -510,6 +703,16 @@ def load_config(path: Path) -> dict[str, Any]:
     deadline = int(timing.get("decision_deadline_seconds_before_post", 0))
     if not poll > cutoff > deadline > 0:
         raise ValueError("timing contract must satisfy poll > cutoff > deadline")
+    if config.get("experiment_id") == "EXP-20260802-012":
+        schedule_contract = config.get("schedule_contract", {})
+        if schedule_contract.get("require_schedule_only_lock") is not True:
+            raise ValueError("EXP012 requires a schedule-only lock")
+        if schedule_contract.get("source_must_not_contain_odds") is not True:
+            raise ValueError("EXP012 schedule source must exclude odds")
+        synthetic_schedule = {
+            "scheduled_post_time_used": "2026-08-02T15:01:00+09:00"
+        }
+        quote_attempt_times(synthetic_schedule, config)
     return config
 
 
@@ -577,9 +780,18 @@ def verify_candidate_record(
         if candidate.get("failure_reason_codes") not in ([], None):
             raise ValueError("ready candidate has failure reasons")
     elif status == "FAILED":
-        expected_reason = config["population"]["source_failure_reason"]
+        allowed_reasons = set(
+            config["population"].get(
+                "allowed_source_failure_reasons",
+                [config["population"]["source_failure_reason"]],
+            )
+        )
         reasons = candidate.get("failure_reason_codes")
-        if not isinstance(reasons, list) or expected_reason not in reasons:
+        if (
+            not isinstance(reasons, list)
+            or not reasons
+            or not set(str(reason) for reason in reasons).issubset(allowed_reasons)
+        ):
             raise ValueError("failed candidate is not the registered source failure")
         if candidate.get("candidate_freeze_contract_ok") is not False:
             raise ValueError("failed candidate freeze contract must be false")
@@ -647,7 +859,7 @@ def build_capture_packet(
             "confidence_gate_pass": False,
             "p_action_calibrated": None,
             "quote_evaluation_allowed": False,
-            "source_failure_reason": config["population"]["source_failure_reason"],
+            "source_failure_reason": str(candidate["failure_reason_codes"][0]),
             "candidate_freeze_persist_ack_at": acknowledgement[
                 "candidate_freeze_persist_ack_at"
             ],
@@ -670,6 +882,20 @@ def build_capture_packet(
         assert universe_observation is not None
         assert quote_observation is not None
         assert_no_forbidden_fields(schedule_record, universe_observation, quote_observation)
+        if config.get("schedule_contract", {}).get("require_schedule_only_lock") is True:
+            verify_schedule_lock_record(
+                schedule_record, candidate=candidate, config=config
+            )
+            schedule_lock = parse_time(
+                schedule_record.get("schedule_lock_time"), config["timezone"]
+            )
+            odds_join = parse_time(
+                quote_observation.get("odds_join_started_at"), config["timezone"]
+            )
+            if not schedule_lock < odds_join:
+                raise ScheduleContractError(
+                    "schedule lock must be committed before odds join"
+                )
         packet = {
             "schema_version": 1,
             "experiment_id": config["experiment_id"],
@@ -729,6 +955,12 @@ def verify_capture_packet(packet: dict[str, Any], config: dict[str, Any]) -> Non
         if packet.get("quote_evaluation_allowed") is not True:
             raise ValueError("ready capture packet disables quote evaluation")
         canonical_pair_key(packet.get("candidate_pair_key"))
+        if config.get("schedule_contract", {}).get("require_schedule_only_lock") is True:
+            schedule = packet.get("schedule_record")
+            if not isinstance(schedule, dict) or schedule.get("schedule_only") is not True:
+                raise ValueError("capture packet lacks a schedule-only lock")
+            if schedule.get("schedule_record_hash") != schedule_record_digest(schedule):
+                raise ValueError("capture packet schedule lock hash mismatch")
     else:
         raise ValueError("capture packet status is invalid")
 

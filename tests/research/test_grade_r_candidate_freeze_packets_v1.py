@@ -443,6 +443,10 @@ class CandidateFreezeAdapterTest(unittest.TestCase):
         self.assertEqual(MODULE._parse_going("芝1600m / 馬場:稍重"), "稍")
         self.assertEqual(MODULE._parse_track_code("芝1600m (外)", "芝"), "8")
         self.assertEqual(MODULE._parse_track_code("ダ1800m", "ダ"), "1")
+        self.assertEqual(MODULE.normalize_race_domain("芝"), "flat_turf")
+        self.assertEqual(MODULE.normalize_race_domain("ダート"), "flat_dirt")
+        self.assertEqual(MODULE.normalize_race_domain("障害"), "obstacle")
+        self.assertEqual(MODULE.normalize_race_domain(""), "unknown")
 
     def test_clean_worktree_data_loader_shim_supplies_inference_contract(self) -> None:
         MODULE._install_data_loader_shim()
