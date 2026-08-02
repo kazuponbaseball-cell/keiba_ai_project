@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-011",
+  "source_experiment_id": "EXP-20260802-010",
+  "config_id": "strict_t3_shadow_decision_exp011",
+  "cohort_id": "grade_r_strict_t3_shadow_exp011_v1",
+  "timezone": "Asia/Tokyo",
+  "population": {
+    "expected_target_rows": 36,
+    "expected_candidate_ready_rows": 25,
+    "expected_source_failure_rows": 11,
+    "source_failure_reason": "CANDIDATE_SOURCE_NOT_READY"
+  },
+  "timing": {
+    "poll_window_opens_seconds_before_post": 210,
+    "strict_t3_cutoff_seconds_before_post": 180,
+    "decision_deadline_seconds_before_post": 170,
+    "maximum_quote_age_seconds": 30,
+    "maximum_quote_ingestion_delay_seconds": 30,
+    "maximum_feed_heartbeat_age_seconds": 30
+  },
+  "quote_contract": {
+    "ticket_type": "wide",
+    "allowed_market_statuses": [
+      "OPEN",
+      "TRADING"
+    ],
+    "require_exact_race": true,
+    "require_exact_ticket_type": true,
+    "require_exact_candidate_pair": true,
+    "require_unique_quote": true,
+    "candidate_substitution_allowed": false,
+    "alternative_pair_search_allowed": false
+  },
+  "decision_policy": {
+    "candidate_policy": "WIDE_1_NON_ODDS_FROZEN",
+    "minimum_research_expected_return_low": 1.5,
+    "threshold_search_allowed": false,
+    "confidence_fail_action": "NO_BET_CONFIDENCE_GATE_FAILED",
+    "source_failure_action": "NO_BET_SOURCE_NOT_READY"
+  },
+  "report": {
+    "read_only": true,
+    "forbidden_output_suffixes": [
+      "outputs/ui/live_odds_dashboard.html",
+      "outputs/ui/live_dashboard.html"
+    ]
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "target_handoff": false,
+    "production_dashboard_write": false,
+    "notification_send": false,
+    "order_path_execution": false,
+    "roi_calculation": false,
+    "real_data_during_preparation": false
+  }
+}

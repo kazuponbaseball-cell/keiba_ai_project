@@ -1,0 +1,786 @@
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import os
+import sys
+from collections import Counter
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any
+from zoneinfo import ZoneInfo
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from build_strict_t3_capture_packet_v1 import (  # noqa: E402
+    assert_real_data_authorized,
+    canonical_digest,
+    canonical_json,
+    canonical_pair_key,
+    candidate_record_digest,
+    capture_packet_digest,
+    file_sha256,
+    load_config,
+    load_json_object,
+    parse_time,
+    schedule_record_digest,
+    verify_candidate_record,
+    verify_capture_packet,
+)
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    records: list[dict[str, Any]] = []
+    for line_number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        if not line.strip():
+            continue
+        value = json.loads(line)
+        if not isinstance(value, dict):
+            raise ValueError(f"ledger line {line_number} is not an object: {path}")
+        records.append(value)
+    return records
+
+
+def _resolve_path(value: Any, base_dir: Path) -> Path:
+    path = Path(str(value or "").strip())
+    if not str(path):
+        raise ValueError("path is missing")
+    return path if path.is_absolute() else base_dir / path
+
+
+def _decision_digest(record: dict[str, Any]) -> str:
+    payload = {
+        key: value
+        for key, value in record.items()
+        if key != "t3_decision_record_hash"
+    }
+    return canonical_digest(payload)
+
+
+def _idempotency_key(config: dict[str, Any], race_id: str) -> str:
+    return canonical_digest(
+        {
+            "cohort_id": config["cohort_id"],
+            "event_type": "strict_t3_shadow_decision",
+            "experiment_id": config["experiment_id"],
+            "race_id": race_id,
+        }
+    )
+
+
+def verify_decision_record(record: dict[str, Any]) -> None:
+    if record.get("formal_buy") is not False:
+        raise ValueError("decision formal_buy violation")
+    if record.get("send_order") is not False:
+        raise ValueError("decision send_order violation")
+    if record.get("stake") != 0:
+        raise ValueError("decision stake violation")
+    if record.get("candidate_uses_odds") is not False:
+        raise ValueError("decision candidate odds-firewall violation")
+    if record.get("candidate_changed_after_odds") is not False:
+        raise ValueError("decision candidate changed after odds")
+    if record.get("shadow_action") not in {"NO_BET", "PAPER_READY"}:
+        raise ValueError("decision shadow_action is invalid")
+    if record.get("t3_decision_record_hash") != _decision_digest(record):
+        raise ValueError("decision record hash mismatch")
+    if not str(record.get("idempotency_key", "")).strip():
+        raise ValueError("decision idempotency key is missing")
+
+
+def append_decision_jsonl(path: Path, record: dict[str, Any]) -> bool:
+    verify_decision_record(record)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    marker_dir = path.parent / f".{path.name}.ids"
+    marker_dir.mkdir(parents=True, exist_ok=True)
+    marker = marker_dir / str(record["idempotency_key"])
+    try:
+        descriptor = os.open(marker, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+    except FileExistsError:
+        return False
+    try:
+        with os.fdopen(descriptor, "w", encoding="ascii") as handle:
+            handle.write(str(record["idempotency_key"]))
+            handle.flush()
+            os.fsync(handle.fileno())
+        with path.open("a", encoding="utf-8", newline="\n") as ledger:
+            ledger.write(canonical_json(record) + "\n")
+            ledger.flush()
+            os.fsync(ledger.fileno())
+    except Exception:
+        marker.unlink(missing_ok=True)
+        raise
+    return True
+
+
+def read_decision_jsonl(path: Path) -> list[dict[str, Any]]:
+    records = _read_jsonl(path)
+    for record in records:
+        verify_decision_record(record)
+    return records
+
+
+def _candidate_packet_path(acknowledgement: dict[str, Any], ledger_path: Path) -> Path:
+    return _resolve_path(acknowledgement.get("packet_path"), ledger_path.parent)
+
+
+def load_candidate_population(
+    source_manifest_path: Path,
+    config: dict[str, Any],
+    *,
+    enforce_expected_counts: bool = True,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    manifest = load_json_object(source_manifest_path)
+    if manifest.get("experiment_id") != config["experiment_id"]:
+        raise ValueError("source manifest experiment mismatch")
+    if manifest.get("source_experiment_id") != config["source_experiment_id"]:
+        raise ValueError("source manifest source experiment mismatch")
+    if manifest.get("data_class") not in {"synthetic", "real-data"}:
+        raise ValueError("source manifest data_class is invalid")
+    sources = manifest.get("sources")
+    if not isinstance(sources, list) or not sources:
+        raise ValueError("source manifest sources are missing")
+
+    population: list[dict[str, Any]] = []
+    observed_ids: set[str] = set()
+    for source in sources:
+        if not isinstance(source, dict):
+            raise ValueError("source manifest entry must be an object")
+        ledger_path = _resolve_path(
+            source.get("candidate_ledger_jsonl"), source_manifest_path.parent
+        )
+        expected_hash = str(source.get("candidate_ledger_sha256", "")).strip()
+        if not expected_hash or file_sha256(ledger_path) != expected_hash:
+            raise ValueError("candidate source ledger hash mismatch")
+        for acknowledgement in _read_jsonl(ledger_path):
+            race_id = str(acknowledgement.get("race_id", "")).strip()
+            if not race_id or race_id in observed_ids:
+                raise ValueError("candidate source race_id is missing or duplicated")
+            candidate_path = _candidate_packet_path(acknowledgement, ledger_path)
+            candidate = load_json_object(candidate_path)
+            packet_sha = file_sha256(candidate_path)
+            verify_candidate_record(
+                candidate,
+                acknowledgement,
+                candidate_packet_sha256=packet_sha,
+                config=config,
+            )
+            if str(candidate.get("race_id", "")) != race_id:
+                raise ValueError("candidate packet race mismatch")
+            population.append(
+                {
+                    "card_id": str(source.get("card_id", candidate.get("card_id", ""))),
+                    "candidate": candidate,
+                    "acknowledgement": acknowledgement,
+                    "candidate_packet_path": candidate_path,
+                    "candidate_packet_sha256": packet_sha,
+                }
+            )
+            observed_ids.add(race_id)
+
+    population.sort(
+        key=lambda row: (
+            str(row["card_id"]),
+            int(row["candidate"].get("race_no", 0)),
+            str(row["candidate"].get("race_id", "")),
+        )
+    )
+    if enforce_expected_counts:
+        expected = config["population"]
+        ready = sum(
+            row["candidate"].get("record_status") == "CANDIDATE_READY"
+            for row in population
+        )
+        failed = sum(
+            row["candidate"].get("record_status") == "FAILED"
+            for row in population
+        )
+        if len(population) != int(expected["expected_target_rows"]):
+            raise ValueError("candidate population does not contain 36 rows")
+        if ready != int(expected["expected_candidate_ready_rows"]):
+            raise ValueError("candidate population does not contain 25 ready rows")
+        if failed != int(expected["expected_source_failure_rows"]):
+            raise ValueError("candidate population does not contain 11 source failures")
+    return manifest, population
+
+
+def _base_decision(
+    *,
+    candidate: dict[str, Any],
+    acknowledgement: dict[str, Any],
+    card_id: str,
+    config: dict[str, Any],
+    committed_at: datetime,
+    action: str,
+    reason: str,
+) -> dict[str, Any]:
+    pair_key = str(candidate.get("candidate_pair_key", ""))
+    record = {
+        "schema_version": 1,
+        "event_type": "strict_t3_shadow_decision",
+        "experiment_id": config["experiment_id"],
+        "source_experiment_id": config["source_experiment_id"],
+        "cohort_id": config["cohort_id"],
+        "card_id": card_id,
+        "race_id": str(candidate.get("race_id", "")),
+        "race_no": int(candidate.get("race_no", 0)),
+        "record_status": "T3_DECISION_COMMITTED",
+        "source_candidate_status": str(candidate.get("record_status", "")),
+        "ticket_type": "wide",
+        "candidate_pair_key": pair_key,
+        "candidate_horse_id_1": str(candidate.get("candidate_horse_id_1", "")),
+        "candidate_horse_id_2": str(candidate.get("candidate_horse_id_2", "")),
+        "candidate_freeze_record_hash": str(
+            candidate.get("candidate_freeze_record_hash", "")
+        ),
+        "candidate_freeze_persist_ack_at": acknowledgement.get(
+            "candidate_freeze_persist_ack_at"
+        ),
+        "candidate_freeze_contract_ok": candidate.get("candidate_freeze_contract_ok")
+        is True,
+        "candidate_uses_odds": False,
+        "candidate_changed_after_odds": False,
+        "confidence_gate_pass": candidate.get("confidence_gate_pass") is True,
+        "p_action_calibrated": candidate.get("p_action_calibrated"),
+        "quote_evaluation_entered": False,
+        "measurement_only": False,
+        "schedule_record_hash": None,
+        "schedule_version": None,
+        "scheduled_post_time_used": None,
+        "t3_cutoff_time": None,
+        "decision_deadline_at": None,
+        "odds_join_started_at": None,
+        "quote_request_started_at": None,
+        "t3_quote_source_event_time": None,
+        "t3_quote_received_at": None,
+        "t3_quote_selected_asof_time": None,
+        "feed_heartbeat_source_event_time": None,
+        "feed_heartbeat_received_at": None,
+        "feed_sequence_id": None,
+        "market_status": None,
+        "t3_wide_odds_low": None,
+        "t3_wide_odds_high": None,
+        "quote_age_seconds": None,
+        "quote_ingestion_delay_seconds": None,
+        "starter_universe_hash_at_freeze": candidate.get(
+            "starter_universe_hash_at_freeze"
+        ),
+        "starter_universe_hash_at_t3": None,
+        "scratch_known_by_t3": None,
+        "candidate_pair_t3_quote_valid": False,
+        "research_expected_return_low": None,
+        "shadow_action": action,
+        "no_bet_reason_codes": [] if action == "PAPER_READY" else [reason],
+        "decision_reason": reason,
+        "t3_decision_committed_at": committed_at.isoformat(timespec="milliseconds"),
+        "target_registered": True,
+        "post_cutoff_backfill": False,
+        "formal_buy": False,
+        "send_order": False,
+        "stake": 0,
+        "idempotency_key": _idempotency_key(
+            config, str(candidate.get("race_id", ""))
+        ),
+    }
+    return record
+
+
+def _finalize(record: dict[str, Any]) -> dict[str, Any]:
+    record["t3_decision_record_hash"] = _decision_digest(record)
+    verify_decision_record(record)
+    return record
+
+
+def source_failure_decision(
+    *,
+    candidate: dict[str, Any],
+    acknowledgement: dict[str, Any],
+    card_id: str,
+    config: dict[str, Any],
+    committed_at: datetime,
+) -> dict[str, Any]:
+    if candidate.get("record_status") != "FAILED":
+        raise ValueError("source failure decision requires a failed candidate")
+    record = _base_decision(
+        candidate=candidate,
+        acknowledgement=acknowledgement,
+        card_id=card_id,
+        config=config,
+        committed_at=committed_at,
+        action="NO_BET",
+        reason="NO_BET_SOURCE_NOT_READY",
+    )
+    record["candidate_pair_key"] = ""
+    record["candidate_horse_id_1"] = ""
+    record["candidate_horse_id_2"] = ""
+    record["p_action_calibrated"] = None
+    record["confidence_gate_pass"] = False
+    return _finalize(record)
+
+
+def no_capture_decision(
+    *,
+    candidate: dict[str, Any],
+    acknowledgement: dict[str, Any],
+    card_id: str,
+    config: dict[str, Any],
+    committed_at: datetime,
+) -> dict[str, Any]:
+    return _finalize(
+        _base_decision(
+            candidate=candidate,
+            acknowledgement=acknowledgement,
+            card_id=card_id,
+            config=config,
+            committed_at=committed_at,
+            action="NO_BET",
+            reason="NO_BET_T3_QUOTE_NOT_AVAILABLE",
+        )
+    )
+
+
+def evaluate_ready_capture(
+    *,
+    candidate: dict[str, Any],
+    acknowledgement: dict[str, Any],
+    candidate_packet_sha256: str,
+    capture_packet: dict[str, Any],
+    card_id: str,
+    config: dict[str, Any],
+    committed_at: datetime,
+) -> dict[str, Any]:
+    record = _base_decision(
+        candidate=candidate,
+        acknowledgement=acknowledgement,
+        card_id=card_id,
+        config=config,
+        committed_at=committed_at,
+        action="NO_BET",
+        reason="NO_BET_CAPTURE_PACKET_INVALID",
+    )
+
+    def finish(reason: str, *, action: str = "NO_BET") -> dict[str, Any]:
+        record["shadow_action"] = action
+        record["decision_reason"] = reason
+        record["no_bet_reason_codes"] = [] if action == "PAPER_READY" else [reason]
+        return _finalize(record)
+
+    try:
+        verify_capture_packet(capture_packet, config)
+    except (TypeError, ValueError):
+        return finish("NO_BET_CAPTURE_PACKET_INVALID")
+
+    if capture_packet.get("data_class") not in {"synthetic", "real-data"}:
+        return finish("NO_BET_CAPTURE_PACKET_INVALID")
+    if capture_packet.get("packet_status") != "QUOTE_CAPTURED":
+        return finish("NO_BET_CAPTURE_PACKET_INVALID")
+    if capture_packet.get("quote_evaluation_allowed") is not True:
+        return finish("NO_BET_CAPTURE_PACKET_INVALID")
+    if str(capture_packet.get("race_id", "")) != str(candidate.get("race_id", "")):
+        return finish("NO_BET_CAPTURE_PACKET_IDENTITY_MISMATCH")
+    if capture_packet.get("candidate_freeze_record_hash") != candidate.get(
+        "candidate_freeze_record_hash"
+    ):
+        return finish("NO_BET_CANDIDATE_HASH_MISMATCH")
+    if capture_packet.get("candidate_packet_file_sha256") != candidate_packet_sha256:
+        return finish("NO_BET_CANDIDATE_HASH_MISMATCH")
+    try:
+        frozen_pair = canonical_pair_key(candidate.get("candidate_pair_key"))
+        captured_pair = canonical_pair_key(capture_packet.get("candidate_pair_key"))
+    except ValueError:
+        return finish("NO_BET_CAPTURE_PACKET_IDENTITY_MISMATCH")
+    if frozen_pair != captured_pair or capture_packet.get("ticket_type") != "wide":
+        return finish("NO_BET_CAPTURE_PACKET_IDENTITY_MISMATCH")
+
+    schedule = capture_packet.get("schedule_record")
+    universe = capture_packet.get("universe_observation")
+    quote = capture_packet.get("quote_observation")
+    if not all(isinstance(value, dict) for value in (schedule, universe, quote)):
+        return finish("NO_BET_CAPTURE_PACKET_INVALID")
+    assert isinstance(schedule, dict)
+    assert isinstance(universe, dict)
+    assert isinstance(quote, dict)
+    record["quote_evaluation_entered"] = True
+
+    if str(schedule.get("race_id", "")) != record["race_id"]:
+        return finish("NO_BET_SCHEDULE_CONTRACT_FAILURE")
+    if schedule.get("schedule_contract_ok") is not True:
+        return finish("NO_BET_SCHEDULE_CONTRACT_FAILURE")
+    schedule_hash = str(schedule.get("schedule_record_hash", ""))
+    if not schedule_hash or schedule_hash != schedule_record_digest(schedule):
+        return finish("NO_BET_SCHEDULE_CONTRACT_FAILURE")
+    record["schedule_record_hash"] = schedule_hash
+    record["schedule_version"] = schedule.get("schedule_version")
+    record["scheduled_post_time_used"] = schedule.get("scheduled_post_time_used")
+
+    timezone_name = config["timezone"]
+    try:
+        post_time = parse_time(schedule.get("scheduled_post_time_used"), timezone_name)
+        schedule_source = parse_time(schedule.get("schedule_source_event_time"), timezone_name)
+        schedule_received = parse_time(schedule.get("schedule_received_at"), timezone_name)
+        freeze_ack = parse_time(
+            acknowledgement.get("candidate_freeze_persist_ack_at"), timezone_name
+        )
+        odds_join = parse_time(quote.get("odds_join_started_at"), timezone_name)
+        request = parse_time(quote.get("quote_request_started_at"), timezone_name)
+        source_time = parse_time(quote.get("t3_quote_source_event_time"), timezone_name)
+        received = parse_time(quote.get("t3_quote_received_at"), timezone_name)
+        selected = parse_time(quote.get("t3_quote_selected_asof_time"), timezone_name)
+        captured = parse_time(capture_packet.get("capture_packet_created_at"), timezone_name)
+        heartbeat_source = parse_time(
+            quote.get("feed_heartbeat_source_event_time"), timezone_name
+        )
+        heartbeat_received = parse_time(
+            quote.get("feed_heartbeat_received_at"), timezone_name
+        )
+    except (TypeError, ValueError):
+        return finish("NO_BET_SOURCE_TIME_CONTRACT_FAILURE")
+
+    timing = config["timing"]
+    cutoff = post_time - timedelta(
+        seconds=int(timing["strict_t3_cutoff_seconds_before_post"])
+    )
+    poll_open = post_time - timedelta(
+        seconds=int(timing["poll_window_opens_seconds_before_post"])
+    )
+    decision_deadline = post_time - timedelta(
+        seconds=int(timing["decision_deadline_seconds_before_post"])
+    )
+    record["t3_cutoff_time"] = cutoff.isoformat(timespec="milliseconds")
+    record["decision_deadline_at"] = decision_deadline.isoformat(timespec="milliseconds")
+    record["odds_join_started_at"] = odds_join.isoformat(timespec="milliseconds")
+    record["quote_request_started_at"] = request.isoformat(timespec="milliseconds")
+    record["t3_quote_source_event_time"] = source_time.isoformat(timespec="milliseconds")
+    record["t3_quote_received_at"] = received.isoformat(timespec="milliseconds")
+    record["t3_quote_selected_asof_time"] = selected.isoformat(timespec="milliseconds")
+    record["feed_heartbeat_source_event_time"] = heartbeat_source.isoformat(
+        timespec="milliseconds"
+    )
+    record["feed_heartbeat_received_at"] = heartbeat_received.isoformat(
+        timespec="milliseconds"
+    )
+
+    if not schedule_source <= schedule_received <= odds_join:
+        return finish("NO_BET_SCHEDULE_CONTRACT_FAILURE")
+    if not freeze_ack < odds_join <= request <= received <= selected <= captured <= committed_at:
+        return finish("NO_BET_SOURCE_TIME_CONTRACT_FAILURE")
+    if request < poll_open:
+        return finish("NO_BET_POLL_WINDOW_CONTRACT_FAILURE")
+    if any(value > cutoff for value in (source_time, received, selected)):
+        return finish("NO_BET_T3_QUOTE_ASOF_VIOLATION")
+    if committed_at > decision_deadline:
+        return finish("NO_BET_DECISION_DEADLINE_MISSED")
+    if not heartbeat_source <= heartbeat_received <= selected:
+        return finish("NO_BET_FEED_HEARTBEAT_FAILURE")
+
+    quote_age = (selected - source_time).total_seconds()
+    ingestion_delay = (received - source_time).total_seconds()
+    heartbeat_age = (selected - heartbeat_received).total_seconds()
+    record["quote_age_seconds"] = quote_age
+    record["quote_ingestion_delay_seconds"] = ingestion_delay
+    if quote_age < 0 or quote_age > float(timing["maximum_quote_age_seconds"]):
+        return finish("NO_BET_T3_QUOTE_STALE")
+    if ingestion_delay < 0 or ingestion_delay > float(
+        timing["maximum_quote_ingestion_delay_seconds"]
+    ):
+        return finish("NO_BET_T3_QUOTE_INGESTION_DELAY")
+    if heartbeat_age < 0 or heartbeat_age > float(
+        timing["maximum_feed_heartbeat_age_seconds"]
+    ):
+        return finish("NO_BET_FEED_HEARTBEAT_FAILURE")
+
+    if str(universe.get("race_id", "")) != record["race_id"]:
+        return finish("NO_BET_STARTER_UNIVERSE_CHANGED")
+    freeze_universe = str(candidate.get("starter_universe_hash_at_freeze", ""))
+    t3_universe = str(universe.get("starter_universe_hash_at_t3", ""))
+    record["starter_universe_hash_at_t3"] = t3_universe
+    record["scratch_known_by_t3"] = universe.get("scratch_known_by_t3")
+    if universe.get("scratch_known_by_t3") is True:
+        return finish("NO_BET_SCRATCH_KNOWN_BY_T3")
+    if (
+        not freeze_universe
+        or not t3_universe
+        or freeze_universe != t3_universe
+        or universe.get("starter_universe_unchanged") is not True
+    ):
+        return finish("NO_BET_STARTER_UNIVERSE_CHANGED")
+
+    try:
+        quote_pair = canonical_pair_key(quote.get("quote_pair_key"))
+    except ValueError:
+        return finish("NO_BET_EXACT_CANDIDATE_QUOTE_INVALID")
+    if (
+        str(quote.get("race_id", "")) != record["race_id"]
+        or str(quote.get("ticket_type", "")).lower() != "wide"
+        or quote_pair != frozen_pair
+    ):
+        return finish("NO_BET_EXACT_CANDIDATE_QUOTE_INVALID")
+    if quote.get("quote_unique") is not True:
+        return finish("NO_BET_EXACT_CANDIDATE_QUOTE_AMBIGUOUS")
+    market_status = str(quote.get("market_status", "")).upper()
+    record["market_status"] = market_status
+    record["feed_sequence_id"] = quote.get("feed_sequence_id")
+    if market_status not in set(config["quote_contract"]["allowed_market_statuses"]):
+        return finish("NO_BET_MARKET_NOT_OPEN")
+    try:
+        odds_low = float(quote.get("t3_wide_odds_low"))
+        odds_high = float(quote.get("t3_wide_odds_high"))
+    except (TypeError, ValueError):
+        return finish("NO_BET_EXACT_CANDIDATE_QUOTE_INVALID")
+    if (
+        not math.isfinite(odds_low)
+        or not math.isfinite(odds_high)
+        or odds_low <= 0
+        or odds_high < odds_low
+    ):
+        return finish("NO_BET_EXACT_CANDIDATE_QUOTE_INVALID")
+    record["t3_wide_odds_low"] = odds_low
+    record["t3_wide_odds_high"] = odds_high
+    record["candidate_pair_t3_quote_valid"] = True
+
+    probability = float(candidate["p_action_calibrated"])
+    expected_return = probability * odds_low
+    record["research_expected_return_low"] = expected_return
+    if candidate.get("confidence_gate_pass") is not True:
+        record["measurement_only"] = True
+        return finish("NO_BET_CONFIDENCE_GATE_FAILED")
+    minimum_er = float(
+        config["decision_policy"]["minimum_research_expected_return_low"]
+    )
+    if expected_return < minimum_er:
+        return finish("NO_BET_VALUE_BELOW_THRESHOLD")
+    return finish("STRICT_T3_CONTRACTS_PASSED", action="PAPER_READY")
+
+
+def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(canonical_json(payload) + "\n", encoding="utf-8")
+    os.replace(temporary, path)
+
+
+def _summary(
+    *,
+    config: dict[str, Any],
+    population: list[dict[str, Any]],
+    decisions: list[dict[str, Any]],
+    pending: list[str],
+) -> dict[str, Any]:
+    target_ids = {str(row["candidate"]["race_id"]) for row in population}
+    relevant = [row for row in decisions if str(row.get("race_id", "")) in target_ids]
+    counts = Counter(str(row.get("race_id", "")) for row in relevant)
+    duplicates = sum(max(0, count - 1) for count in counts.values())
+    observed = target_ids.intersection(counts)
+    missing = sorted(target_ids.difference(observed))
+    source_failures = [
+        row for row in relevant if row.get("decision_reason") == "NO_BET_SOURCE_NOT_READY"
+    ]
+    source_failures_entering_quote = sum(
+        row.get("quote_evaluation_entered") is True for row in source_failures
+    )
+    candidate_changes = sum(
+        row.get("candidate_changed_after_odds") is True for row in relevant
+    )
+    unsafe = sum(
+        row.get("formal_buy") is not False
+        or row.get("send_order") is not False
+        or row.get("stake") != 0
+        for row in relevant
+    )
+    action_counts = Counter(str(row.get("shadow_action", "")) for row in relevant)
+    reason_counts = Counter(str(row.get("decision_reason", "")) for row in relevant)
+    invalid = bool(
+        duplicates or candidate_changes or unsafe or source_failures_entering_quote
+    )
+    if invalid:
+        status = "INVALID"
+    elif not missing:
+        status = "PASS"
+    else:
+        status = "IN_PROGRESS"
+    return {
+        "schema_version": 1,
+        "experiment_id": config["experiment_id"],
+        "cohort_id": config["cohort_id"],
+        "status": status,
+        "expected_target_rows": len(population),
+        "recorded_target_rows": len(observed),
+        "strict_t3_shadow_ledger_contract_completeness": (
+            len(observed) / len(population) if population else 0.0
+        ),
+        "candidate_ready_rows": sum(
+            row["candidate"].get("record_status") == "CANDIDATE_READY"
+            for row in population
+        ),
+        "source_failure_rows": sum(
+            row["candidate"].get("record_status") == "FAILED" for row in population
+        ),
+        "source_failure_rows_preserved": len(source_failures),
+        "source_failure_rows_entering_quote_evaluation": source_failures_entering_quote,
+        "quote_evaluation_rows": sum(
+            row.get("quote_evaluation_entered") is True for row in relevant
+        ),
+        "measurement_only_rows": sum(
+            row.get("measurement_only") is True for row in relevant
+        ),
+        "missing_target_race_ids": missing,
+        "pending_target_race_ids": sorted(set(pending)),
+        "duplicate_decision_rows": duplicates,
+        "candidate_changes_after_odds": candidate_changes,
+        "unsafe_output_rows": unsafe,
+        "action_counts": dict(sorted(action_counts.items())),
+        "reason_counts": dict(sorted(reason_counts.items())),
+        "formal_buy": False,
+        "send_order": False,
+        "stake": 0,
+        "roi_calculated": False,
+        "production_dashboard_writes": 0,
+    }
+
+
+def run_shadow_decisions(
+    *,
+    source_manifest_path: Path,
+    capture_packet_dir: Path,
+    decision_ledger_path: Path,
+    summary_path: Path,
+    config: dict[str, Any],
+    now: datetime,
+    enforce_expected_counts: bool = True,
+) -> dict[str, Any]:
+    _manifest, population = load_candidate_population(
+        source_manifest_path, config, enforce_expected_counts=enforce_expected_counts
+    )
+    existing = read_decision_jsonl(decision_ledger_path)
+    existing_ids = {
+        str(row.get("race_id", ""))
+        for row in existing
+        if row.get("experiment_id") == config["experiment_id"]
+        and row.get("cohort_id") == config["cohort_id"]
+    }
+    if len(existing_ids) != len(
+        [
+            row
+            for row in existing
+            if row.get("experiment_id") == config["experiment_id"]
+            and row.get("cohort_id") == config["cohort_id"]
+        ]
+    ):
+        raise ValueError("duplicate decision race_id in existing ledger")
+    pending: list[str] = []
+    cutoff_seconds = int(config["timing"]["strict_t3_cutoff_seconds_before_post"])
+
+    for row in population:
+        candidate = row["candidate"]
+        acknowledgement = row["acknowledgement"]
+        race_id = str(candidate["race_id"])
+        if race_id in existing_ids:
+            continue
+        if candidate.get("record_status") == "FAILED":
+            decision = source_failure_decision(
+                candidate=candidate,
+                acknowledgement=acknowledgement,
+                card_id=row["card_id"],
+                config=config,
+                committed_at=now,
+            )
+            append_decision_jsonl(decision_ledger_path, decision)
+            existing_ids.add(race_id)
+            continue
+
+        capture_path = capture_packet_dir / f"{race_id}.strict_t3_capture.json"
+        if capture_path.is_file():
+            capture = load_json_object(capture_path)
+            decision = evaluate_ready_capture(
+                candidate=candidate,
+                acknowledgement=acknowledgement,
+                candidate_packet_sha256=row["candidate_packet_sha256"],
+                capture_packet=capture,
+                card_id=row["card_id"],
+                config=config,
+                committed_at=now,
+            )
+            append_decision_jsonl(decision_ledger_path, decision)
+            existing_ids.add(race_id)
+            continue
+
+        post_time = parse_time(candidate.get("scheduled_post_time_asof"), config["timezone"])
+        cutoff = post_time - timedelta(seconds=cutoff_seconds)
+        if now < cutoff:
+            pending.append(race_id)
+            continue
+        decision = no_capture_decision(
+            candidate=candidate,
+            acknowledgement=acknowledgement,
+            card_id=row["card_id"],
+            config=config,
+            committed_at=now,
+        )
+        append_decision_jsonl(decision_ledger_path, decision)
+        existing_ids.add(race_id)
+
+    decisions = read_decision_jsonl(decision_ledger_path)
+    summary = _summary(
+        config=config, population=population, decisions=decisions, pending=pending
+    )
+    _write_json_atomic(summary_path, summary)
+    return summary
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Commit strict-T3 research-only shadow decisions."
+    )
+    parser.add_argument("--source-manifest-json", type=Path, required=True)
+    parser.add_argument("--capture-packet-dir", type=Path, required=True)
+    parser.add_argument("--decision-ledger-jsonl", type=Path, required=True)
+    parser.add_argument("--summary-json", type=Path, required=True)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=ROOT / "config" / "strict_t3_shadow_decision_exp011.json",
+    )
+    parser.add_argument(
+        "--execution-mode", choices=("synthetic", "real-data"), default="synthetic"
+    )
+    parser.add_argument("--now", default="")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv)
+    config = load_config(args.config)
+    manifest = load_json_object(args.source_manifest_json)
+    if manifest.get("data_class") != args.execution_mode:
+        raise ValueError("execution mode and source manifest data_class mismatch")
+    if args.execution_mode == "real-data":
+        assert_real_data_authorized(ROOT, config["experiment_id"])
+    now = (
+        parse_time(args.now, config["timezone"])
+        if args.now
+        else datetime.now(ZoneInfo(config["timezone"]))
+    )
+    summary = run_shadow_decisions(
+        source_manifest_path=args.source_manifest_json,
+        capture_packet_dir=args.capture_packet_dir,
+        decision_ledger_path=args.decision_ledger_jsonl,
+        summary_path=args.summary_json,
+        config=config,
+        now=now,
+    )
+    print(canonical_json(summary))
+    return 0 if summary["status"] != "INVALID" else 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
