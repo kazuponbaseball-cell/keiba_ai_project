@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-008",
+  "cohort_id": "grade_r_candidate_freeze_20260802_sapporo_v1",
+  "timezone": "Asia/Tokyo",
+  "target_card": {
+    "race_date": "2026-08-02",
+    "venue_code": "01",
+    "meeting_no": 1,
+    "day_no": 4,
+    "expected_race_numbers": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "expected_race_count": 12
+  },
+  "bundle_contract": {
+    "model_kind": "linear_top3_set_softmax",
+    "candidate_policy": "non_odds_top1_wide_pair_from_coherent_top3_softmax",
+    "production_bundle_sha256": "abec14df7231e82ddd02494d9fa0c7d3af1ea4254631296c76440ec130a7c31e",
+    "production_policy_sha256": "f392ce91aad54101a5a843a22cd6d984ec612077f42a74d5dde70d50d5c82f08"
+  },
+  "probability_contract": {
+    "set_mass": 1.0,
+    "wide_mass": 3.0,
+    "tolerance": 1e-10
+  },
+  "candidate_policy": {
+    "name": "WIDE_1_NON_ODDS_COHERENT_TOP3",
+    "horse_id_columns": ["horse_id_1", "horse_id_2", "horse_id_3"],
+    "tie_break": "canonical_numeric_then_text_horse_id_pair",
+    "candidate_substitution_allowed": false,
+    "alternative_pair_search_allowed": false,
+    "primary_confidence_threshold": 0.21275851149504352,
+    "action_calibrator_type": "C0_offset",
+    "action_calibrator_offset_intercept": 0.130654047367905
+  },
+  "forbidden_candidate_columns": [
+    "current_odds",
+    "current_popularity",
+    "final_odds",
+    "market_rank",
+    "official_result",
+    "payout",
+    "popularity",
+    "result",
+    "roi",
+    "t3_odds"
+  ],
+  "runner_snapshot_contract": {
+    "source_priority": [
+      "pre_registered_public_entry_snapshot",
+      "local_target_entry_snapshot"
+    ],
+    "baseline_feature_config": "config/baseline_features.json",
+    "baseline_model": "models/baseline/baseline_ranker.pkl",
+    "current_market_columns_must_be_blank_before_inference": true,
+    "final_runner_snapshot_is_allowlist_only": true,
+    "historical_rows_must_precede_target_date": true,
+    "source_received_at_must_not_exceed_candidate_cutoff": true,
+    "all_target_races_must_remain_in_manifest": true
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "production_dashboard_write": false,
+    "notification": false,
+    "credential_access": false,
+    "order_module_import": false,
+    "real_data_during_preparation": false,
+    "roi_calculation": false
+  }
+}

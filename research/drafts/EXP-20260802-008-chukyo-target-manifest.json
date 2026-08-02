@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-008",
+  "cohort_id": "grade_r_candidate_freeze_20260802_chukyo_v1",
+  "data_class": "real-data",
+  "manifest_type": "pre_registered_candidate_freeze_card",
+  "target_selection_uses_odds": false,
+  "target_card": {
+    "race_date": "2026-08-02",
+    "venue_code": "07",
+    "venue_name": "Chukyo",
+    "meeting_no": 2,
+    "day_no": 4,
+    "official_program_url": "https://www.jra.go.jp/keiba/calendar2026/2026/8/0802.html"
+  },
+  "records": [
+    {"race_id":"202607020401","race_no":1,"target_registered":true,"scheduled_post_time":"2026-08-02T09:40:00+09:00","candidate_feature_cutoff_time":"2026-08-02T09:25:00+09:00"},
+    {"race_id":"202607020402","race_no":2,"target_registered":true,"scheduled_post_time":"2026-08-02T10:10:00+09:00","candidate_feature_cutoff_time":"2026-08-02T09:55:00+09:00"},
+    {"race_id":"202607020403","race_no":3,"target_registered":true,"scheduled_post_time":"2026-08-02T10:40:00+09:00","candidate_feature_cutoff_time":"2026-08-02T10:25:00+09:00"},
+    {"race_id":"202607020404","race_no":4,"target_registered":true,"scheduled_post_time":"2026-08-02T11:10:00+09:00","candidate_feature_cutoff_time":"2026-08-02T10:55:00+09:00"},
+    {"race_id":"202607020405","race_no":5,"target_registered":true,"scheduled_post_time":"2026-08-02T11:40:00+09:00","candidate_feature_cutoff_time":"2026-08-02T11:25:00+09:00"},
+    {"race_id":"202607020406","race_no":6,"target_registered":true,"scheduled_post_time":"2026-08-02T15:00:00+09:00","candidate_feature_cutoff_time":"2026-08-02T14:45:00+09:00"},
+    {"race_id":"202607020407","race_no":7,"target_registered":true,"scheduled_post_time":"2026-08-02T15:35:00+09:00","candidate_feature_cutoff_time":"2026-08-02T15:20:00+09:00"},
+    {"race_id":"202607020408","race_no":8,"target_registered":true,"scheduled_post_time":"2026-08-02T16:10:00+09:00","candidate_feature_cutoff_time":"2026-08-02T15:55:00+09:00"},
+    {"race_id":"202607020409","race_no":9,"target_registered":true,"scheduled_post_time":"2026-08-02T16:45:00+09:00","candidate_feature_cutoff_time":"2026-08-02T16:30:00+09:00"},
+    {"race_id":"202607020410","race_no":10,"target_registered":true,"scheduled_post_time":"2026-08-02T17:20:00+09:00","candidate_feature_cutoff_time":"2026-08-02T17:05:00+09:00"},
+    {"race_id":"202607020411","race_no":11,"target_registered":true,"scheduled_post_time":"2026-08-02T17:50:00+09:00","candidate_feature_cutoff_time":"2026-08-02T17:35:00+09:00"},
+    {"race_id":"202607020412","race_no":12,"target_registered":true,"scheduled_post_time":"2026-08-02T18:20:00+09:00","candidate_feature_cutoff_time":"2026-08-02T18:05:00+09:00"}
+  ],
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

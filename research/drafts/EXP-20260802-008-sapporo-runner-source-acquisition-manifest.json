@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-008",
+  "cohort_id": "grade_r_candidate_freeze_20260802_sapporo_v1",
+  "manifest_type": "candidate_runner_snapshot_acquisition_contract",
+  "execution_data_root": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project",
+  "target_manifest": "research/drafts/EXP-20260802-008-sapporo-target-manifest.json",
+  "netkeiba_target_card": "research/drafts/EXP-20260802-008-sapporo-netkeiba-target-card.csv",
+  "entry_source": {
+    "kind": "pre_registered_public_race_card",
+    "capture_operation": "scripts/research/build_grade_r_candidate_freeze_packets_v1.py --operation capture-entry-snapshot",
+    "url_pattern": "https://race.netkeiba.com/race/shutuba.html?race_id={race_id}",
+    "target_selection_uses_odds": false,
+    "maximum_requests": 12,
+    "minimum_sleep_seconds": 0.75,
+    "all_target_races_receive_capture_status": true,
+    "unavailable_races_remain_in_candidate_denominator": true,
+    "raw_capture_is_not_candidate_input": true,
+    "current_odds_and_popularity_are_blank_before_inference": true,
+    "source_observed_time": "local receipt and persisted-file mtime"
+  },
+  "frozen_model_inputs": [
+    {
+      "path": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/models/baseline/baseline_ranker.pkl",
+      "sha256": "f626e4ec26891c2bd1f232d3df2a12bdc1a9db49b0488b1e70cd55e01d8888f3"
+    },
+    {
+      "path": "config/baseline_features.json",
+      "sha256": "5e8a31af0cf377eaf269489a35874e9b515335993f796d764576d344f75f4dd8"
+    },
+    {
+      "path": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/umaren_wide_rebuild_v1/m1c_variance_inference_bundle_v1/artifacts/m1c_variance_final_grade_r_live_candidate_artifact.json",
+      "sha256": "abec14df7231e82ddd02494d9fa0c7d3af1ea4254631296c76440ec130a7c31e"
+    }
+  ],
+  "historical_inputs_hashed_at_execution": [
+    "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/date/raw/全競走馬成績.csv",
+    "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/content_bridge_member_features_v1/*",
+    "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/race_day_review_*/parsed_results_all_horses.csv",
+    "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/*bias_review/horse_results.csv",
+    "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/data/datasets/inference/weekly/entry_snapshot_netkeiba_*.csv"
+  ],
+  "historical_contract": {
+    "target_date": "2026-08-02",
+    "all_feature_labels_must_precede_target_date": true,
+    "same_day_or_future_result_rows_are_not_eligible": true,
+    "all_files_read_are_sha256_recorded_in_feature_source_manifest": true
+  },
+  "outputs": {
+    "raw_entry_csv": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/research/EXP-20260802-008/sapporo/raw_entry/entry_snapshot_20260802.csv",
+    "capture_manifest_json": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/research/EXP-20260802-008/sapporo/raw_entry/capture_manifest_20260802.json",
+    "runner_snapshot_csv": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/research/EXP-20260802-008/sapporo/runner_snapshot/runner_snapshot_20260802.csv",
+    "feature_source_manifest_json": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/research/EXP-20260802-008/sapporo/runner_snapshot/feature_source_manifest_20260802.json",
+    "candidate_output_dir": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/research/EXP-20260802-008/sapporo/candidate_freeze"
+  },
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
