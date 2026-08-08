@@ -1,0 +1,136 @@
+{
+  "allowed_columns": [
+    "automatic_execution_allowed",
+    "execution_authorized",
+    "execution_kind",
+    "experiment_id",
+    "formal_buy",
+    "real_data_execution_allowed",
+    "send_order",
+    "stake",
+    "status",
+    "synthetic_fixture_tests_allowed"
+  ],
+  "allowed_threshold_search_count": 0,
+  "allowed_variant_count": 1,
+  "base_commit": "385a418827fd6d1cbf9868507d53ad7a04fe172d",
+  "chronological_fold_design": {
+    "design": "synthetic_lifecycle_contract_cases_only",
+    "external_api_calls": 0,
+    "real_data_rows": 0,
+    "sequence": [
+      "construct_verified_lifecycle_fixture",
+      "request_transition",
+      "inspect_capability_flags",
+      "assert_fail_closed_state"
+    ],
+    "test_case_count": 5
+  },
+  "compute_budget": {
+    "cpu": "local_cpu_only",
+    "external_api_calls": 0,
+    "maximum_runtime_minutes": 20,
+    "network_calls": 0,
+    "random_seed": 20260808,
+    "real_data_rows": 0,
+    "synthetic_contract_cases": 5
+  },
+  "data_as_of": "2026-08-08T23:45:00+09:00",
+  "expected_changed_paths": [
+    "scripts/research/update_registry.py",
+    "tests/research/test_experiment_lifecycle.py"
+  ],
+  "experiment_id": "EXP-20260808-031",
+  "fold_manifest": {
+    "path": "research/drafts/EXP-20260808-031-execution-kind-flags.fold_manifest.json",
+    "sha256": "2281fc7168acfef674520bbb8236f2aa358b92da70eb81aa1afcf1c6418cdd4b"
+  },
+  "forbidden_columns": [
+    "api_key",
+    "credential",
+    "current_odds",
+    "final_odds",
+    "official_result",
+    "order_payload",
+    "payout",
+    "production_path",
+    "roi",
+    "secret"
+  ],
+  "formal_buy": false,
+  "hypothesis": "Deriving Research OS execution capability flags from both lifecycle status and the approved execution_kind will prevent a synthetic RUNNING event from claiming real-data authority, while preserving the existing exact-scope synthetic and real-data transition contracts.",
+  "in_scope": [
+    "Bind real_data_execution_allowed to RUNNING plus execution_kind real-data",
+    "Bind synthetic_fixture_tests_allowed during RUNNING to execution_kind synthetic",
+    "Keep all post-run execution capability flags false",
+    "Reject RUNNING when execution_kind is none",
+    "Retain preparation-only synthetic fixture permission",
+    "Use injected GitHub approval fixtures with no external network"
+  ],
+  "lineage_hash_requirements": [
+    "Canonical proposal scope SHA-256",
+    "Exact execution commit SHA",
+    "Exact lifecycle fixture manifest SHA-256",
+    "Exact test command list SHA-256",
+    "Python environment manifest SHA-256"
+  ],
+  "null_hypothesis": "Capability flags remain status-only, synthetic RUNNING can claim real-data permission, RUNNING can be entered with no execution kind, or the correction weakens GitHub approval verification, exact run-scope verification, production safety, or BUY safety.",
+  "out_of_scope": [
+    "Actual external API or GitHub network calls in tests",
+    "Actual real-data execution, backtests, OOS evaluation, or ROI calculation",
+    "Automatic merge, shadow approval, production deployment, or formal BUY",
+    "Changes to feature, model, calibrator, candidate, value, dashboard, or purchase logic",
+    "GPT provider or Codex dispatcher implementation"
+  ],
+  "primary_metric": {
+    "direction": "higher_is_better",
+    "name": "execution_kind_capability_contract_pass_fraction",
+    "unit": "fraction"
+  },
+  "purge_embargo": {
+    "embargo": "not_applicable_no_temporal_rows",
+    "purge": "not_applicable_no_temporal_rows",
+    "real_data_rows": 0
+  },
+  "racing_mechanism": "The GPT-to-Codex research loop must distinguish harmless synthetic contract checks from authorized real-race evaluation. Incorrect capability labels can cause operators or future adapters to treat a synthetic approval as permission to read race, odds, result, or payout data, undermining leakage controls and the validity of ROI evidence.",
+  "raw_data_sources": [
+    "Git-tracked Research OS lifecycle implementation at base commit 385a418827fd6d1cbf9868507d53ad7a04fe172d",
+    "Observed EXP-20260808-030 synthetic RUNNING registry event",
+    "Synthetic lifecycle fixtures only"
+  ],
+  "rejection_gate": [
+    "Any synthetic RUNNING event records real_data_execution_allowed=true",
+    "Any RUNNING transition accepts execution_kind=none",
+    "Any real-data permission exists outside RUNNING with execution_kind=real-data",
+    "Any GitHub approval, run-scope, commit, or dirty-worktree verification becomes weaker",
+    "Any external API, real data, production, notification, purchase, or order side effect",
+    "Any pre-registered synthetic contract case fails"
+  ],
+  "required_effect": {
+    "external_api_calls": 0,
+    "pre_registered_contract_cases_passed": 5,
+    "production_or_purchase_side_effects": 0,
+    "real_data_rows": 0,
+    "synthetic_real_data_permission": false,
+    "undefined_running_rejection_fraction": 1.0
+  },
+  "score_components": {
+    "acquisition_implementation_cost": 10,
+    "independent_information": 23,
+    "leakage_safety": 15,
+    "minimal_falsifiability": 10,
+    "outer_oos_failure_evidence": 19,
+    "racing_mechanism": 17
+  },
+  "send_order": false,
+  "stake": 0,
+  "stop_conditions": [
+    "A fixture attempts network, external API, real-data, production, notification, or purchase access",
+    "A change reaches outside the two approved implementation paths",
+    "A change weakens approval revalidation or run-scope hash checks",
+    "Runtime exceeds 20 minutes",
+    "formal_buy, send_order, or stake changes"
+  ],
+  "target_population": "Synthetic Research OS lifecycle transitions only; no horse, race, odds, payout, result, historical OOS, or prospective rows.",
+  "title": "Bind Research OS capability flags to execution kind"
+}
