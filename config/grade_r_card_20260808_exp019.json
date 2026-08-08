@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-019",
+  "timezone": "Asia/Tokyo",
+  "race_date": "2026-08-08",
+  "input_sources": {
+    "html": {
+      "path": "C:/Users/kazup/Data Lab/TXT/DI260808.HTM",
+      "sha256": "3103bba00bf9ba9961d87bc44adf28348f68fc6dbb83dadb91c38569e71e02b4",
+      "observed_at": "2026-08-08T11:17:25+09:00"
+    },
+    "du": {
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DU20260808.DAT",
+      "sha256": "87af9ebab89c18df7460072e7ac5bf3ad2a1b633fd8a0a05e6f8627c276ff08a",
+      "observed_at": "2026-08-08T11:14:29+09:00"
+    },
+    "dr": {
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DR20260808.DAT",
+      "sha256": "aaa6330a3a0e23677cf88612d04e0f3848e723163721681cbe613b1e8ac5c9f4",
+      "observed_at": "2026-08-08T11:14:23+09:00"
+    }
+  },
+  "input_contract": {
+    "expected_runner_rows": 462,
+    "expected_races": 36,
+    "expected_ra_rows": 36,
+    "public_entry_requests": 0,
+    "public_schedule_requests": 0,
+    "current_market_fields_must_be_blank": true
+  },
+  "cards": [
+    {
+      "slug": "sapporo",
+      "venue_code": "01",
+      "target_manifest": "research/drafts/EXP-20260808-019-sapporo-target-manifest.json",
+      "expected_runner_rows": 157,
+      "cohort_id": "grade_r_candidate_freeze_20260808_sapporo_v2"
+    },
+    {
+      "slug": "niigata",
+      "venue_code": "04",
+      "target_manifest": "research/drafts/EXP-20260808-019-niigata-target-manifest.json",
+      "expected_runner_rows": 162,
+      "cohort_id": "grade_r_candidate_freeze_20260808_niigata_v2"
+    },
+    {
+      "slug": "chukyo",
+      "venue_code": "07",
+      "target_manifest": "research/drafts/EXP-20260808-019-chukyo-target-manifest.json",
+      "expected_runner_rows": 143,
+      "cohort_id": "grade_r_candidate_freeze_20260808_chukyo_v2"
+    }
+  ],
+  "bundle": {
+    "inference_bundle": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/umaren_wide_rebuild_v1/m1c_variance_inference_bundle_v1/artifacts/m1c_variance_final_grade_r_live_candidate_artifact.json",
+    "sha256": "abec14df7231e82ddd02494d9fa0c7d3af1ea4254631296c76440ec130a7c31e",
+    "candidate_policy_sha256": "f392ce91aad54101a5a843a22cd6d984ec612077f42a74d5dde70d50d5c82f08"
+  },
+  "history": {
+    "historical_csv": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/date/raw/全競走馬成績.csv",
+    "baseline_config": "config/baseline_features.json",
+    "baseline_model": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/models/baseline/baseline_ranker.pkl",
+    "ability_history_dir": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/content_bridge_member_features_v1",
+    "recent_result_globs": [
+      "research/drafts/EXP-20260808-019-recent-results-20260802.csv",
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/race_day_review_*/parsed_results_all_horses.csv",
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/*bias_review/horse_results.csv"
+    ],
+    "entry_globs": [
+      "research/drafts/EXP-20260808-019-entry_snapshot_netkeiba_20260802_target_de_overlay_enriched_workout_knowledge.csv",
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/data/datasets/inference/weekly/entry_snapshot_netkeiba_*.csv"
+    ],
+    "minimum_history_date": "20260802",
+    "maximum_history_date": "20260807"
+  },
+  "candidate_policy": {
+    "name": "WIDE_1_NON_ODDS_COHERENT_TOP3",
+    "horse_id_columns": ["horse_id_1", "horse_id_2", "horse_id_3"],
+    "tie_break": "canonical_numeric_then_text_horse_id_pair",
+    "candidate_substitution_allowed": false,
+    "alternative_pair_search_allowed": false,
+    "primary_confidence_threshold": 0.21275851149504352,
+    "action_calibrator_type": "C0_offset",
+    "action_calibrator_offset_intercept": 0.130654047367905
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "production_dashboard_write": false,
+    "notification": false,
+    "credential_access": false,
+    "order_module_import": false,
+    "roi_calculation": false
+  }
+}

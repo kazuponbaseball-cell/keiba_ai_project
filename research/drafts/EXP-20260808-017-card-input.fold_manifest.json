@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-017",
+  "manifest_type": "fixed_three_card_input_and_chronology",
+  "timezone": "Asia/Tokyo",
+  "proposal_registered_at": "2026-08-08T12:08:52+09:00",
+  "selection_uses_market_data": false,
+  "input_sources": [
+    {
+      "path": "C:/Users/kazup/Data Lab/TXT/DI260808.HTM",
+      "source_role": "target_multirace_entry_html",
+      "sha256": "3103bba00bf9ba9961d87bc44adf28348f68fc6dbb83dadb91c38569e71e02b4",
+      "size_bytes": 17937925,
+      "observed_last_write_time": "2026-08-08T11:17:25+09:00",
+      "encoding": "cp932"
+    },
+    {
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DU20260808.DAT",
+      "source_role": "target_runner_identity_and_card_key",
+      "sha256": "87af9ebab89c18df7460072e7ac5bf3ad2a1b633fd8a0a05e6f8627c276ff08a",
+      "size_bytes": 73458,
+      "observed_last_write_time": "2026-08-08T11:14:29+09:00",
+      "encoding": "cp932"
+    },
+    {
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DR20260808.DAT",
+      "source_role": "target_race_metadata_schedule_and_domain",
+      "sha256": "aaa6330a3a0e23677cf88612d04e0f3848e723163721681cbe613b1e8ac5c9f4",
+      "size_bytes": 32112,
+      "observed_last_write_time": "2026-08-08T11:14:23+09:00",
+      "encoding": "cp932",
+      "jv_record_type": "RA",
+      "expected_record_count": 36
+    }
+  ],
+  "target_manifests": [
+    {
+      "venue": "Sapporo",
+      "path": "research/drafts/EXP-20260808-017-sapporo-target-manifest.json",
+      "registered_race_count": 12,
+      "registered_runner_count": 157
+    },
+    {
+      "venue": "Niigata",
+      "path": "research/drafts/EXP-20260808-017-niigata-target-manifest.json",
+      "registered_race_count": 12,
+      "registered_runner_count": 162
+    },
+    {
+      "venue": "Chukyo",
+      "path": "research/drafts/EXP-20260808-017-chukyo-target-manifest.json",
+      "registered_race_count": 12,
+      "registered_runner_count": 143
+    }
+  ],
+  "identity_audit": {
+    "html_horse_blocks": 462,
+    "du_active_runner_rows": 462,
+    "registered_races": 36,
+    "uniquely_mapped_races": 36,
+    "unmapped_races": 0,
+    "duplicate_race_mappings": 0,
+    "candidate_key_format": "YYYYVVMMDDRR",
+    "target_source_key_format": "YYYYMMDDVVMMDDRR",
+    "html_runner_groups_by_horse_number_reset": 36,
+    "dr_race_detail_rows": 36,
+    "dr_du_unique_key_matches": 36
+  },
+  "chronological_contract": {
+    "candidate_cutoff_seconds_before_scheduled_post": 900,
+    "all_registered_targets_remain_in_denominator": true,
+    "late_race_action": "NO_BET_SOURCE_READINESS_DEADLINE_MISSED",
+    "past_race_backfill_allowed": false,
+    "candidate_ready_requires_persist_ack_before_registered_cutoff": true,
+    "schedule_must_be_locked_before_quote_access": true,
+    "strict_t3_source_received_and_selected_times_must_not_exceed_cutoff": true,
+    "obstacle_or_unknown_domain_action": "NO_BET_UNSUPPORTED_RACE_TYPE"
+  },
+  "registration_snapshot": {
+    "snapshot_at": "2026-08-08T12:08:52+09:00",
+    "timing_eligible_races": 21,
+    "flat_timing_eligible_races": 20,
+    "already_late_races": 15,
+    "unsupported_races": 1,
+    "timing_eligible_race_ids": [
+      "202601010506",
+      "202601010507",
+      "202601010508",
+      "202601010509",
+      "202601010510",
+      "202601010511",
+      "202601010512",
+      "202604020506",
+      "202604020507",
+      "202604020508",
+      "202604020509",
+      "202604020510",
+      "202604020511",
+      "202604020512",
+      "202607020506",
+      "202607020507",
+      "202607020508",
+      "202607020509",
+      "202607020510",
+      "202607020511",
+      "202607020512"
+    ]
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "candidate_uses_odds": false,
+    "alternative_pair_search_allowed": false,
+    "dashboard_mutation_allowed": false,
+    "notification_allowed": false,
+    "order_path_allowed": false
+  }
+}
