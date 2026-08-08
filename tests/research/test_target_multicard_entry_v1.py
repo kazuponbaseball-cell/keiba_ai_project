@@ -104,8 +104,10 @@ def _history_row(
 def _history_table(
     *rows: dict[str, str],
     omitted_header: str | None = None,
+    include_display_date: bool = False,
 ) -> str:
     headers = [
+        *(["\u65e5\u4ed8"] if include_display_date else []),
         "\u65e5\u4ed8S",
         "\u99ac\u540d",
         "\u8840\u7d71\u767b\u9332\u756a\u53f7",
@@ -356,6 +358,48 @@ class TargetMulticardEntryTests(unittest.TestCase):
             self.assertEqual(latest[aliases[0]], row[destination])
         self.assertNotIn("\u5358\u52dd\u30aa\u30c3\u30ba", groups.columns)
         self.assertEqual(24, len(PREVIOUS_RACE_COLUMNS))
+
+    def test_html_history_accepts_equivalent_display_and_sortable_dates(self) -> None:
+        horse_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        row = _history_row("2026.8.2", horse_name, "2022000001", "dual-date")
+        row["\u65e5\u4ed8"] = "2026. 8. 2"
+        source = _html_block(
+            1,
+            1,
+            horse_name,
+            _history_table(row, include_display_date=True),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            groups = parse_html_runner_groups(
+                path,
+                expected_runner_rows=1,
+                expected_races=1,
+                target_date="20260808",
+            )
+        self.assertEqual("20260802", groups.iloc[0]["previous_race_source_date"])
+
+    def test_html_history_rejects_disagreeing_date_aliases(self) -> None:
+        horse_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        row = _history_row("2026.8.2", horse_name, "2022000001", "dual-date")
+        row["\u65e5\u4ed8"] = "2026. 8. 1"
+        source = _html_block(
+            1,
+            1,
+            horse_name,
+            _history_table(row, include_display_date=True),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            with self.assertRaisesRegex(ValueError, "date aliases disagree"):
+                parse_html_runner_groups(
+                    path,
+                    expected_runner_rows=1,
+                    expected_races=1,
+                    target_date="20260808",
+                )
 
     def test_html_history_rejects_same_day_or_future_row(self) -> None:
         horse_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"

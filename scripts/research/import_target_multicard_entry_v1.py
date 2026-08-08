@@ -194,7 +194,22 @@ def _canonical_history_identity(value: str) -> str:
 
 
 def _normalize_history_date(value: str) -> str:
-    digits = re.sub(r"\D", "", _normalized_text(value))
+    text = _normalized_text(value).strip()
+    separated = re.fullmatch(
+        r"(?P<year>\d{2}|\d{4})\D+(?P<month>\d{1,2})\D+(?P<day>\d{1,2})",
+        text,
+    )
+    if separated is not None:
+        year = int(separated.group("year"))
+        if year < 100:
+            year += 2000
+        parsed = datetime(
+            year,
+            int(separated.group("month")),
+            int(separated.group("day")),
+        )
+        return parsed.strftime("%Y%m%d")
+    digits = re.sub(r"\D", "", text)
     if len(digits) == 6:
         digits = "20" + digits
     if len(digits) != 8:
@@ -265,13 +280,29 @@ class _TableExtractor(HTMLParser):
             self._cell_parts.append(data)
 
 
-def _history_header_index(header: list[str], aliases: tuple[str, ...]) -> int | None:
+def _history_header_matches(header: list[str], aliases: tuple[str, ...]) -> list[int]:
     normalized = [_canonical_history_header(value) for value in header]
     accepted = {_canonical_history_header(value) for value in aliases}
-    matches = [index for index, value in enumerate(normalized) if value in accepted]
+    return [index for index, value in enumerate(normalized) if value in accepted]
+
+
+def _history_header_index(header: list[str], aliases: tuple[str, ...]) -> int | None:
+    matches = _history_header_matches(header, aliases)
     if len(matches) > 1:
         raise ValueError(f"duplicate DI history header for aliases={aliases}")
     return matches[0] if matches else None
+
+
+def _history_date_header_indices(header: list[str]) -> tuple[int, ...]:
+    normalized = [_canonical_history_header(value) for value in header]
+    indices: list[int] = []
+    for alias in HISTORY_DATE_ALIASES:
+        canonical_alias = _canonical_history_header(alias)
+        matches = [index for index, value in enumerate(normalized) if value == canonical_alias]
+        if len(matches) > 1:
+            raise ValueError(f"duplicate DI history date header: {alias}")
+        indices.extend(matches)
+    return tuple(indices)
 
 
 def _empty_previous_race_payload(*, horse_no: int, horse_name: str, reason: str) -> dict[str, Any]:
@@ -310,7 +341,7 @@ def _parse_latest_previous_race(
     candidates: list[tuple[list[list[str]], int]] = []
     for table in parser.tables:
         for row_index, row in enumerate(table):
-            if _history_header_index(row, HISTORY_DATE_ALIASES) is not None:
+            if _history_date_header_indices(row):
                 candidates.append((table, row_index))
     if not candidates:
         history_aliases = {
@@ -345,8 +376,8 @@ def _parse_latest_previous_race(
 
     table, header_row_index = candidates[0]
     header = table[header_row_index]
-    date_index = _history_header_index(header, HISTORY_DATE_ALIASES)
-    assert date_index is not None
+    date_indices = _history_date_header_indices(header)
+    assert date_indices
     source_indices: dict[str, int] = {}
     missing_headers: list[str] = []
     for destination, aliases in PREVIOUS_RACE_SOURCE_ALIASES.items():
@@ -371,12 +402,20 @@ def _parse_latest_previous_race(
             raise ValueError(f"DI history row shorter than header for horse_no={horse_no}")
         if not any(value.strip() for value in row):
             continue
-        raw_date = row[date_index].strip()
-        if not raw_date:
+        raw_dates = [row[index].strip() for index in date_indices]
+        if not any(raw_dates):
             if any(row[index].strip() for index in source_indices.values()):
                 raise ValueError(f"DI history row lacks date for horse_no={horse_no}")
             continue
-        source_date = _normalize_history_date(raw_date)
+        if any(not value for value in raw_dates):
+            raise ValueError(f"DI history date alias is blank for horse_no={horse_no}")
+        normalized_dates = [_normalize_history_date(value) for value in raw_dates]
+        if len(set(normalized_dates)) != 1:
+            raise ValueError(
+                f"DI history date aliases disagree for horse_no={horse_no}: "
+                f"{normalized_dates}"
+            )
+        source_date = normalized_dates[0]
         if source_date >= target_date:
             raise ValueError(
                 f"same-day or future DI history row for horse_no={horse_no}: {source_date}"
