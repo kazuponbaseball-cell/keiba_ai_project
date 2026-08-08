@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
 
 import pandas as pd
 
+from scripts.enrich_prediction_basic_ability_features import load_recent_result_history
+from scripts.research.build_grade_r_candidate_freeze_packets_v1 import (
+    validate_target_manifest,
+)
 from scripts.research.import_target_multicard_entry_v1 import (
     RaceMetadata,
     _race_class,
@@ -18,6 +24,18 @@ from scripts.research.import_target_multicard_entry_v1 import (
     parse_html_runner_groups,
     parse_ra_race_metadata,
 )
+from scripts.research.run_grade_r_card_v1 import _candidate_config
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _put(raw: bytearray, start: int, end: int, value: str) -> None:
@@ -89,6 +107,50 @@ def _ra_line(
 
 
 class TargetMulticardEntryTests(unittest.TestCase):
+    def test_exp019_config_identity_paths_manifests_and_recent_history(self) -> None:
+        config_path = ROOT / "config" / "grade_r_card_20260808_exp019.json"
+        config = json.loads(config_path.read_text(encoding="utf-8"))
+        self.assertEqual("EXP-20260808-019", config["experiment_id"])
+
+        static_files = [
+            Path(config["bundle"]["inference_bundle"]),
+            Path(config["history"]["baseline_model"]),
+            Path(config["history"]["historical_csv"]),
+            ROOT / config["history"]["baseline_config"],
+        ]
+        self.assertTrue(all(path.is_file() for path in static_files))
+        self.assertTrue(Path(config["history"]["ability_history_dir"]).is_dir())
+        self.assertTrue(all("繝" not in str(path) for path in static_files))
+        self.assertEqual(
+            config["bundle"]["sha256"],
+            _sha256(Path(config["bundle"]["inference_bundle"])),
+        )
+        for source in config["input_sources"].values():
+            source_path = Path(source["path"])
+            self.assertTrue(source_path.is_file())
+            self.assertEqual(source["sha256"], _sha256(source_path))
+
+        registered = 0
+        for card in config["cards"]:
+            manifest_path = ROOT / card["target_manifest"]
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            self.assertEqual(config["experiment_id"], manifest["experiment_id"])
+            records = validate_target_manifest(manifest, _candidate_config(config, manifest))
+            self.assertEqual(12, len(records))
+            registered += len(records)
+        self.assertEqual(36, registered)
+
+        result_path = ROOT / config["history"]["recent_result_globs"][0]
+        entry_path = ROOT / config["history"]["entry_globs"][0]
+        history = load_recent_result_history([str(result_path)], [str(entry_path)])
+        self.assertEqual(459, len(history))
+        self.assertEqual("20260802", str(history["date_key"].max()))
+        self.assertTrue(history["recent_result_source"].ne("").all())
+
+        self.assertFalse(config["safety"]["formal_buy"])
+        self.assertFalse(config["safety"]["send_order"])
+        self.assertEqual(0, config["safety"]["stake"])
+
     def test_baseline_prediction_module_imports_with_tracked_loader(self) -> None:
         from src.predict import predict_baseline
 
