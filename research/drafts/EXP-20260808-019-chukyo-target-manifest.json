@@ -1,0 +1,141 @@
+{
+    "schema_version":  1,
+    "experiment_id":  "EXP-20260808-019",
+    "cohort_id":  "grade_r_candidate_freeze_20260808_chukyo_v2",
+    "data_class":  "real-data",
+    "manifest_type":  "pre_registered_candidate_freeze_card",
+    "target_selection_uses_odds":  false,
+    "target_card":  {
+                        "race_date":  "2026-08-08",
+                        "venue_code":  "07",
+                        "venue_name":  "Chukyo",
+                        "meeting_no":  2,
+                        "day_no":  5,
+                        "official_program_url":  "https://www.jra.go.jp/keiba/calendar2026/2026/8/0808.html"
+                    },
+    "records":  [
+                    {
+                        "race_id":  "202607020501",
+                        "target_race_key":  "2026080807020501",
+                        "race_no":  1,
+                        "runner_count":  9,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T09:50:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T09:35:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020502",
+                        "target_race_key":  "2026080807020502",
+                        "race_no":  2,
+                        "runner_count":  7,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T10:20:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T10:05:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020503",
+                        "target_race_key":  "2026080807020503",
+                        "race_no":  3,
+                        "runner_count":  16,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T10:50:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T10:35:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020504",
+                        "target_race_key":  "2026080807020504",
+                        "race_no":  4,
+                        "runner_count":  16,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T11:20:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T11:05:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020505",
+                        "target_race_key":  "2026080807020505",
+                        "race_no":  5,
+                        "runner_count":  8,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T11:50:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T11:35:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020506",
+                        "target_race_key":  "2026080807020506",
+                        "race_no":  6,
+                        "runner_count":  11,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T15:10:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T14:55:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020507",
+                        "target_race_key":  "2026080807020507",
+                        "race_no":  7,
+                        "runner_count":  8,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T15:45:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T15:30:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020508",
+                        "target_race_key":  "2026080807020508",
+                        "race_no":  8,
+                        "runner_count":  12,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T16:20:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T16:05:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020509",
+                        "target_race_key":  "2026080807020509",
+                        "race_no":  9,
+                        "runner_count":  10,
+                        "target_registered":  true,
+                        "race_domain":  "obstacle",
+                        "scheduled_post_time":  "2026-08-08T16:55:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T16:40:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020510",
+                        "target_race_key":  "2026080807020510",
+                        "race_no":  10,
+                        "runner_count":  16,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T17:30:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T17:15:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020511",
+                        "target_race_key":  "2026080807020511",
+                        "race_no":  11,
+                        "runner_count":  12,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T18:00:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T17:45:00+09:00"
+                    },
+                    {
+                        "race_id":  "202607020512",
+                        "target_race_key":  "2026080807020512",
+                        "race_no":  12,
+                        "runner_count":  18,
+                        "target_registered":  true,
+                        "race_domain":  "flat",
+                        "scheduled_post_time":  "2026-08-08T18:30:00+09:00",
+                        "candidate_feature_cutoff_time":  "2026-08-08T18:15:00+09:00"
+                    }
+                ],
+    "formal_buy":  false,
+    "send_order":  false,
+    "stake":  0
+}
