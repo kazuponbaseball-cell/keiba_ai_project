@@ -1,0 +1,157 @@
+{
+  "experiment_id": "EXP-20260808-025",
+  "title": "Prepare the fixed 2026-08-09 Grade-R card directly from TARGET DR/DU and audited JRA history",
+  "hypothesis": "A deterministic adapter over the already-fixed TARGET DR/DU card and JRA-VAN SU/SR history can reproduce the existing 24 previous-race inputs and run the unchanged frozen EXP023 model, candidate policy, C0 calibrator, confidence threshold, and tie-break for all 36 races without waiting for a 17 MB TARGET HTML export.",
+  "null_hypothesis": "Direct TARGET history cannot reproduce the HTM-derived input contract and today's candidate decisions within the pre-registered parity gates, a latest prior race cannot be proven, or any model, policy, threshold, market, BUY, order, dashboard, or notification change is required.",
+  "racing_mechanism": "The prediction logic is unchanged; only the source adapter for the same prior-race variables changes. TARGET DR/DU fixes tomorrow's race and runner universe, while JRA-VAN SU/SR contains pre-race runner and race records needed to reconstruct the existing time, popularity, field, surface, distance, going, final-section, PCI-family, bodyweight, jockey, and track fields.",
+  "target_population": "All 36 fixed races and 495 runners on the 2026-08-09 Sapporo, Niigata, and Chukyo cards. Every race remains in the denominator. Chukyo 9R is an unsupported obstacle race and must be deterministic no-bet.",
+  "in_scope": [
+    "Add one audited TARGET SU/SR-to-existing-24-column adapter with deterministic record offsets, race-time conversion, apprentice symbol mapping, track mapping, Ave-3F, final-3F rank, PCI, PCI3, and RPCI calculations",
+    "Normalize TARGET's trailing PCI presentation marker only when converting to the numeric training-time PCI field, retaining the marker as lineage metadata",
+    "Create a hash-bound source manifest for every SU/SR file actually read and reject any unlisted or changed source",
+    "Create identity-only EXP025 config and three fixed target manifests for the 2026-08-09 DR/DU card while preserving every frozen prediction and safety setting from EXP023",
+    "During APPROVED_TO_PREPARE run synthetic fixture tests only, including time conversion, rounded PCI3, odd-distance RPCI, obstacle blanks, apprentice symbols, duplicate identity, future-date, local-history absence, and market-firewall cases",
+    "After a distinct APPROVED_TO_RUN grant, first compare direct TARGET fields and resulting candidates against the fixed 2026-08-08 HTM control; generate the 2026-08-09 research candidates only if every pre-registered parity and safety gate passes",
+    "Keep formal_buy false, send_order false, stake zero, dashboard mutation false, notification false, credential access false, and order imports disabled"
+  ],
+  "out_of_scope": [
+    "Any model training, refit, feature addition, feature removal, calibrator change, candidate reranking, confidence threshold change, value threshold search, or tie-break change",
+    "Any silent fallback from an unprovable local or foreign latest race to an older JRA race",
+    "Any odds, popularity, market rank, payout, ROI, result, or derivative in candidate generation, confidence, ranking, tie-break, or abstention",
+    "Any alternative pair, ticket type, race, or stake search after observing a quote",
+    "Any historical backtest, outer OOS comparison, ROI calculation, or action-policy optimization",
+    "Any dashboard mutation, notification, credential, purchase adapter, TARGET GUI automation, formal BUY, nonzero stake, or order transmission",
+    "Any support for obstacle prediction or domains outside flat turf and flat dirt"
+  ],
+  "expected_changed_paths": [
+    "scripts/research/target_direct_history_v1.py",
+    "scripts/research/import_target_multicard_entry_v1.py",
+    "tests/research/test_target_direct_history_v1.py",
+    "tests/research/test_target_multicard_entry_v1.py",
+    "config/grade_r_card_20260809_exp025.json",
+    "research/drafts/EXP-20260808-025-sapporo-target-manifest.json",
+    "research/drafts/EXP-20260808-025-niigata-target-manifest.json",
+    "research/drafts/EXP-20260808-025-chukyo-target-manifest.json",
+    "research/drafts/EXP-20260808-025-history-source-manifest.json",
+    "research/drafts/EXP-20260808-025-card-input.fold_manifest.json"
+  ],
+  "raw_data_sources": [
+    "C:/Users/kazup/Data Lab/DE_DATA/2026/DR20260809.DAT SHA-256 ea331f6d5da7ef14bb3b1f14783388f36d6f4da603e873004a19257259a8b177, 32112 bytes, fixed at 2026-08-08T19:11:06.8372518+09:00",
+    "C:/Users/kazup/Data Lab/DE_DATA/2026/DU20260809.DAT SHA-256 d644e3b128e4643ecee14e688893e8589182c770e9b4edcca2eab0ad82a893e6, 78705 bytes, fixed at 2026-08-08T19:11:21.8844603+09:00",
+    "C:/Users/kazup/Data Lab/SE_DATA/2025 and /2026 SU/SR files; exact files read and their SHA-256 values must be frozen in EXP025 history-source-manifest and run scope before real execution",
+    "C:/Users/kazup/Data Lab/TXT/DI260808.HTM SHA-256 3103bba00bf9ba9961d87bc44adf28348f68fc6dbb83dadb91c38569e71e02b4, fixed control only",
+    "C:/Users/kazup/Data Lab/DE_DATA/2026/DR20260808.DAT SHA-256 aaa6330a3a0e23677cf88612d04e0f3848e723163721681cbe613b1e8ac5c9f4, fixed control only",
+    "C:/Users/kazup/Data Lab/DE_DATA/2026/DU20260808.DAT SHA-256 87af9ebab89c18df7460072e7ac5bf3ad2a1b633fd8a0a05e6f8627c276ff08a, fixed control only",
+    "EXP023 frozen M1C coherent Top3-set bundle, C0 offset action calibrator, primary confidence threshold 0.2127585, candidate policy, and tie-break",
+    "Read-only pre-proposal audit: tomorrow DR/DU contains 36 unique races and 495 unique active runners; 35 flat races and one Chukyo obstacle race",
+    "Read-only pre-proposal control audit: today's HTM contains 420 prior-history runners; 406 join to JRA SU/SR, 14 latest prior races are local/NAR and absent from JRA SU/SR, and 10 joined rows are obstacle histories with intentionally blank flat lap-derived fields"
+  ],
+  "data_as_of": "At 2026-08-08 evening JST, tomorrow's DR/DU card is fixed and readable but DI260809.HTM does not exist. The direct source audit reproduces the primary 24-field definitions for all 406 JRA control joins after the explicit TARGET rounding and presentation contracts; candidate-level impact has not yet been executed and remains behind APPROVED_TO_RUN.",
+  "allowed_columns": [
+    "race_id", "target_race_key", "horse_id", "horse_name", "horse_no", "race_no", "race_domain", "scheduled_post_time", "candidate_feature_cutoff_time", "candidate_freeze_persist_ack_at", "candidate_pair_key", "p_wide_coherent_raw", "p_action_calibrated", "confidence_gate_pass", "record_status", "failure_reason_codes", "candidate_uses_odds", "formal_buy", "send_order", "stake", "previous_race_source_date", "previous_race_source_record_hash", "previous_race_contract_ok", "previous_race_no_history_reason", "previous_race_source_system", "previous_race_source_file_hash", "previous_pci_target_good_run_marker", "前走レースID(新/馬番無)", "前走走破タイム", "前走平均1Fタイム", "前走基準タイム", "前走着差タイム", "前走人気", "前走頭数", "前走出走頭数", "前走馬番", "前走斤量", "前芝・ダ", "前距離", "前走馬場状態", "前走上3F地点差", "前走Ave-3F", "前走上り3F", "前走上り3F順", "前PCI", "前走PCI3", "前走RPCI", "前走馬体重", "前走馬体重増減", "前走騎手コード", "前走トラックコード"
+  ],
+  "forbidden_columns": [
+    "actual_order_acknowledgement", "alternative_pair", "current_odds_as_candidate_input", "current_popularity", "final_odds", "formal_stake_yen", "future_or_post_race_features", "market_rank", "official_result_20260808", "official_result_20260809", "order_payload", "payout", "popularity", "result_derived_candidate_change", "roi", "same_day_history_row", "t3_odds_as_candidate_input"
+  ],
+  "lineage_hash_requirements": [
+    "Tomorrow DR and DU, today's HTM/DR/DU control, every SU/SR source read, the three target manifests, fold manifest, inference bundle, feature schema, model artifact, and adapter code remain hash-bound",
+    "Each experienced runner maps exactly one latest provable prior row strictly before target date; an unprovable latest local or foreign race fails closed rather than selecting an older JRA row",
+    "Every direct field records source file, source record identity, source race date, and canonical record hash",
+    "Every Top3-set and derived WIDE distribution passes mass, finite, range, support, and duplicate checks",
+    "Every output sets candidate_uses_odds false, formal_buy false, send_order false, and stake zero",
+    "The frozen model artifact, candidate policy, calibrator, confidence threshold, and tie-break are byte-identical to EXP023"
+  ],
+  "chronological_fold_design": {
+    "design": "One fixed next-day Grade-R research card after synthetic adapter preparation, a separate run approval, and a fixed prior-day parity control; there is no fitting, backtest, ROI, or policy search.",
+    "history_clock": "Only the newest provable history row with event date strictly before each target date may populate previous-race features.",
+    "control_clock": "The 2026-08-08 HTM/DR/DU and JRA SU/SR control are read only after APPROVED_TO_RUN and are used only to test adapter field and candidate parity.",
+    "candidate_clock": "feature source time <= generation start <= generation completion <= freeze commit <= persist acknowledgement < original candidate cutoff.",
+    "late_race_rule": "A target whose original cutoff passes before persistence remains in the denominator as deterministic no-bet and is never backfilled.",
+    "real_data_rule": "No real HTM, DR, DU, SU, SR, inference, candidate, quote, result, payout, or ROI command may run during APPROVED_TO_PREPARE; synthetic fixtures only."
+  },
+  "fold_manifest": {
+    "path": "research/drafts/EXP-20260808-025-card-input.fold_manifest.json",
+    "sha256": "2de07ad7c649247cbdb897f5aaa6e91e23013a538ec7e6289a64e68863c1eeb2"
+  },
+  "purge_embargo": {
+    "history_cutoff": "No history row dated 2026-08-09 or later may enter tomorrow features, and no row dated 2026-08-08 or later may enter the control features.",
+    "race_overlap_allowed": false,
+    "market_firewall": "No odds, popularity, market rank, payout, ROI, or derivative may influence candidate selection, confidence, tie-break, or abstention.",
+    "post_event_embargo": "No missed candidate cutoff may be repaired with later information.",
+    "target_selection_embargo": "All 36 tomorrow race identities and 495 runners are fixed independently of market and results."
+  },
+  "primary_metric": {
+    "name": "target_direct_input_and_candidate_parity_then_terminal_completeness",
+    "unit": "fraction",
+    "baseline": "EXP023 generated today's fixed card from a TARGET HTM export; tomorrow DR/DU is available but tomorrow HTM is absent.",
+    "evaluation": "First, the direct adapter must pass all synthetic tests and reproduce the fixed control fields under declared rounding and marker rules. Then control candidate pairs and confidence decisions are compared. Only after those gates pass may the unchanged pipeline produce one terminal research record for each of tomorrow's 36 fixed races."
+  },
+  "required_effect": {
+    "registered_target_rows": 36,
+    "registered_runner_rows": 495,
+    "required_previous_race_columns_present": 24,
+    "control_htm_history_rows": 420,
+    "control_jra_direct_join_rows": 406,
+    "control_local_or_nar_rows_explicitly_unsupported": 14,
+    "control_obstacle_history_rows_with_flat_lap_fields_blank": 10,
+    "supported_control_field_contract_pass_rate": 1.0,
+    "supported_control_candidate_pair_parity_rate": 1.0,
+    "supported_control_confidence_decision_parity_rate": 1.0,
+    "missing_target_rows": 0,
+    "duplicate_target_rows": 0,
+    "silent_older_jra_fallback_rows": 0,
+    "same_day_or_future_history_rows_used": 0,
+    "late_rows_accepted_as_candidate_ready": 0,
+    "unsupported_rows_accepted_as_candidate_ready": 0,
+    "candidate_uses_odds_true_rows": 0,
+    "formal_buy_true_rows": 0,
+    "send_order_true_rows": 0,
+    "nonzero_stake_rows": 0,
+    "probability_contract_violations_accepted": 0
+  },
+  "rejection_gate": [
+    "Any synthetic adapter test fails",
+    "Any direct control field differs beyond its declared TARGET display rounding or marker-normalization contract",
+    "Any supported flat control race changes candidate pair or primary confidence decision",
+    "Any unprovable latest local or foreign race silently falls back to an older JRA race",
+    "Any of the 24 required previous-race columns is absent",
+    "Any mapped history row violates the strict target-date cutoff",
+    "Any model, feature set, calibrator, candidate policy, confidence threshold, value policy, or tie-break changes",
+    "Any current result, odds, popularity, market, payout, ROI, dashboard, notification, credential, BUY, or order side effect reaches candidate generation",
+    "Any registered target disappears or any obstacle or source-contract-failed race becomes candidate-ready",
+    "Any probability contract violation is accepted"
+  ],
+  "stop_conditions": [
+    "Today's supported control candidate pair or confidence decision parity is below 100 percent",
+    "The direct adapter cannot prove the actual latest prior race for any runner it marks ready",
+    "Any additional predictive, market, threshold, or production change is required",
+    "Any late race would need backfill or a source contract would need weakening",
+    "Any result, market, credential, notification, dashboard mutation, formal BUY, nonzero stake, or order-capable path is encountered"
+  ],
+  "compute_budget": {
+    "cpu_only": true,
+    "maximum_wall_clock_minutes": 150,
+    "maximum_real_control_races": 36,
+    "maximum_real_target_races": 36,
+    "maximum_real_target_runner_rows": 495,
+    "maximum_public_entry_requests": 0,
+    "maximum_public_schedule_requests": 0,
+    "maximum_public_quote_requests": 0,
+    "synthetic_cases": 48,
+    "random_seeds": [20260809]
+  },
+  "allowed_variant_count": 1,
+  "allowed_threshold_search_count": 0,
+  "base_commit": "385a418827fd6d1cbf9868507d53ad7a04fe172d",
+  "score_components": {
+    "independent_information": 24,
+    "racing_mechanism": 15,
+    "outer_oos_failure_evidence": 20,
+    "leakage_safety": 15,
+    "minimal_falsifiability": 10,
+    "acquisition_implementation_cost": 6
+  },
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

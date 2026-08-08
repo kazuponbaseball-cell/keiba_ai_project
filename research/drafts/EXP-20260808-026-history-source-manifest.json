@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-026",
+  "target_date": "20260809",
+  "source_time_contract": "STRICTLY_BEFORE_TARGET_DATE",
+  "preparation_status": "REAL_SOURCE_BINDING_REQUIRED",
+  "ra_sources": [],
+  "se_sources": [],
+  "authoritative_latest_races": [],
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "real_data_execution_allowed": false
+  }
+}

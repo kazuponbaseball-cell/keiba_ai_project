@@ -1,0 +1,159 @@
+{
+  "experiment_id": "EXP-20260808-027",
+  "title": "Freeze the 2026-08-09 TARGET direct-history source inventory",
+  "hypothesis": "A read-only, hash-recording inventory over the fixed 2026-08-09 runner universe and declared pre-target history sources can produce exactly one authoritative latest-prior-race decision for each of 495 runners, while explicitly failing closed for local, foreign, unavailable, or otherwise unprovable histories.",
+  "null_hypothesis": "The declared sources cannot prove one authoritative latest-prior-race decision for every fixed runner, any same-day or future record is required, any source cannot be hash-bound, or any prediction, market, result, ROI, BUY, order, dashboard, notification, or credential path is needed.",
+  "racing_mechanism": "The frozen model requires the latest pre-race performance context for each runner. This inventory does not predict; it proves which prior race is authoritative and which exact JRA-VAN SU/SR records may be used later by the already-prepared direct-history adapter.",
+  "target_population": "The fixed 495 active runners in the 36 pre-registered 2026-08-09 Sapporo, Niigata, and Chukyo races bound by the EXP025 fold manifest and fixed DU hash.",
+  "in_scope": [
+    "Add one read-only source-inventory builder that writes canonical JSON and SHA-256 identities for every external file it actually reads",
+    "Build exactly one authority row per fixed current horse_id with latest_race_id, latest_race_date, authority source, and explicit contract status",
+    "Classify provable JRA history, confirmed no-prior-race, local or foreign latest race, and unprovable authority separately",
+    "Enumerate only declared 2025 and 2026 JRA-VAN SU/SR inputs and reject path, hash, duplicate-record, and source-date drift",
+    "Keep all 495 runners in the denominator and never substitute an older JRA race for an unprovable latest race",
+    "Run synthetic fixture tests only during APPROVED_TO_PREPARE",
+    "After a distinct APPROVED_TO_RUN grant, execute one read-only inventory command with no inference or candidate generation",
+    "Keep formal_buy false, send_order false, stake zero, dashboard mutation false, notification false, credential access false, and order imports disabled"
+  ],
+  "out_of_scope": [
+    "Any 2026-08-08 control parity, 2026-08-09 inference, candidate generation, confidence decision, quote, or dashboard generation",
+    "Any current odds, popularity, market rank, payout, ROI, result from 2026-08-09, or derivative",
+    "Any historical backtest, model training, refit, calibration, threshold search, candidate reranking, or action optimization",
+    "Any public website acquisition, browser automation, scraping, login, credential, or CAPTCHA interaction",
+    "Any formal BUY, purchase adapter, notification, nonzero stake, or order transmission",
+    "Any mutation of external TARGET or history source files",
+    "Any silent fallback from a local, foreign, missing, or unprovable latest race to an older JRA record"
+  ],
+  "expected_changed_paths": [
+    "scripts/research/build_target_direct_history_source_manifest_v1.py",
+    "tests/research/test_target_direct_history_source_manifest_v1.py"
+  ],
+  "raw_data_sources": [
+    "C:/Users/kazup/Data Lab/DE_DATA/2026/DU20260809.DAT SHA-256 d644e3b128e4643ecee14e688893e8589182c770e9b4edcca2eab0ad82a893e6",
+    "C:/Users/kazup/Data Lab/SE_DATA/2025 and /2026 SU/SR files; exact paths and SHA-256 values are the primary output of this inventory",
+    "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/date/raw/全競走馬成績.csv and registered recent-result manifests, read-only and accepted only when their source chronology is explicit",
+    "research/drafts/EXP-20260808-025-card-input.fold_manifest.json SHA-256 2de07ad7c649247cbdb897f5aaa6e91e23013a538ec7e6289a64e68863c1eeb2"
+  ],
+  "data_as_of": "The target race and runner universe was fixed before this proposal. No real DU, SU, SR, historical CSV, recent-result file, inference bundle, candidate, quote, result, payout, or ROI operation is allowed during preparation. The single real inventory command requires a separate APPROVED_TO_RUN grant.",
+  "allowed_columns": [
+    "authoritative_latest_race_id",
+    "authoritative_latest_race_date",
+    "authority_contract_ok",
+    "authority_failure_reason",
+    "authority_source_file_hash",
+    "authority_source_record_hash",
+    "authority_source_system",
+    "formal_buy",
+    "horse_id",
+    "ra_source_path",
+    "ra_source_sha256",
+    "se_source_path",
+    "se_source_sha256",
+    "send_order",
+    "source_event_time_max",
+    "source_file_count",
+    "stake",
+    "target_date"
+  ],
+  "forbidden_columns": [
+    "current_odds",
+    "current_popularity",
+    "final_odds",
+    "formal_stake_yen",
+    "market_rank",
+    "official_result_20260809",
+    "order_payload",
+    "payout",
+    "prediction_probability",
+    "roi",
+    "selected_candidate",
+    "t3_odds"
+  ],
+  "lineage_hash_requirements": [
+    "The fixed DU, fold manifest, inventory code, environment manifest, and every external history or authority file read are SHA-256 bound",
+    "Every current horse_id has exactly one canonical authority row and no duplicate identity",
+    "Every accepted latest race date is strictly before 2026-08-09",
+    "Every accepted JRA latest race maps to exactly one SU race record and one runner record for that horse",
+    "Local, foreign, missing, or unprovable latest histories remain explicit failures and never fall back to older JRA rows",
+    "No external source is written or modified",
+    "Every output sets formal_buy false, send_order false, and stake zero"
+  ],
+  "chronological_fold_design": {
+    "design": "One fixed read-only source inventory; there is no fitting, calibration, policy selection, inference, candidate generation, or ROI evaluation.",
+    "target_clock": "All authority and history records must have event date strictly before 2026-08-09.",
+    "preparation_clock": "Only synthetic temporary-directory fixtures are permitted before APPROVED_TO_RUN.",
+    "real_data_clock": "The exact inventory command runs once after separate run approval and records every file hash before parsing its records.",
+    "failure_denominator_rule": "Every one of the fixed 495 horse_ids receives an authority row even when its history cannot be proven."
+  },
+  "fold_manifest": {
+    "path": "research/drafts/EXP-20260808-025-card-input.fold_manifest.json",
+    "sha256": "2de07ad7c649247cbdb897f5aaa6e91e23013a538ec7e6289a64e68863c1eeb2"
+  },
+  "purge_embargo": {
+    "history_cutoff": "No record dated 2026-08-09 or later may be accepted.",
+    "market_firewall": "No odds, popularity, market rank, payout, ROI, or derivative may be read or emitted.",
+    "result_embargo": "No 2026-08-09 result or post-race field may be read.",
+    "race_overlap_allowed": false,
+    "target_selection_embargo": "The 495 current horse_ids remain fixed from the pre-registered DU universe."
+  },
+  "primary_metric": {
+    "name": "authoritative_history_inventory_completeness",
+    "unit": "fraction",
+    "baseline": "EXP026 has a deliberately empty fail-closed history source manifest and therefore cannot read real history or generate candidates.",
+    "evaluation": "Exactly 495 unique authority rows are emitted; every accepted latest JRA race has unique matching SU/SR records; every source read is hash-bound; all unavailable cases are explicit; no future date, silent fallback, prediction, market, or side effect occurs."
+  },
+  "required_effect": {
+    "registered_runner_rows": 495,
+    "authority_rows": 495,
+    "duplicate_authority_rows": 0,
+    "accepted_same_day_or_future_rows": 0,
+    "silent_older_jra_fallback_rows": 0,
+    "unhashed_source_files_read": 0,
+    "prediction_rows": 0,
+    "market_rows": 0,
+    "formal_buy_true_rows": 0,
+    "send_order_true_rows": 0,
+    "nonzero_stake_rows": 0
+  },
+  "rejection_gate": [
+    "Any preparation command reads a fixed real DU, SU, SR, historical CSV, or recent-result file",
+    "Any current horse_id is missing or duplicated in the authority output",
+    "Any accepted authority row is dated 2026-08-09 or later",
+    "Any source file is read without recording and verifying its SHA-256",
+    "Any latest local, foreign, unavailable, or unprovable race silently falls back to an older JRA race",
+    "Any prediction, candidate, odds, popularity, market, payout, ROI, result, dashboard, notification, credential, BUY, stake, or order path is touched",
+    "Any external source file is modified",
+    "Any synthetic source-inventory test fails"
+  ],
+  "stop_conditions": [
+    "The latest-race authority cannot distinguish a true debut runner from unavailable history",
+    "The authority data are not current through the required pre-target as-of date",
+    "The fixed DU or fold manifest hash changes",
+    "Any result, market, credential, dashboard, notification, formal BUY, nonzero stake, or order-capable path is encountered",
+    "Any additional predictive or policy change is required"
+  ],
+  "compute_budget": {
+    "cpu_only": true,
+    "maximum_wall_clock_minutes": 45,
+    "maximum_real_target_runner_rows": 495,
+    "maximum_public_requests": 0,
+    "synthetic_cases": 16,
+    "random_seeds": [
+      20260809
+    ]
+  },
+  "allowed_variant_count": 1,
+  "allowed_threshold_search_count": 0,
+  "base_commit": "385a418827fd6d1cbf9868507d53ad7a04fe172d",
+  "score_components": {
+    "independent_information": 24,
+    "racing_mechanism": 12,
+    "outer_oos_failure_evidence": 20,
+    "leakage_safety": 15,
+    "minimal_falsifiability": 10,
+    "acquisition_implementation_cost": 7
+  },
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

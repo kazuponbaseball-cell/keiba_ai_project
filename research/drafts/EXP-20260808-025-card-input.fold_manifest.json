@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-025",
+  "manifest_type": "fixed_target_direct_entry_card_and_chronology",
+  "timezone": "Asia/Tokyo",
+  "target_date": "2026-08-09",
+  "selection_uses_market_data": false,
+  "input_sources": [
+    {
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DR20260809.DAT",
+      "source_role": "target_race_metadata_schedule_and_domain",
+      "sha256": "ea331f6d5da7ef14bb3b1f14783388f36d6f4da603e873004a19257259a8b177",
+      "size_bytes": 32112,
+      "observed_last_write_time": "2026-08-08T19:11:06.8372518+09:00",
+      "encoding": "cp932"
+    },
+    {
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DU20260809.DAT",
+      "source_role": "target_runner_identity_and_card_key",
+      "sha256": "d644e3b128e4643ecee14e688893e8589182c770e9b4edcca2eab0ad82a893e6",
+      "size_bytes": 78705,
+      "observed_last_write_time": "2026-08-08T19:11:21.8844603+09:00",
+      "encoding": "cp932"
+    },
+    {
+      "path_pattern": "C:/Users/kazup/Data Lab/SE_DATA/{2025,2026}/{SU,SR}*.DAT",
+      "source_role": "jra_prior_race_runner_and_race_history",
+      "hash_binding": "required_in_run_scope",
+      "known_limitation": "JRA SU/SR does not contain NAR/local prior-race records"
+    }
+  ],
+  "card_totals": {
+    "race_count": 36,
+    "runner_count": 495,
+    "flat_race_count": 35,
+    "unsupported_obstacle_race_count": 1
+  },
+  "venue_totals": [
+    {"venue": "Sapporo", "race_count": 12, "runner_count": 159},
+    {"venue": "Niigata", "race_count": 12, "runner_count": 172},
+    {"venue": "Chukyo", "race_count": 12, "runner_count": 164}
+  ],
+  "races": [
+    {"target_race_key":"2026080901010601","race_id":"202601010601","venue":"Sapporo","race_no":1,"runner_count":12,"scheduled_post_time":"2026-08-09T10:00:00+09:00","domain":"dirt","distance_m":1700,"track_code":"24"},
+    {"target_race_key":"2026080901010602","race_id":"202601010602","venue":"Sapporo","race_no":2,"runner_count":12,"scheduled_post_time":"2026-08-09T10:30:00+09:00","domain":"dirt","distance_m":1000,"track_code":"24"},
+    {"target_race_key":"2026080901010603","race_id":"202601010603","venue":"Sapporo","race_no":3,"runner_count":10,"scheduled_post_time":"2026-08-09T11:00:00+09:00","domain":"turf","distance_m":2000,"track_code":"17"},
+    {"target_race_key":"2026080901010604","race_id":"202601010604","venue":"Sapporo","race_no":4,"runner_count":14,"scheduled_post_time":"2026-08-09T11:30:00+09:00","domain":"dirt","distance_m":1700,"track_code":"24"},
+    {"target_race_key":"2026080901010605","race_id":"202601010605","venue":"Sapporo","race_no":5,"runner_count":13,"scheduled_post_time":"2026-08-09T12:20:00+09:00","domain":"turf","distance_m":1500,"track_code":"17"},
+    {"target_race_key":"2026080901010606","race_id":"202601010606","venue":"Sapporo","race_no":6,"runner_count":14,"scheduled_post_time":"2026-08-09T12:50:00+09:00","domain":"turf","distance_m":2600,"track_code":"17"},
+    {"target_race_key":"2026080901010607","race_id":"202601010607","venue":"Sapporo","race_no":7,"runner_count":16,"scheduled_post_time":"2026-08-09T13:20:00+09:00","domain":"turf","distance_m":2000,"track_code":"17"},
+    {"target_race_key":"2026080901010608","race_id":"202601010608","venue":"Sapporo","race_no":8,"runner_count":14,"scheduled_post_time":"2026-08-09T13:50:00+09:00","domain":"dirt","distance_m":1700,"track_code":"24"},
+    {"target_race_key":"2026080901010609","race_id":"202601010609","venue":"Sapporo","race_no":9,"runner_count":16,"scheduled_post_time":"2026-08-09T14:20:00+09:00","domain":"turf","distance_m":1200,"track_code":"17"},
+    {"target_race_key":"2026080901010610","race_id":"202601010610","venue":"Sapporo","race_no":10,"runner_count":14,"scheduled_post_time":"2026-08-09T14:50:00+09:00","domain":"dirt","distance_m":1700,"track_code":"24"},
+    {"target_race_key":"2026080901010611","race_id":"202601010611","venue":"Sapporo","race_no":11,"runner_count":16,"scheduled_post_time":"2026-08-09T15:25:00+09:00","domain":"turf","distance_m":1200,"track_code":"17"},
+    {"target_race_key":"2026080901010612","race_id":"202601010612","venue":"Sapporo","race_no":12,"runner_count":8,"scheduled_post_time":"2026-08-09T16:00:00+09:00","domain":"turf","distance_m":1800,"track_code":"17"},
+    {"target_race_key":"2026080904020601","race_id":"202604020601","venue":"Niigata","race_no":1,"runner_count":16,"scheduled_post_time":"2026-08-09T09:40:00+09:00","domain":"turf","distance_m":2000,"track_code":"11"},
+    {"target_race_key":"2026080904020602","race_id":"202604020602","venue":"Niigata","race_no":2,"runner_count":11,"scheduled_post_time":"2026-08-09T10:10:00+09:00","domain":"turf","distance_m":1200,"track_code":"11"},
+    {"target_race_key":"2026080904020603","race_id":"202604020603","venue":"Niigata","race_no":3,"runner_count":15,"scheduled_post_time":"2026-08-09T10:40:00+09:00","domain":"dirt","distance_m":1200,"track_code":"23"},
+    {"target_race_key":"2026080904020604","race_id":"202604020604","venue":"Niigata","race_no":4,"runner_count":15,"scheduled_post_time":"2026-08-09T11:10:00+09:00","domain":"dirt","distance_m":1800,"track_code":"23"},
+    {"target_race_key":"2026080904020605","race_id":"202604020605","venue":"Niigata","race_no":5,"runner_count":15,"scheduled_post_time":"2026-08-09T11:40:00+09:00","domain":"dirt","distance_m":1200,"track_code":"23"},
+    {"target_race_key":"2026080904020606","race_id":"202604020606","venue":"Niigata","race_no":6,"runner_count":13,"scheduled_post_time":"2026-08-09T15:00:00+09:00","domain":"turf","distance_m":1800,"track_code":"12"},
+    {"target_race_key":"2026080904020607","race_id":"202604020607","venue":"Niigata","race_no":7,"runner_count":12,"scheduled_post_time":"2026-08-09T15:35:00+09:00","domain":"dirt","distance_m":1800,"track_code":"23"},
+    {"target_race_key":"2026080904020608","race_id":"202604020608","venue":"Niigata","race_no":8,"runner_count":17,"scheduled_post_time":"2026-08-09T16:10:00+09:00","domain":"turf","distance_m":1000,"track_code":"10"},
+    {"target_race_key":"2026080904020609","race_id":"202604020609","venue":"Niigata","race_no":9,"runner_count":15,"scheduled_post_time":"2026-08-09T16:45:00+09:00","domain":"dirt","distance_m":1200,"track_code":"23"},
+    {"target_race_key":"2026080904020610","race_id":"202604020610","venue":"Niigata","race_no":10,"runner_count":7,"scheduled_post_time":"2026-08-09T17:20:00+09:00","domain":"turf","distance_m":2000,"track_code":"12"},
+    {"target_race_key":"2026080904020611","race_id":"202604020611","venue":"Niigata","race_no":11,"runner_count":18,"scheduled_post_time":"2026-08-09T17:50:00+09:00","domain":"turf","distance_m":1600,"track_code":"12"},
+    {"target_race_key":"2026080904020612","race_id":"202604020612","venue":"Niigata","race_no":12,"runner_count":18,"scheduled_post_time":"2026-08-09T18:20:00+09:00","domain":"turf","distance_m":1200,"track_code":"11"},
+    {"target_race_key":"2026080907020601","race_id":"202607020601","venue":"Chukyo","race_no":1,"runner_count":16,"scheduled_post_time":"2026-08-09T09:50:00+09:00","domain":"turf","distance_m":2000,"track_code":"17"},
+    {"target_race_key":"2026080907020602","race_id":"202607020602","venue":"Chukyo","race_no":2,"runner_count":9,"scheduled_post_time":"2026-08-09T10:20:00+09:00","domain":"turf","distance_m":1600,"track_code":"17"},
+    {"target_race_key":"2026080907020603","race_id":"202607020603","venue":"Chukyo","race_no":3,"runner_count":8,"scheduled_post_time":"2026-08-09T10:50:00+09:00","domain":"turf","distance_m":2000,"track_code":"17"},
+    {"target_race_key":"2026080907020604","race_id":"202607020604","venue":"Chukyo","race_no":4,"runner_count":16,"scheduled_post_time":"2026-08-09T11:20:00+09:00","domain":"dirt","distance_m":1800,"track_code":"24"},
+    {"target_race_key":"2026080907020605","race_id":"202607020605","venue":"Chukyo","race_no":5,"runner_count":16,"scheduled_post_time":"2026-08-09T11:50:00+09:00","domain":"dirt","distance_m":1400,"track_code":"24"},
+    {"target_race_key":"2026080907020606","race_id":"202607020606","venue":"Chukyo","race_no":6,"runner_count":7,"scheduled_post_time":"2026-08-09T15:10:00+09:00","domain":"turf","distance_m":2000,"track_code":"17"},
+    {"target_race_key":"2026080907020607","race_id":"202607020607","venue":"Chukyo","race_no":7,"runner_count":18,"scheduled_post_time":"2026-08-09T15:45:00+09:00","domain":"turf","distance_m":1200,"track_code":"17"},
+    {"target_race_key":"2026080907020608","race_id":"202607020608","venue":"Chukyo","race_no":8,"runner_count":11,"scheduled_post_time":"2026-08-09T16:20:00+09:00","domain":"dirt","distance_m":1800,"track_code":"24"},
+    {"target_race_key":"2026080907020609","race_id":"202607020609","venue":"Chukyo","race_no":9,"runner_count":13,"scheduled_post_time":"2026-08-09T16:55:00+09:00","domain":"obstacle","distance_m":3000,"track_code":"56","required_action":"NO_BET_UNSUPPORTED_RACE_TYPE"},
+    {"target_race_key":"2026080907020610","race_id":"202607020610","venue":"Chukyo","race_no":10,"runner_count":16,"scheduled_post_time":"2026-08-09T17:30:00+09:00","domain":"dirt","distance_m":1200,"track_code":"24"},
+    {"target_race_key":"2026080907020611","race_id":"202607020611","venue":"Chukyo","race_no":11,"runner_count":18,"scheduled_post_time":"2026-08-09T18:00:00+09:00","domain":"turf","distance_m":1200,"track_code":"17"},
+    {"target_race_key":"2026080907020612","race_id":"202607020612","venue":"Chukyo","race_no":12,"runner_count":16,"scheduled_post_time":"2026-08-09T18:30:00+09:00","domain":"turf","distance_m":1600,"track_code":"17"}
+  ],
+  "chronological_contract": {
+    "candidate_cutoff_seconds_before_scheduled_post": 900,
+    "history_date_must_be_strictly_before": "2026-08-09",
+    "all_registered_targets_remain_in_denominator": true,
+    "past_race_backfill_allowed": false,
+    "unsupported_or_unprovable_history_action": "NO_BET_HISTORY_SOURCE_CONTRACT_FAILED",
+    "obstacle_action": "NO_BET_UNSUPPORTED_RACE_TYPE"
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "candidate_uses_odds": false,
+    "alternative_pair_search_allowed": false,
+    "dashboard_mutation_allowed": false,
+    "notification_allowed": false,
+    "order_path_allowed": false
+  }
+}

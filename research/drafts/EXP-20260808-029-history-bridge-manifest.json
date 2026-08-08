@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-029",
+  "artifacts": [
+    {
+      "role": "recent_results",
+      "config_history_key": "recent_result_globs",
+      "path": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/worktrees/EXP-20260808-019-execution/research/drafts/EXP-20260808-019-recent-results-20260802.csv",
+      "sha256": "ead9264ecc8add5c3de49f65ed9006ac5a653bc6d9bf67f491a33342d30c240d",
+      "byte_count": 12834,
+      "row_count": 459,
+      "race_count": 36,
+      "race_id_column": "race_id",
+      "horse_key_column": "horse_no",
+      "date_column": null,
+      "date_from_race_id_prefix": 8,
+      "minimum_date": "20260802",
+      "maximum_date": "20260802",
+      "duplicate_race_horse_rows": 0
+    },
+    {
+      "role": "entry_snapshot",
+      "config_history_key": "entry_globs",
+      "path": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/worktrees/EXP-20260808-019-execution/research/drafts/EXP-20260808-019-entry_snapshot_netkeiba_20260802_target_de_overlay_enriched_workout_knowledge.csv",
+      "sha256": "2d987623b2be36e9eed451fb5b1e0dd0db6fff189f3b67374711f71908022023",
+      "byte_count": 20962,
+      "row_count": 459,
+      "race_count": 36,
+      "race_id_column": "race_id",
+      "horse_key_column": "馬番",
+      "date_column": "日付S",
+      "date_from_race_id_prefix": 0,
+      "minimum_date": "20260802",
+      "maximum_date": "20260802",
+      "duplicate_race_horse_rows": 0
+    }
+  ],
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
