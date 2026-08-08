@@ -486,6 +486,95 @@ class TargetDirectHistoryUnitTests(unittest.TestCase):
                     target_date="20260809",
                 )
 
+    def test_direct_source_manifest_accepts_audited_authority_schema(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            ra_path = root / "SU.DAT"
+            se_path = root / "SR.DAT"
+            manifest_path = root / "history-manifest.json"
+            ra_path.write_bytes(synthetic_ra() + b"\r\n")
+            se_path.write_bytes(synthetic_se() + b"\r\n")
+            current = pd.DataFrame(
+                [
+                    {
+                        "target_race_key": "2026080901010501",
+                        "horse_no": 7,
+                        "horse_id": "2022100001",
+                    }
+                ]
+            )
+            manifest = {
+                "schema_version": 1,
+                "target_date": "20260809",
+                "source_time_contract": "STRICTLY_BEFORE_TARGET_DATE",
+                "ra_sources": [{"path": str(ra_path), "sha256": _sha256(ra_path)}],
+                "se_sources": [{"path": str(se_path), "sha256": _sha256(se_path)}],
+                "authoritative_latest_races": [
+                    {
+                        "horse_id": "2022100001",
+                        "authoritative_latest_race_id": "202605010101",
+                        "authority_contract_ok": True,
+                        "authority_failure_reason": "",
+                        "target_date": "20260809",
+                    }
+                ],
+            }
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, sort_keys=True),
+                encoding="utf-8",
+            )
+            frame, _ = load_direct_history(
+                source_manifest_path=manifest_path,
+                source_manifest_sha256=_sha256(manifest_path),
+                du=current,
+                target_date="20260809",
+            )
+        self.assertEqual(1, len(frame))
+        self.assertTrue(frame.iloc[0]["previous_race_contract_ok"])
+
+    def test_direct_source_manifest_rejects_failed_audited_authority(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            ra_path = root / "SU.DAT"
+            se_path = root / "SR.DAT"
+            manifest_path = root / "history-manifest.json"
+            ra_path.write_bytes(synthetic_ra() + b"\r\n")
+            se_path.write_bytes(synthetic_se() + b"\r\n")
+            manifest = {
+                "schema_version": 1,
+                "target_date": "20260809",
+                "source_time_contract": "STRICTLY_BEFORE_TARGET_DATE",
+                "ra_sources": [{"path": str(ra_path), "sha256": _sha256(ra_path)}],
+                "se_sources": [{"path": str(se_path), "sha256": _sha256(se_path)}],
+                "authoritative_latest_races": [
+                    {
+                        "horse_id": "2022100001",
+                        "authoritative_latest_race_id": "",
+                        "authority_contract_ok": False,
+                        "authority_failure_reason": "UNPROVABLE_LATEST_RACE",
+                    }
+                ],
+            }
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, sort_keys=True),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(ValueError, "failed authority row"):
+                load_direct_history(
+                    source_manifest_path=manifest_path,
+                    source_manifest_sha256=_sha256(manifest_path),
+                    du=pd.DataFrame(
+                        [
+                            {
+                                "target_race_key": "2026080901010501",
+                                "horse_no": 7,
+                                "horse_id": "2022100001",
+                            }
+                        ]
+                    ),
+                    target_date="20260809",
+                )
+
     def test_direct_multicard_import_is_synthetic_and_complete(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -623,11 +712,33 @@ class TargetDirectHistoryUnitTests(unittest.TestCase):
             )
             summary = import_multicard(config_path, output_root)
 
+            config["input_sources"]["direct_history_manifest"] = {
+                "path": str(root / "unbound-history-manifest.json"),
+                "sha256": "0" * 64,
+            }
+            config_path.write_text(
+                json.dumps(config, ensure_ascii=False), encoding="utf-8"
+            )
+            override_summary = import_multicard(
+                config_path,
+                root / "output-override",
+                direct_history_manifest_path=source_manifest_path,
+                direct_history_manifest_sha256=_sha256(source_manifest_path),
+            )
+
             self.assertEqual("target_direct", summary["history_mode"])
             self.assertEqual(36, summary["runner_rows"])
             self.assertEqual(36, summary["race_count"])
             self.assertEqual(36, summary["experienced_runner_rows_mapped"])
             self.assertEqual(0, summary["history_contract_failures"])
+            self.assertEqual(
+                _sha256(source_manifest_path),
+                override_summary["direct_history_manifest_sha256"],
+            )
+            self.assertEqual(
+                str(source_manifest_path.resolve()),
+                override_summary["direct_history_manifest_path"],
+            )
             self.assertEqual(3, len(summary["cards"]))
             for card in summary["cards"]:
                 self.assertEqual(12, card["rows"])
@@ -656,6 +767,10 @@ class TargetDirectHistoryUnitTests(unittest.TestCase):
         self.assertEqual("target_direct", config["input_contract"]["history_mode"])
         self.assertEqual(36, config["input_contract"]["expected_races"])
         self.assertEqual(495, config["input_contract"]["expected_runner_rows"])
+        self.assertEqual(
+            447, config["input_contract"]["expected_experienced_runner_rows"]
+        )
+        self.assertEqual(48, config["input_contract"]["expected_no_history_runner_rows"])
         self.assertNotIn("html", config["input_sources"])
         self.assertFalse(config["safety"]["formal_buy"])
         self.assertFalse(config["safety"]["send_order"])

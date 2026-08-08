@@ -64,6 +64,8 @@
   },
   "input_contract": {
     "current_market_fields_must_be_blank": true,
+    "expected_experienced_runner_rows": 447,
+    "expected_no_history_runner_rows": 48,
     "expected_ra_rows": 36,
     "expected_races": 36,
     "expected_runner_rows": 495,

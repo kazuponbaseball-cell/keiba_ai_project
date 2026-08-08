@@ -1042,16 +1042,33 @@ def load_direct_history(
     for row in authority_rows:
         if not isinstance(row, dict):
             raise ValueError("invalid authoritative latest-race row")
+        if "authority_contract_ok" in row and row["authority_contract_ok"] is not True:
+            raise ValueError("direct history manifest contains failed authority row")
         horse_id = re.sub(r"\D", "", str(row.get("horse_id", "")))
         if len(horse_id) == 8:
             horse_id = "20" + horse_id
         if len(horse_id) != 10 or horse_id in authoritative:
             raise ValueError("invalid or duplicate authoritative horse identity")
         latest_race_id = row.get("latest_race_id")
+        audited_latest_race_id = row.get("authoritative_latest_race_id")
+        if latest_race_id not in {None, ""} and audited_latest_race_id not in {
+            None,
+            "",
+        } and str(latest_race_id) != str(audited_latest_race_id):
+            raise ValueError("conflicting authoritative latest race ids")
+        if latest_race_id in {None, ""}:
+            latest_race_id = audited_latest_race_id
         if latest_race_id not in {None, ""}:
             latest_race_id = re.sub(r"\D", "", str(latest_race_id))
             if len(latest_race_id) != 12:
                 raise ValueError(f"invalid authoritative latest race id: {latest_race_id}")
+        failure_reason = str(row.get("authority_failure_reason", ""))
+        if failure_reason not in {"", "NO_PRIOR_RACE_CONFIRMED"}:
+            raise ValueError(f"unsupported authority failure reason: {failure_reason}")
+        if failure_reason == "NO_PRIOR_RACE_CONFIRMED" and latest_race_id:
+            raise ValueError("no-prior authority row contains a latest race id")
+        if "target_date" in row and str(row["target_date"]) != target_date:
+            raise ValueError("authority row target date mismatch")
         authoritative[horse_id] = latest_race_id or None
 
     current_horse_ids = set(du["horse_id"].astype(str))
@@ -1080,7 +1097,13 @@ def load_direct_history(
     return frame, manifest
 
 
-def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
+def import_multicard(
+    config_path: Path,
+    output_root: Path,
+    *,
+    direct_history_manifest_path: Path | None = None,
+    direct_history_manifest_sha256: str | None = None,
+) -> dict[str, Any]:
     config = load_json(config_path)
     safety = config.get("safety", {})
     if safety.get("formal_buy") is not False or safety.get("send_order") is not False:
@@ -1141,12 +1164,27 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
         source = sources.get("direct_history_manifest")
         if not isinstance(source, dict):
             raise ValueError("target-direct history mode requires a source manifest")
-        manifest_path = Path(str(source.get("path", "")))
+        if (direct_history_manifest_path is None) != (
+            direct_history_manifest_sha256 is None
+        ):
+            raise ValueError(
+                "direct history manifest override requires both path and sha256"
+            )
+        manifest_path = (
+            direct_history_manifest_path
+            if direct_history_manifest_path is not None
+            else Path(str(source.get("path", "")))
+        )
         if not manifest_path.is_absolute():
             manifest_path = ROOT / manifest_path
+        manifest_sha256 = (
+            str(direct_history_manifest_sha256)
+            if direct_history_manifest_sha256 is not None
+            else str(source.get("sha256", ""))
+        )
         direct_history, direct_manifest = load_direct_history(
             source_manifest_path=manifest_path,
-            source_manifest_sha256=str(source.get("sha256", "")),
+            source_manifest_sha256=manifest_sha256,
             du=du,
             target_date=target_dates[0],
         )
@@ -1245,9 +1283,12 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
         "history_mode": history_mode,
         "html_sha256": file_sha256(html_path) if html_path is not None else "",
         "direct_history_manifest_sha256": (
-            str(sources["direct_history_manifest"]["sha256"])
+            manifest_sha256
             if history_mode == "target_direct"
             else ""
+        ),
+        "direct_history_manifest_path": (
+            str(manifest_path.resolve()) if history_mode == "target_direct" else ""
         ),
         "direct_history_ra_source_count": (
             len(direct_manifest.get("ra_sources", [])) if direct_manifest is not None else 0
@@ -1293,12 +1334,23 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Import a fixed TARGET multi-card HTM/DU pair.")
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--direct-history-manifest", type=Path)
+    parser.add_argument("--direct-history-manifest-sha256")
     return parser
 
 
 def main(argv: Iterable[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    summary = import_multicard(args.config.resolve(), args.output_root.resolve())
+    summary = import_multicard(
+        args.config.resolve(),
+        args.output_root.resolve(),
+        direct_history_manifest_path=(
+            args.direct_history_manifest.resolve()
+            if args.direct_history_manifest is not None
+            else None
+        ),
+        direct_history_manifest_sha256=args.direct_history_manifest_sha256,
+    )
     print(canonical_json(summary))
     return 0
 
