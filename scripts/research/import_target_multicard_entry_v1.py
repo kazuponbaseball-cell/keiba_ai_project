@@ -14,6 +14,14 @@ from typing import Any, Iterable
 
 import pandas as pd
 
+from scripts.research.target_direct_history_v1 import (
+    PREVIOUS_RACE_COLUMNS as DIRECT_PREVIOUS_RACE_COLUMNS,
+    build_all_history_payloads,
+    read_ra_files,
+    read_se_files,
+    select_authoritative_history,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 VENUES = {
@@ -67,6 +75,18 @@ PREVIOUS_RACE_SOURCE_ALIASES: dict[str, tuple[str, ...]] = {
     "\u524d\u8d70\u30c8\u30e9\u30c3\u30af\u30b3\u30fc\u30c9": ("TrC", "\u30c8\u30e9\u30c3\u30af\u30b3\u30fc\u30c9"),
 }
 PREVIOUS_RACE_COLUMNS = tuple(PREVIOUS_RACE_SOURCE_ALIASES)
+if PREVIOUS_RACE_COLUMNS != DIRECT_PREVIOUS_RACE_COLUMNS:
+    raise RuntimeError("TARGET direct-history schema differs from the legacy HTM schema")
+
+DIRECT_HISTORY_METADATA_COLUMNS = (
+    "previous_race_source_date",
+    "previous_race_source_record_hash",
+    "previous_race_source_system",
+    "previous_race_source_file_hash",
+    "previous_race_no_history_reason",
+    "previous_race_contract_ok",
+    "previous_pci_target_good_run_marker",
+)
 HISTORY_DATE_ALIASES = ("\u65e5\u4ed8S", "\u65e5\u4ed8")
 HISTORY_HORSE_NAME_ALIASES = ("\u99ac\u540d",)
 HISTORY_HORSE_ID_ALIASES = ("\u8840\u7d71\u767b\u9332\u756a\u53f7", "horse_id")
@@ -708,14 +728,16 @@ def parse_ra_race_metadata(
 def bind_fixed_input_metadata(
     *,
     du: pd.DataFrame,
-    html_matches: dict[str, dict[str, int]],
+    html_matches: dict[str, dict[str, int]] | None,
     ra_metadata: dict[str, RaceMetadata],
     target_records: list[dict[str, Any]],
 ) -> dict[str, RaceMetadata]:
     target_by_key = {str(record["target_race_key"]): record for record in target_records}
     du_keys = set(du["target_race_key"].astype(str).unique())
     expected_keys = set(target_by_key)
-    if du_keys != expected_keys or set(html_matches) != expected_keys or set(ra_metadata) != expected_keys:
+    if du_keys != expected_keys or set(ra_metadata) != expected_keys:
+        raise ValueError("DU/RA/manifest race identity mismatch")
+    if html_matches is not None and set(html_matches) != expected_keys:
         raise ValueError("HTM/DU/RA/manifest race identity mismatch")
     bound: dict[str, RaceMetadata] = {}
     for key in sorted(expected_keys):
@@ -736,13 +758,17 @@ def bind_fixed_input_metadata(
                 f"RA/manifest post time mismatch for {key}: "
                 f"{meta.scheduled_post_hhmm} != {scheduled_hhmm}"
             )
-        match = html_matches[key]
-        if int(match["runner_name_match_count"]) != expected_count:
+        match = html_matches[key] if html_matches is not None else None
+        if match is not None and int(match["runner_name_match_count"]) != expected_count:
             raise ValueError(f"HTML/manifest runner count mismatch for {key}")
         bound[key] = replace(
             meta,
-            runner_name_match_count=int(match["runner_name_match_count"]),
-            html_group_index=int(match["html_group_index"]),
+            runner_name_match_count=(
+                int(match["runner_name_match_count"])
+                if match is not None
+                else du_count
+            ),
+            html_group_index=(int(match["html_group_index"]) if match is not None else 0),
         )
     return bound
 
@@ -775,7 +801,10 @@ def build_entry_rows(
     *,
     historical: pd.DataFrame | None = None,
     html_history: pd.DataFrame | None = None,
+    direct_history: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
+    if html_history is not None and direct_history is not None:
+        raise ValueError("HTML and direct history modes are mutually exclusive")
     records = target_manifest.get("records")
     if not isinstance(records, list) or len(records) != 12:
         raise ValueError("target manifest must contain exactly 12 records")
@@ -786,7 +815,7 @@ def build_entry_rows(
     expected_count = sum(int(record["runner_count"]) for record in records)
     if len(selected) != expected_count:
         raise ValueError(f"runner count mismatch: {len(selected)} != {expected_count}")
-    history_lookup: dict[tuple[int, int], dict[str, Any]] = {}
+    history_lookup: dict[tuple[Any, int], dict[str, Any]] = {}
     if html_history is not None:
         required_history_columns = {
             "html_group_index",
@@ -805,6 +834,22 @@ def build_entry_rows(
         for history_row in html_history.to_dict(orient="records"):
             key = (int(history_row["html_group_index"]), int(history_row["horse_no"]))
             history_lookup[key] = history_row
+    if direct_history is not None:
+        required_history_columns = {
+            "target_race_key",
+            "horse_no",
+            "horse_id",
+            *PREVIOUS_RACE_COLUMNS,
+            *DIRECT_HISTORY_METADATA_COLUMNS,
+        }
+        missing = sorted(required_history_columns.difference(direct_history.columns))
+        if missing:
+            raise ValueError(f"direct history frame missing required columns: {missing}")
+        if direct_history.duplicated(["target_race_key", "horse_no"]).any():
+            raise ValueError("direct history frame contains duplicate runner keys")
+        for history_row in direct_history.to_dict(orient="records"):
+            key = (str(history_row["target_race_key"]), int(history_row["horse_no"]))
+            history_lookup[key] = history_row
     output: list[dict[str, Any]] = []
     for row in selected.to_dict(orient="records"):
         target = manifest_by_key[str(row["target_race_key"])]
@@ -814,8 +859,13 @@ def build_entry_rows(
             {
                 "previous_race_source_date": "",
                 "previous_race_source_record_hash": "",
+                "previous_race_source_system": "",
+                "previous_race_source_file_hash": "",
                 "previous_race_no_history_reason": "HISTORY_NOT_ATTACHED",
-                "previous_race_contract_ok": html_history is None,
+                "previous_race_contract_ok": (
+                    html_history is None and direct_history is None
+                ),
+                "previous_pci_target_good_run_marker": None,
             }
         )
         if html_history is not None:
@@ -834,6 +884,24 @@ def build_entry_rows(
                     "previous_race_no_history_reason",
                     "previous_race_contract_ok",
                 )
+            }
+            previous_payload.update(
+                {
+                    "previous_race_source_system": "TARGET_DI_HTML",
+                    "previous_race_source_file_hash": "",
+                    "previous_pci_target_good_run_marker": None,
+                }
+            )
+        if direct_history is not None:
+            history_key = (str(row["target_race_key"]), int(row["horse_no"]))
+            history_row = history_lookup.get(history_key)
+            if history_row is None:
+                raise ValueError(f"direct history runner missing: {history_key}")
+            if str(history_row["horse_id"]) != str(row["horse_id"]):
+                raise ValueError(f"direct history horse id mismatch: {history_key}")
+            previous_payload = {
+                column: history_row[column]
+                for column in (*PREVIOUS_RACE_COLUMNS, *DIRECT_HISTORY_METADATA_COLUMNS)
             }
         race_domain = (
             "obstacle"
@@ -898,10 +966,118 @@ def build_entry_rows(
             }
         )
     frame = pd.DataFrame(output).sort_values(["race_no", "horse_no"], kind="mergesort")
+    if direct_history is not None:
+        failed_race_ids = set(
+            frame.loc[~frame["previous_race_contract_ok"].astype(bool), "race_id"].astype(str)
+        )
+        if failed_race_ids:
+            frame.loc[
+                frame["race_id"].astype(str).isin(failed_race_ids), "race_domain"
+            ] = "history_contract_failed"
     for column in frame.columns:
         if column in FORBIDDEN_CURRENT_FIELDS or str(column).lower().startswith(ODDS_PREFIX):
             frame[column] = ""
     return frame
+
+
+def _manifest_source_paths(
+    manifest: dict[str, Any],
+    key: str,
+) -> list[Path]:
+    entries = manifest.get(key)
+    if not isinstance(entries, list) or not entries:
+        raise ValueError(f"direct history manifest requires non-empty {key}")
+    paths: list[Path] = []
+    seen: set[str] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError(f"invalid {key} source entry")
+        raw_path = str(entry.get("path", ""))
+        expected_hash = str(entry.get("sha256", "")).lower()
+        if not raw_path or not re.fullmatch(r"[0-9a-f]{64}", expected_hash):
+            raise ValueError(f"invalid {key} source identity")
+        path = Path(raw_path)
+        if not path.is_absolute():
+            path = ROOT / path
+        canonical_path = str(path.resolve())
+        if canonical_path in seen:
+            raise ValueError(f"duplicate {key} source path: {canonical_path}")
+        seen.add(canonical_path)
+        observed_hash = file_sha256(path)
+        if observed_hash != expected_hash:
+            raise ValueError(
+                f"{key} source hash mismatch: {observed_hash} != {expected_hash}"
+            )
+        paths.append(path)
+    return paths
+
+
+def load_direct_history(
+    *,
+    source_manifest_path: Path,
+    source_manifest_sha256: str,
+    du: pd.DataFrame,
+    target_date: str,
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    observed_manifest_hash = file_sha256(source_manifest_path)
+    if observed_manifest_hash != source_manifest_sha256.lower():
+        raise ValueError(
+            "direct history manifest hash mismatch: "
+            f"{observed_manifest_hash} != {source_manifest_sha256.lower()}"
+        )
+    manifest = load_json(source_manifest_path)
+    if int(manifest.get("schema_version", 0)) != 1:
+        raise ValueError("unsupported direct history manifest schema")
+    if str(manifest.get("target_date", "")) != target_date:
+        raise ValueError("direct history manifest target date mismatch")
+    if manifest.get("source_time_contract") != "STRICTLY_BEFORE_TARGET_DATE":
+        raise ValueError("direct history manifest source-time contract mismatch")
+
+    ra_paths = _manifest_source_paths(manifest, "ra_sources")
+    se_paths = _manifest_source_paths(manifest, "se_sources")
+    authority_rows = manifest.get("authoritative_latest_races")
+    if not isinstance(authority_rows, list):
+        raise ValueError("direct history manifest lacks authoritative latest races")
+    authoritative: dict[str, str | None] = {}
+    for row in authority_rows:
+        if not isinstance(row, dict):
+            raise ValueError("invalid authoritative latest-race row")
+        horse_id = re.sub(r"\D", "", str(row.get("horse_id", "")))
+        if len(horse_id) == 8:
+            horse_id = "20" + horse_id
+        if len(horse_id) != 10 or horse_id in authoritative:
+            raise ValueError("invalid or duplicate authoritative horse identity")
+        latest_race_id = row.get("latest_race_id")
+        if latest_race_id not in {None, ""}:
+            latest_race_id = re.sub(r"\D", "", str(latest_race_id))
+            if len(latest_race_id) != 12:
+                raise ValueError(f"invalid authoritative latest race id: {latest_race_id}")
+        authoritative[horse_id] = latest_race_id or None
+
+    current_horse_ids = set(du["horse_id"].astype(str))
+    if set(authoritative) != current_horse_ids:
+        missing = sorted(current_horse_ids.difference(authoritative))
+        extra = sorted(set(authoritative).difference(current_horse_ids))
+        raise ValueError(
+            "authoritative latest-race universe mismatch: "
+            f"missing={missing[:3]} extra={extra[:3]}"
+        )
+
+    races = read_ra_files(ra_paths)
+    runners = read_se_files(se_paths)
+    payloads = build_all_history_payloads(races, runners)
+    selected = select_authoritative_history(
+        du.to_dict(orient="records"),
+        payloads,
+        target_date=target_date,
+        authoritative_latest_race_id=authoritative,
+    )
+    frame = pd.DataFrame(selected)
+    if len(frame) != len(du):
+        raise ValueError(f"direct history row count mismatch: {len(frame)} != {len(du)}")
+    if frame.duplicated(["target_race_key", "horse_no"]).any():
+        raise ValueError("direct history selection contains duplicate current runners")
+    return frame, manifest
 
 
 def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
@@ -912,14 +1088,30 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
     if int(safety.get("stake", -1)) != 0:
         raise ValueError("stake must be zero")
     sources = config["input_sources"]
-    html_path = Path(sources["html"]["path"])
     du_path = Path(sources["du"]["path"])
     dr_path = Path(sources["dr"]["path"])
-    for name, path in (("html", html_path), ("du", du_path), ("dr", dr_path)):
+    for name, path in (("du", du_path), ("dr", dr_path)):
         expected = str(sources[name]["sha256"]).lower()
         observed = file_sha256(path)
         if observed != expected:
             raise ValueError(f"{name} source hash mismatch: {observed} != {expected}")
+    history_mode = str(config.get("input_contract", {}).get("history_mode", "html"))
+    if history_mode not in {"html", "target_direct"}:
+        raise ValueError(f"unsupported history mode: {history_mode}")
+    html_path: Path | None = None
+    if history_mode == "html":
+        if "html" not in sources:
+            raise ValueError("HTML history mode requires an html input source")
+        html_path = Path(sources["html"]["path"])
+        expected_html_hash = str(sources["html"]["sha256"]).lower()
+        observed_html_hash = file_sha256(html_path)
+        if observed_html_hash != expected_html_hash:
+            raise ValueError(
+                f"html source hash mismatch: {observed_html_hash} != {expected_html_hash}"
+            )
+    elif "html" in sources:
+        raise ValueError("target-direct history mode must not declare an HTML source")
+
     du = parse_du(du_path)
     expected_total = int(config["input_contract"]["expected_runner_rows"])
     expected_races = int(config["input_contract"]["expected_races"])
@@ -928,36 +1120,64 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
     target_dates = sorted(set(du["race_date"].astype(str)))
     if len(target_dates) != 1:
         raise ValueError(f"DU source spans multiple target dates: {target_dates}")
-    html_groups = parse_html_runner_groups(
-        html_path,
-        expected_runner_rows=expected_total,
-        expected_races=expected_races,
-        target_date=target_dates[0],
-    )
     input_contract = config["input_contract"]
     expected_previous_columns = int(input_contract.get("required_previous_race_columns", 24))
+    html_groups: pd.DataFrame | None = None
+    html_matches: dict[str, dict[str, int]] | None = None
+    direct_history: pd.DataFrame | None = None
+    direct_manifest: dict[str, Any] | None = None
+    if history_mode == "html":
+        assert html_path is not None
+        html_groups = parse_html_runner_groups(
+            html_path,
+            expected_runner_rows=expected_total,
+            expected_races=expected_races,
+            target_date=target_dates[0],
+        )
+        html_matches = match_html_runner_groups_to_du(html_groups, du)
+        history_frame = html_groups
+        history_label = "DI"
+    else:
+        source = sources.get("direct_history_manifest")
+        if not isinstance(source, dict):
+            raise ValueError("target-direct history mode requires a source manifest")
+        manifest_path = Path(str(source.get("path", "")))
+        if not manifest_path.is_absolute():
+            manifest_path = ROOT / manifest_path
+        direct_history, direct_manifest = load_direct_history(
+            source_manifest_path=manifest_path,
+            source_manifest_sha256=str(source.get("sha256", "")),
+            du=du,
+            target_date=target_dates[0],
+        )
+        history_frame = direct_history
+        history_label = "direct TARGET"
+
     observed_previous_columns = sum(
-        column in html_groups.columns for column in PREVIOUS_RACE_COLUMNS
+        column in history_frame.columns for column in PREVIOUS_RACE_COLUMNS
     )
     if observed_previous_columns != expected_previous_columns:
         raise ValueError(
-            "DI previous-race column contract mismatch: "
+            f"{history_label} previous-race column contract mismatch: "
             f"{observed_previous_columns} != {expected_previous_columns}"
         )
-    mapped_history = html_groups["previous_race_source_date"].astype(str).ne("")
+    mapped_history = history_frame["previous_race_source_date"].astype(str).ne("")
     expected_mapped = input_contract.get("expected_experienced_runner_rows")
     if expected_mapped is not None and int(mapped_history.sum()) != int(expected_mapped):
         raise ValueError(
-            f"DI experienced-runner history count mismatch: {int(mapped_history.sum())} "
-            f"!= {int(expected_mapped)}"
+            f"{history_label} experienced-runner history count mismatch: "
+            f"{int(mapped_history.sum())} != {int(expected_mapped)}"
         )
     expected_no_history = input_contract.get("expected_no_history_runner_rows")
-    if expected_no_history is not None and int((~mapped_history).sum()) != int(expected_no_history):
+    no_history_rows = history_frame["previous_race_no_history_reason"].astype(str).eq(
+        "NO_PRIOR_RACE_CONFIRMED"
+    ) if history_mode == "target_direct" else ~mapped_history
+    if expected_no_history is not None and int(no_history_rows.sum()) != int(expected_no_history):
         raise ValueError(
-            f"DI no-history runner count mismatch: {int((~mapped_history).sum())} "
-            f"!= {int(expected_no_history)}"
+            f"{history_label} no-history runner count mismatch: "
+            f"{int(no_history_rows.sum())} != {int(expected_no_history)}"
         )
-    html_matches = match_html_runner_groups_to_du(html_groups, du)
+
     ra_metadata = parse_ra_race_metadata(dr_path, expected_races=expected_races)
     manifests: dict[str, dict[str, Any]] = {}
     target_records: list[dict[str, Any]] = []
@@ -984,10 +1204,11 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
             metadata,
             historical=historical,
             html_history=html_groups,
+            direct_history=direct_history,
         )
         card_dir = output_root / str(card["slug"]) / "raw_entry"
         card_dir.mkdir(parents=True, exist_ok=True)
-        output_csv = card_dir / "entry_snapshot_20260808.csv"
+        output_csv = card_dir / f"entry_snapshot_{target_dates[0]}.csv"
         frame.to_csv(output_csv, index=False, encoding="utf-8-sig")
         cards.append(
             {
@@ -1003,32 +1224,58 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
                     frame["previous_race_source_date"].astype(str).ne("").sum()
                 ),
                 "no_history_runner_rows": int(
-                    frame["previous_race_no_history_reason"].astype(str).ne("").sum()
+                    frame["previous_race_no_history_reason"].astype(str).isin(
+                        {"NO_PRIOR_RACE_CONFIRMED", "NO_PRIOR_RACE_TABLE"}
+                    ).sum()
+                ),
+                "history_contract_failure_rows": int(
+                    (~frame["previous_race_contract_ok"].astype(bool)).sum()
+                ),
+                "history_contract_failed_races": int(
+                    frame.loc[
+                        frame["race_domain"].eq("history_contract_failed"), "race_id"
+                    ].nunique()
                 ),
             }
         )
-    mapped_dates = html_groups["previous_race_source_date"].astype(str)
+    mapped_dates = history_frame["previous_race_source_date"].astype(str)
     summary = {
         "schema_version": 1,
         "experiment_id": config["experiment_id"],
-        "html_sha256": file_sha256(html_path),
+        "history_mode": history_mode,
+        "html_sha256": file_sha256(html_path) if html_path is not None else "",
+        "direct_history_manifest_sha256": (
+            str(sources["direct_history_manifest"]["sha256"])
+            if history_mode == "target_direct"
+            else ""
+        ),
+        "direct_history_ra_source_count": (
+            len(direct_manifest.get("ra_sources", [])) if direct_manifest is not None else 0
+        ),
+        "direct_history_se_source_count": (
+            len(direct_manifest.get("se_sources", [])) if direct_manifest is not None else 0
+        ),
         "du_sha256": file_sha256(du_path),
         "dr_sha256": file_sha256(dr_path),
         "runner_rows": int(len(du)),
         "race_count": int(du["target_race_key"].nunique()),
-        "html_runner_groups": int(html_groups["html_group_index"].nunique()),
-        "html_du_identity_matches": int(len(html_matches)),
+        "html_runner_groups": (
+            int(html_groups["html_group_index"].nunique())
+            if html_groups is not None
+            else 0
+        ),
+        "html_du_identity_matches": int(len(html_matches)) if html_matches is not None else 0,
         "ra_race_rows": int(len(ra_metadata)),
         "required_previous_race_columns_present": int(
-            sum(column in html_groups.columns for column in PREVIOUS_RACE_COLUMNS)
+            sum(column in history_frame.columns for column in PREVIOUS_RACE_COLUMNS)
         ),
         "experienced_runner_rows_mapped": int(mapped_dates.ne("").sum()),
         "no_history_runner_rows": int(
-            html_groups["previous_race_no_history_reason"].astype(str).ne("").sum()
+            no_history_rows.sum()
         ),
         "history_max_date": max((value for value in mapped_dates if value), default=""),
         "history_contract_failures": int(
-            (~html_groups["previous_race_contract_ok"].astype(bool)).sum()
+            (~history_frame["previous_race_contract_ok"].astype(bool)).sum()
         ),
         "cards": cards,
         "candidate_uses_odds": False,
