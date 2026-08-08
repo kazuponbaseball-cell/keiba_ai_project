@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-002",
+  "config_id": "realtime_paper_decision_wiring_v1",
+  "timezone": "Asia/Tokyo",
+  "timing": {
+    "monitor_window_opens_seconds_before_post": 300,
+    "normal_window_opens_seconds_before_post": 150,
+    "hard_stop_seconds_before_post": 75,
+    "maximum_quote_age_seconds": 30,
+    "maximum_decision_age_seconds": 45
+  },
+  "value": {
+    "minimum_robust_expected_return": 1.5,
+    "early_window_minimum_robust_expected_return": 1.6
+  },
+  "contracts": {
+    "allowed_market_statuses": [
+      "OPEN",
+      "TRADING"
+    ],
+    "require_exact_race": true,
+    "require_exact_ticket_type": true,
+    "require_exact_candidate_pair": true,
+    "require_candidate_hash_match": true,
+    "require_quote_contract_ok": true,
+    "require_starter_universe_unchanged": true,
+    "require_value_generated_at_or_after_quote": true
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "target_handoff": false,
+    "real_data_during_preparation": false
+  }
+}

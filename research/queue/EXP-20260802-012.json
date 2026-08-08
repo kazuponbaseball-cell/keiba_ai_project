@@ -1,0 +1,222 @@
+{
+  "schema_version": 2,
+  "experiment_id": "EXP-20260802-012",
+  "title": "Harden race-day domain, source-readiness, schedule, and quote-poll contracts",
+  "owner": "kazuponbaseball-cell",
+  "created_at": "2026-08-02T10:23:17Z",
+  "status": "proposed",
+  "score": {
+    "components": {
+      "independent_information": 25,
+      "racing_mechanism": 15,
+      "outer_oos_failure_evidence": 20,
+      "leakage_safety": 15,
+      "minimal_falsifiability": 10,
+      "acquisition_implementation_cost": 8
+    },
+    "weights": {
+      "independent_information": 25,
+      "racing_mechanism": 20,
+      "outer_oos_failure_evidence": 20,
+      "leakage_safety": 15,
+      "minimal_falsifiability": 10,
+      "acquisition_implementation_cost": 10
+    },
+    "total": 93,
+    "threshold": 75,
+    "threshold_met": true
+  },
+  "proposal_scope": {
+    "experiment_id": "EXP-20260802-012",
+    "title": "Harden race-day domain, source-readiness, schedule, and quote-poll contracts",
+    "hypothesis": "A research-only contract layer can retain every registered race while preventing obstacle or unknown race domains from entering the flat-race model, requiring the candidate batch before the earliest cutoff, deriving poll times from a separately locked current schedule, and retrying only within the fixed T-3:30 to T-3:00 window until a quote satisfies the unchanged 60-second freshness contract.",
+    "null_hypothesis": "The observed unsupported-race candidate, late source rows, schedule-shift poll-window failures, and stale one-shot quotes cannot all be eliminated without changing the model, relaxing the strict quote contract, reading odds before the permitted window, dropping failed races, or touching a production/order path.",
+    "racing_mechanism": "The frozen Top3 model was trained for flat turf and dirt races, so obstacle and unknown domains are out of distribution and must fail closed. Candidate probabilities must exist before price observation. Schedule timing determines when a quote is legally observable, and repeated bounded observations inside the pre-registered 30-second window can select the newest quote available by T-3 without changing the candidate or freshness threshold.",
+    "target_population": "Synthetic fixtures representing supported flat turf and dirt races, an obstacle race, an unknown race domain, an early and late candidate batch, exact and shifted odd-minute schedules, a late schedule update, a 90-second-old provider quote, and a fully valid strict-T3 path. No new real race-day run is authorized by this proposal.",
+    "out_of_scope": [
+      "Any alternative pair or ticket search after odds access",
+      "Any model, feature, calibrator, confidence threshold, candidate pair, or expected-return threshold change",
+      "Any obstacle-race model or attempt to reuse the flat-race model for obstacle races",
+      "Any production dashboard, notification, credential, purchase adapter, target handoff, formal BUY, nonzero stake, or order transmission",
+      "Any real race-day execution during APPROVED_TO_PREPARE",
+      "Any relaxation or retrospective reinterpretation of the 60-second strict quote freshness contract",
+      "Any result, payout, popularity, market rank, final odds, ROI, or post-race feature"
+    ],
+    "in_scope": [
+      "Add a premeeting batch-readiness assertion against the earliest candidate cutoff",
+      "Add a schedule-only preflight observation that cannot return or expose odds",
+      "Add a single fixed bounded polling policy inside T-3:30 through T-3:00",
+      "Add an explicit allowlist for flat turf and dirt race domains and retain unsupported rows as UNSUPPORTED_RACE_TYPE failures",
+      "Add race-domain metadata and its source hash to the candidate source manifest and immutable candidate packet",
+      "Derive poll-open and cutoff timestamps from the locked schedule version without minute rounding",
+      "Keep the strict maximum quote age and ingestion delay at 60 seconds",
+      "Retain every registered target as a deterministic candidate, failure, or NO_BET row",
+      "Use synthetic fixtures only during APPROVED_TO_PREPARE"
+    ],
+    "expected_changed_paths": [
+      "config/race_day_contract_hardening_exp012.json",
+      "scripts/research/build_grade_r_candidate_freeze_packets_v1.py",
+      "scripts/research/build_strict_t3_capture_packet_v1.py",
+      "scripts/research/run_strict_t3_shadow_decision_v1.py",
+      "tests/research/test_grade_r_candidate_freeze_packets_v1.py",
+      "tests/research/test_race_day_contract_hardening_v1.py",
+      "tests/research/test_strict_t3_capture_packet_v1.py",
+      "tests/research/test_strict_t3_shadow_decision_v1.py"
+    ],
+    "rejection_gate": [
+      "Any candidate batch committed after the earliest cutoff is accepted as a complete batch",
+      "Any candidate pair changes after odds access",
+      "Any obstacle or unknown race domain reaches model inference or CANDIDATE_READY",
+      "Any odds endpoint is accessed before the locked schedule poll-open time",
+      "Any poll or cutoff timestamp is rounded to a clock minute",
+      "Any production, dashboard, notification, credential, purchase, formal BUY, nonzero stake, or order side effect occurs",
+      "Any quote older than 60 seconds or received after T-3 is accepted",
+      "Any registered target disappears from the ledger",
+      "Any schedule update is applied retrospectively after its new cutoff"
+    ],
+    "allowed_columns": [
+      "candidate_feature_cutoff_time",
+      "candidate_freeze_persist_ack_at",
+      "candidate_freeze_record_hash",
+      "candidate_uses_odds",
+      "failure_reason_codes",
+      "feature_input_max_source_event_time",
+      "formal_buy",
+      "odds_join_started_at",
+      "quote_attempt_index",
+      "quote_received_at",
+      "quote_selected_asof_time",
+      "quote_source_event_time",
+      "race_domain",
+      "race_domain_source_hash",
+      "race_id",
+      "race_no",
+      "record_status",
+      "schedule_lock_time",
+      "schedule_received_at",
+      "schedule_source_event_time",
+      "schedule_version",
+      "scheduled_post_time_used",
+      "send_order",
+      "stake",
+      "t3_cutoff_time",
+      "target_registered"
+    ],
+    "raw_data_sources": [
+      "EXP010 Chukyo obstacle candidate packet SHA-256 205005c2f408903d33f0dad1268975c061f71bf2249ff93b4f407cf4189e058b",
+      "EXP010 Chukyo pre-race entry snapshot SHA-256 94e8df6f1e4df2a81fb5e0429e4dabd2ef99795d9d872c9627e76fb161ee7706",
+      "EXP011 append-only decision ledger SHA-256 af4b19cd488823c2e9d5355fe3f4bd5ed2a7dd66dfb443a54e8fc8cee8dfe0a1",
+      "EXP011 strict-T3 summary SHA-256 d9a6ff272b9eb6fcdccf4419805643b46589617b7a975bcb1978355ed3bddd8f",
+      "Synthetic fixtures generated entirely inside the approved test process"
+    ],
+    "forbidden_columns": [
+      "alternative_pair",
+      "current_odds",
+      "current_popularity",
+      "final_odds",
+      "formal_stake_yen",
+      "market_rank",
+      "official_result",
+      "order_payload",
+      "payout",
+      "result_derived_candidate_change",
+      "roi"
+    ],
+    "lineage_hash_requirements": [
+      "Candidate and quote ledgers remain append-only and idempotent",
+      "Candidate identity and candidate-freeze hash are unchanged across all schedule and quote attempts",
+      "Every output sets candidate_uses_odds false, formal_buy false, send_order false, and stake zero",
+      "Every quote attempt records its request, source, receive, and selected-asof timestamps even when rejected",
+      "Race-domain metadata is derived from the same pre-race entry snapshot and bound into the source-record hash",
+      "The locked schedule record is hash-verified and referenced by every quote attempt"
+    ],
+    "stop_conditions": [
+      "A credential, login challenge, CAPTCHA, access restriction, protected endpoint, or order-capable path is encountered",
+      "A model, feature, calibrator, candidate, confidence, or expected-return policy change would be required",
+      "A real race-day row or external quote would need to be accessed during preparation",
+      "Any safety flag cannot remain false or stake cannot remain zero",
+      "The strict 60-second quote contract would need to be relaxed"
+    ],
+    "data_as_of": "2026-08-02T23:30:00+09:00. Proposal construction used only contract status, race-domain, schedule, and source-time evidence from EXP010 and EXP011. Odds values, results, payouts, ROI, and candidate alternatives are forbidden from implementation and test selection.",
+    "chronological_fold_design": {
+      "design": "One deterministic synthetic contract suite with ten pre-registered cases; no fitting, model comparison, threshold search, ROI calculation, or real-data access.",
+      "candidate_clock": "The batch readiness commit must be no later than the earliest candidate_feature_cutoff_time, and every source event and receipt must be at or before its race cutoff.",
+      "schedule_clock": "A schedule-only observation is locked before any odds request. If a new schedule version arrives prospectively, poll-open and cutoff are recomputed from that version without rounding.",
+      "quote_clock": "At most three pre-registered attempts occur inside the locked T-3:30 to T-3:00 window. Only a quote satisfying all existing strict as-of and 60-second freshness assertions may be latched.",
+      "denominator_rule": "Unsupported, late, missing, stale, and schedule-invalid races remain represented as deterministic failed or NO_BET records.",
+      "real_data_rule": "APPROVED_TO_PREPARE permits synthetic fixture tests only."
+    },
+    "fold_manifest": {
+      "path": "research/drafts/EXP-20260802-012-race-day-contract-hardening.fold_manifest.json",
+      "sha256": "c4cc7e3c4e7eb08ae7fe111b761d362db6531f0b777aa7d77aa20c983259a57f"
+    },
+    "purge_embargo": {
+      "race_overlap_allowed": false,
+      "candidate_embargo": "No candidate may be created, replaced, or re-ranked after odds access.",
+      "schedule_embargo": "A schedule update received after its newly implied strict cutoff cannot be applied retrospectively and must fail closed.",
+      "quote_embargo": "No quote source, receive, or selected-asof timestamp after T-3 is eligible.",
+      "result_embargo": "No result, payout, final odds, or ROI information is available to the implementation."
+    },
+    "primary_metric": {
+      "name": "pre_registered_contract_case_pass_fraction",
+      "unit": "fraction",
+      "baseline": "EXP011 retained all 36 rows but produced one unsupported obstacle candidate, 11 late source failures, 2 schedule-shift poll-window failures, and 18 stale one-shot quote failures.",
+      "evaluation": "Fraction of the ten fixed synthetic cases producing the exact expected terminal status while all safety and chronology invariants pass."
+    },
+    "required_effect": {
+      "expected_synthetic_cases": 10,
+      "expected_case_pass_fraction": 1.0,
+      "unsupported_races_entering_model": 0,
+      "late_candidate_batches_accepted": 0,
+      "pre_poll_odds_requests": 0,
+      "minute_rounded_poll_times": 0,
+      "stale_quotes_accepted": 0,
+      "candidate_changes_after_odds": 0,
+      "formal_buy_true_rows": 0,
+      "send_order_true_rows": 0,
+      "nonzero_stake_rows": 0
+    },
+    "compute_budget": {
+      "cpu_only": true,
+      "maximum_wall_clock_minutes": 30,
+      "maximum_synthetic_cases": 10,
+      "maximum_quote_attempts_per_race": 3,
+      "maximum_real_target_races": 0,
+      "random_seeds": [
+        20260802
+      ]
+    },
+    "base_commit": "385a418827fd6d1cbf9868507d53ad7a04fe172d",
+    "score_components": {
+      "independent_information": 25,
+      "racing_mechanism": 15,
+      "outer_oos_failure_evidence": 20,
+      "leakage_safety": 15,
+      "minimal_falsifiability": 10,
+      "acquisition_implementation_cost": 8
+    },
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "allowed_variant_count": 1,
+    "allowed_threshold_search_count": 0
+  },
+  "proposal_scope_file": "research/scopes/EXP-20260802-012.proposal.json",
+  "proposal_scope_digest": "f8caa65d28048f2d3957962a374ea5135d50a07609f6f784f6c7dfd1456541e2",
+  "human_approved_to_prepare": false,
+  "human_approved_to_run": false,
+  "human_approved_for_shadow": false,
+  "automatic_execution_allowed": false,
+  "execution_authorized": false,
+  "production_approved": false,
+  "merge_approved": false,
+  "buy_approved": false,
+  "production_change_allowed": false,
+  "merge_allowed": false,
+  "buy_logic_change_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0,
+  "experiment_markdown": "research/experiments/EXP-20260802-012.md",
+  "notes": "Race-day contract hardening after the fail-closed 2026-08-02 engineering run; preparation remains synthetic-only."
+}

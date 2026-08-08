@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-013",
+  "design": "deterministic_synthetic_schedule_provider_contract",
+  "data_class": "synthetic",
+  "real_race_rows": 0,
+  "cases": [
+    {
+      "case_id": "VALID_UNIQUE_SCHEDULE",
+      "expected_status": "SCHEDULE_LOCKED"
+    },
+    {
+      "case_id": "ODD_MINUTE_POST_PRESERVED",
+      "expected_status": "SCHEDULE_LOCKED"
+    },
+    {
+      "case_id": "LATEST_RECEIVED_VERSION_SELECTED",
+      "expected_status": "SCHEDULE_LOCKED"
+    },
+    {
+      "case_id": "DUPLICATE_IDENTICAL_VERSION_IDEMPOTENT",
+      "expected_status": "SCHEDULE_LOCKED"
+    },
+    {
+      "case_id": "CONFLICTING_DUPLICATE_VERSION",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "MISSING_SOURCE_EVENT_TIME",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "RECEIVED_BEFORE_SOURCE_EVENT",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "UPDATE_RECEIVED_AFTER_NEW_CUTOFF",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "FORBIDDEN_ODDS_FIELD_PRESENT",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "PROVIDER_UNAVAILABLE",
+      "expected_status": "NO_BET_SCHEDULE_SOURCE_UNAVAILABLE"
+    }
+  ],
+  "chronology_contract": "schedule_source_event_time <= schedule_received_at <= schedule_lock_time < odds_join_started_at",
+  "denominator_contract": "Every registered candidate receives either an immutable schedule lock or an explicit fail-closed record.",
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "odds_access": false,
+    "real_data_access": false,
+    "production_write": false
+  }
+}

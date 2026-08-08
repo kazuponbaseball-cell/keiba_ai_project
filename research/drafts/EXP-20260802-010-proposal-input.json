@@ -1,0 +1,186 @@
+{
+    "experiment_id":  "EXP-20260802-010",
+    "title":  "Project immutable target manifests and regenerate fresh-history candidates",
+    "hypothesis":  "Creating hash-bound successor target manifests that change only experiment_id and cohort_id while preserving every race record, scheduled time, and candidate cutoff will satisfy the adapter identity contract and allow the already-fixed fresh-history pipeline to regenerate only still-on-time candidates.",
+    "null_hypothesis":  "The successor projections alter a race identity or cutoff, fail adapter validation, accept a late target, fail the fresh-history contract, or require any model, candidate-policy, market, dashboard, or order-path change.",
+    "racing_mechanism":  "The target-manifest projection changes no racing information. It only binds unchanged pre-registered race identities and cutoffs to the successor experiment identifier so that the frozen non-odds Top3-set model can consume fresh prior-day history under its existing validation contract.",
+    "target_population":  "The same 36 races already pre-registered without market data for the 2026-08-02 Niigata, Sapporo, and Chukyo cards. At EXP010 proposal registration, 27 cutoffs had not yet passed. All 36 remain in the denominator; any race not persisted before its original cutoff is retained as a deterministic failure and is never backfilled.",
+    "in_scope":  [
+                     "Create one EXP010 target-manifest projection per venue with unchanged records and target-card metadata",
+                     "Change only experiment_id and cohort_id in each projected target manifest",
+                     "Create EXP010 configs that preserve the frozen bundle, probability contract, candidate policy, threshold, calibrator, and safety flags",
+                     "Add synthetic regression tests proving all projected records and cutoffs equal their source manifests",
+                     "Retain all 36 targets as candidate-ready or deterministic failure rows",
+                     "Use synthetic fixtures only during APPROVED_TO_PREPARE",
+                     "After separate run approval, require matched prior-result files, joined rows, history through 20260801, Top3 mass one, and WIDE mass three"
+                 ],
+    "out_of_scope":  [
+                         "Any real 2026-08-02 entry, runner, result, or market row during APPROVED_TO_PREPARE",
+                         "Any Strict T-3 quote, schedule decision, scratch decision, final quote, or outcome join",
+                         "Any backfill or prospective promotion after an original registered cutoff",
+                         "Any model, coefficient, calibrator, feature schema, candidate ranking, threshold, or tie-break change",
+                         "Any current odds, popularity, market rank, payout, current-day result, final odds, ROI, or derivative as input",
+                         "Any dashboard or notification mutation",
+                         "Any formal BUY, credential access, purchase adapter, order transmission, or nonzero stake",
+                         "Any training, refit, backtest, ROI calculation, threshold search, or model comparison"
+                     ],
+    "expected_changed_paths":  [
+                                   "config/grade_r_candidate_freeze_chukyo_20260802_v3.json",
+                                   "config/grade_r_candidate_freeze_niigata_20260802_v5.json",
+                                   "config/grade_r_candidate_freeze_sapporo_20260802_v3.json",
+                                   "research/drafts/EXP-20260802-010-chukyo-target-manifest.json",
+                                   "research/drafts/EXP-20260802-010-niigata-target-manifest.json",
+                                   "research/drafts/EXP-20260802-010-sapporo-target-manifest.json",
+                                   "research/drafts/EXP-20260802-010-target-manifest-projection.fold_manifest.json",
+                                   "tests/research/test_target_manifest_projection_v1.py"
+                               ],
+    "raw_data_sources":  [
+                             "Immutable 2026-08-02 Niigata source target manifest SHA-256 9e049fece42b203622959c895c66fb16a907bb348e6a7e9825d8c249d4bcfe61",
+                             "Immutable 2026-08-02 Sapporo source target manifest SHA-256 c69f15bc51230a0a1a3975d333176cd1d71e49a2ccf6850047b36ff1667d1b6d",
+                             "Immutable 2026-08-02 Chukyo source target manifest SHA-256 81b1ec35c385130bd312ee27b9d15c8ebd4b6af147a78cad0949695e37f22ac9",
+                             "Frozen M1C coherent Top3-set inference bundle and feature-schema manifest",
+                             "Hash-bound local historical feature stores with source event times before each candidate cutoff",
+                             "Public pre-race entry identity fields only after a distinct APPROVED_TO_RUN grant",
+                             "Registered prior-day result files through 20260801, excluding current-day results"
+                         ],
+    "data_as_of":  "Race identities and cutoffs remain those fixed in EXP007 and EXP008. EXP010 was registered at 2026-08-02T10:53:30+09:00 with 27 cutoffs not yet passed. Only immutable target metadata was inspected; preparation remains synthetic-only until a distinct APPROVED_TO_RUN grant.",
+    "allowed_columns":  [
+                            "basic_ability_history_ready",
+                            "candidate_feature_cutoff_time",
+                            "candidate_freeze_persist_ack_at",
+                            "candidate_horse_id_1",
+                            "candidate_horse_id_2",
+                            "candidate_pair_key",
+                            "candidate_uses_odds",
+                            "failure_reason_codes",
+                            "feature_input_max_source_event_time",
+                            "formal_buy",
+                            "history_date_max",
+                            "history_rows",
+                            "horse_id",
+                            "horse_name",
+                            "horse_no",
+                            "matched_recent_result_file_count",
+                            "p_action_calibrated",
+                            "p_wide_coherent_raw",
+                            "probability_contract_ok",
+                            "race_id",
+                            "race_no",
+                            "recent_result_history_rows",
+                            "record_status",
+                            "send_order",
+                            "set_probability_mass_error",
+                            "source_received_at",
+                            "stake",
+                            "starter_universe_hash_at_freeze",
+                            "target_registered",
+                            "venue_code",
+                            "wide_probability_mass_error"
+                        ],
+    "forbidden_columns":  [
+                              "actual_order_acknowledgement",
+                              "current_odds",
+                              "current_popularity",
+                              "final_odds",
+                              "formal_stake_yen",
+                              "future_or_post_race_features",
+                              "market_rank",
+                              "official_result_20260802",
+                              "payout",
+                              "result_derived_candidate_change",
+                              "roi",
+                              "t3_odds_as_candidate_input"
+                          ],
+    "lineage_hash_requirements":  [
+                                      "Each source and projected target manifest is SHA-256 bound",
+                                      "Projection changes only experiment_id and cohort_id; all records and target-card fields remain equal",
+                                      "Candidate-ready rows require source receipt, feature completion, and persistence acknowledgement before the original registered cutoff",
+                                      "Every matched recent-result file used in execution is listed with SHA-256 and source timestamp",
+                                      "No result dated 20260802 and no market field enters candidate construction",
+                                      "Every output sets candidate_uses_odds false, formal_buy false, send_order false, and stake zero",
+                                      "The frozen inference bundle, feature schema, candidate policy, input snapshot, source manifests, and packet ledger are SHA-256 bound"
+                                  ],
+    "chronological_fold_design":  {
+                                      "design":  "Synthetic projection-equivalence preparation followed, only after separate run approval, by one chronological fresh-history regeneration over the same 36 targets.",
+                                      "failure_denominator_rule":  "All 36 original targets remain in the ledger.",
+                                      "late_race_rule":  "Any target not persisted before its original cutoff is a deterministic failure and cannot be regenerated as prospective evidence.",
+                                      "ordering":  "prior-day result source time \u003c= feature source time \u003c= generation \u003c= freeze persistence acknowledgement \u003c= original candidate cutoff",
+                                      "real_data_rule":  "No real 2026-08-02 row is read during APPROVED_TO_PREPARE.",
+                                      "target_selection_rule":  "Projection cannot add, remove, reorder, or reprioritize a race using market or result information."
+                                  },
+    "fold_manifest":  {
+                          "path":  "research/drafts/EXP-20260802-010-target-manifest-projection.fold_manifest.json",
+                          "sha256":  "382f72e6b7c26ac8560531dc15e139a6a3dc57d2000acd0b9cafc1c24fccbd5f"
+                      },
+    "purge_embargo":  {
+                          "race_overlap_allowed":  false,
+                          "history_cutoff":  "Only result history dated 2026-08-01 or earlier and received before the candidate cutoff is allowed.",
+                          "market_firewall":  "No odds, popularity, market rank, payout, current-day result, or derivative may influence the candidate.",
+                          "post_event_embargo":  "No target can be promoted after its original registered cutoff.",
+                          "target_selection_embargo":  "The three existing target manifests and all 36 race identities are immutable."
+                      },
+    "primary_metric":  {
+                           "baseline":  "EXP009 failed before network access because successor configs and immutable source target manifests had different experiment_id values.",
+                           "evaluation":  "Projection identity, all-target completeness, fresh-history assertions, source-time validity, and probability invariants.",
+                           "name":  "target_projection_and_fresh_history_contract_completeness",
+                           "unit":  "fraction"
+                       },
+    "required_effect":  {
+                            "target_projection_identity":  1,
+                            "projected_target_rows":  36,
+                            "changed_race_or_cutoff_rows":  0,
+                            "missing_target_rows":  0,
+                            "minimum_matched_recent_result_file_count":  1,
+                            "minimum_recent_result_history_rows":  1,
+                            "minimum_history_date_max":  20260801,
+                            "current_day_result_rows_used":  0,
+                            "late_rows_accepted_as_candidate_ready":  0,
+                            "probability_contract_violations_accepted":  0,
+                            "candidate_uses_odds_true_rows":  0,
+                            "formal_buy_true_rows":  0,
+                            "send_order_true_rows":  0,
+                            "nonzero_stake_rows":  0
+                        },
+    "rejection_gate":  [
+                           "Any projected record, race ID, race count, scheduled post time, or candidate cutoff differs from its immutable source",
+                           "Any configured recent-result source has zero matched files or zero joined rows",
+                           "Effective history_date_max is earlier than 20260801 or later than the permitted as-of time",
+                           "Any late race is accepted as candidate-ready or retrospectively promoted",
+                           "Any of the 36 targets is absent or duplicated",
+                           "Any Top3-set or WIDE probability-mass violation is accepted",
+                           "Any odds, popularity, market, payout, current-day result, ROI, or derivative reaches candidate construction",
+                           "Any dashboard, notification, credential, purchase, formal BUY, nonzero stake, or order side effect occurs"
+                       ],
+    "stop_conditions":  [
+                            "Any projected race record, race ID, scheduled post time, or candidate cutoff differs from its source manifest",
+                            "Any late candidate would need to be backfilled",
+                            "Fresh prior-day history through 20260801 cannot be proved",
+                            "A current-day result or forbidden market field would be required",
+                            "A model, calibrator, feature schema, candidate policy, confidence threshold, or tie-break change is required",
+                            "A production, credential, notification, purchase, dashboard, or order-capable path would be invoked"
+                        ],
+    "compute_budget":  {
+                           "cpu_only":  true,
+                           "maximum_public_entry_requests":  36,
+                           "maximum_real_target_races":  36,
+                           "maximum_wall_clock_minutes":  180,
+                           "random_seeds":  [
+                                                20260802
+                                            ],
+                           "synthetic_cases":  15
+                       },
+    "allowed_variant_count":  1,
+    "allowed_threshold_search_count":  0,
+    "base_commit":  "385a418827fd6d1cbf9868507d53ad7a04fe172d",
+    "score_components":  {
+                             "independent_information":  24,
+                             "racing_mechanism":  15,
+                             "outer_oos_failure_evidence":  20,
+                             "leakage_safety":  15,
+                             "minimal_falsifiability":  10,
+                             "acquisition_implementation_cost":  7
+                         },
+    "formal_buy":  false,
+    "send_order":  false,
+    "stake":  0
+}

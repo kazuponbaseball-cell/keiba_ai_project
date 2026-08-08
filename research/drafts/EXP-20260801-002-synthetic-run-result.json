@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-002",
+  "result_type": "synthetic_fixture_execution",
+  "executed_at": "2026-08-01T12:00:09Z",
+  "execution_commit_sha": "cd457b7efdadade1ae794d2b62008a657bc9f4d4",
+  "proposal_scope_digest": "52a34b8e0b33948b3eaceca366e23d732919bb8923d7add3f2a759d97540fc19",
+  "run_scope_digest": "c722fae69a77047c2551ea71eec65ecf4ea198b4189a9ce4378d3659b3ac6a8f",
+  "exact_execution_command": "C:/Users/kazup/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe -m unittest tests.research.test_realtime_paper_decision_wiring_v1 -v",
+  "exit_code": 0,
+  "tests_run": 11,
+  "tests_passed": 11,
+  "tests_failed": 0,
+  "tests_errored": 0,
+  "contracts": {
+    "candidate_payload_rejects_market_fields": "PASS",
+    "candidate_hash_change_fails_closed": "PASS",
+    "exact_race_ticket_pair_match": "PASS",
+    "fresh_quote_normal_window_paper_ready": "PASS",
+    "late_decision_fails_closed": "PASS",
+    "low_value_waits_without_candidate_change": "PASS",
+    "missing_quote_fails_closed": "PASS",
+    "quote_value_time_order": "PASS",
+    "stale_quote_fails_closed": "PASS",
+    "duplicate_cycle_is_idempotent": "PASS",
+    "unsafe_config_rejected": "PASS"
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "production_path_executed": false,
+    "real_data_executed": false,
+    "roi_calculated": false
+  },
+  "unconfirmed": [
+    "No real race-day candidate ledger was connected",
+    "No live quote source was connected",
+    "No dashboard or purchase adapter was connected",
+    "No prospective latency or race-day availability was measured"
+  ],
+  "decision": "REVIEW_REQUIRED"
+}

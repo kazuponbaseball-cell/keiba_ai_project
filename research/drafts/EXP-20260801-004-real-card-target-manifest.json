@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-004",
+  "cohort_id": "grade_r_engineering_pilot_20260802_niigata_v1",
+  "data_class": "real-data",
+  "manifest_type": "pre_registered_one_card_target",
+  "target_selection_uses_odds": false,
+  "target_card": {
+    "race_date": "2026-08-02",
+    "venue_code": "04",
+    "venue_name": "Niigata",
+    "meeting_no": 2,
+    "day_no": 4,
+    "official_program_url": "https://www.jra.go.jp/keiba/calendar2026/2026/8/0802.html"
+  },
+  "records": [
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020401",
+      "race_no": 1,
+      "scheduled_post_time": "2026-08-02T09:50:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020401.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020402",
+      "race_no": 2,
+      "scheduled_post_time": "2026-08-02T10:20:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020402.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020403",
+      "race_no": 3,
+      "scheduled_post_time": "2026-08-02T10:50:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020403.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020404",
+      "race_no": 4,
+      "scheduled_post_time": "2026-08-02T11:20:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020404.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020405",
+      "race_no": 5,
+      "scheduled_post_time": "2026-08-02T11:50:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020405.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020406",
+      "race_no": 6,
+      "scheduled_post_time": "2026-08-02T15:10:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020406.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020407",
+      "race_no": 7,
+      "scheduled_post_time": "2026-08-02T15:45:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020407.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020408",
+      "race_no": 8,
+      "scheduled_post_time": "2026-08-02T16:20:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020408.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020409",
+      "race_no": 9,
+      "scheduled_post_time": "2026-08-02T16:55:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020409.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020410",
+      "race_no": 10,
+      "scheduled_post_time": "2026-08-02T17:30:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020410.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020411",
+      "race_no": 11,
+      "scheduled_post_time": "2026-08-02T18:00:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020411.packet.json"
+    },
+    {
+      "card_id": "2026040204",
+      "race_id": "202604020412",
+      "race_no": 12,
+      "scheduled_post_time": "2026-08-02T18:30:00+09:00",
+      "target_registered": true,
+      "capture_packet_path": "../../outputs/research/EXP-20260801-004/packets/202604020412.packet.json"
+    }
+  ],
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

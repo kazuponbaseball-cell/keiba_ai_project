@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-007",
+  "reviewed_at": "2026-08-01T23:42:11Z",
+  "review_decision": "PASS_FOR_SHADOW_APPROVAL_REQUEST",
+  "shadow_scope": "candidate-freeze artifacts only",
+  "proposal_scope_digest": "0ab4ae296966b6466a38cb360b7a24dae25cf9d8106e58bfc530ec7c5718ab28",
+  "run_scope_digest": "e8fac441a3da8f733255fd826b5852f59aebd5a4d65024a8a24f5952d76d61d9",
+  "execution_commit_sha": "e1c34486a3350cb2366937d691b57a926ac19f27",
+  "audit_commit_sha": "411a21a7edeb399f61949c4cb32fe3c97110b27d",
+  "approval_evidence": {
+    "prepare_comment_id": 5153896083,
+    "run_comment_id": 5153943987
+  },
+  "fixed_test_result": {
+    "passed": 74,
+    "failed": 0
+  },
+  "artifact_hashes": {
+    "outputs/research/EXP-20260802-007/raw_entry/entry_snapshot_20260802.csv": "70fa9bca746752e16b772f1401c2cd527c34764e77dd0bec8c68a36e577ca02b",
+    "outputs/research/EXP-20260802-007/raw_entry/capture_manifest_20260802.json": "4c81f19e486e04ed19819310030c371946afc78345d08aabf1afb4e7fe3a0337",
+    "outputs/research/EXP-20260802-007/runner_snapshot/runner_snapshot_20260802.csv": "02b07459a3a95c46df9542c252144b0f3fa95d26e5a497cf4a4ee513ff893308",
+    "outputs/research/EXP-20260802-007/runner_snapshot/feature_source_manifest_20260802.json": "35e9ef0cfe92d0209395867956a9c9eea9b4fb0e5d0e0017af69da67b7db6707",
+    "outputs/research/EXP-20260802-007/candidate_freeze/candidate_freeze_ledger.jsonl": "84ef399fdd145dac7ef3a4cf0c9971d173c85c315171a7a73ef5172bfd76f31b",
+    "outputs/research/EXP-20260802-007/candidate_freeze/candidate_freeze_summary.json": "2c8ff3c64a39458ad1e720f6610060004273dc1f4daaa33d437a4e6519bb5c09"
+  },
+  "packet_batch_root": {
+    "algorithm": "sha256(canonical_json(packet_file_sha256_list_in_ledger_order))",
+    "sha256": "0c6b425b343c4c60bc782d01131f1d28913545564eb0ae5d9f3e38082913b02f"
+  },
+  "review_metrics": {
+    "capture": {
+      "target_races": 12,
+      "captured_races": 12,
+      "runner_rows": 177,
+      "unavailable_races": 0,
+      "duplicate_race_horse_rows": 0,
+      "current_market_nonblank_values": 0
+    },
+    "runner_snapshot": {
+      "target_races": 12,
+      "source_contract_ok_races": 12,
+      "runner_rows": 177,
+      "duplicate_race_horse_rows": 0
+    },
+    "candidate_freeze": {
+      "expected_target_rows": 12,
+      "recorded_target_rows": 12,
+      "candidate_ready_rows": 12,
+      "failed_rows": 0,
+      "duplicate_packet_rows": 0,
+      "max_set_probability_mass_error": 1.1102230246251565e-16,
+      "max_wide_probability_mass_error": 4.440892098500626e-16,
+      "packet_file_hash_contract_ok": true,
+      "candidate_record_hash_contract_ok": true,
+      "event_time_order_contract_ok": true
+    }
+  },
+  "safety_contract": {
+    "candidate_uses_odds": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "roi_calculated": false,
+    "production_path_executed": false,
+    "dashboard_mutated": false,
+    "notification_sent": false,
+    "order_path_executed": false
+  },
+  "not_validated_by_this_experiment": [
+    "strict T-3 quote capture",
+    "T-3 schedule and scratch decision contracts",
+    "T-3 decision commit",
+    "official outcome join",
+    "ROI or value policy",
+    "Grade-O lineage",
+    "formal BUY or order execution"
+  ],
+  "shadow_approval_effect": "Approval permits classification of these candidate-freeze artifacts as shadow-only evidence. It does not authorize a T-3 run, production, merge, formal BUY, notifications, credentials, or orders."
+}

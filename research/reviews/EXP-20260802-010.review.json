@@ -1,0 +1,196 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-010",
+  "reviewed_at": "2026-08-02T02:30:16Z",
+  "review_decision": "PASS_FOR_SHADOW_APPROVAL_REQUEST",
+  "shadow_scope": "25 candidate-ready artifacts and 11 deterministic failure rows across Sapporo, Chukyo, and Niigata",
+  "proposal_scope_digest": "588e6fad0f2e2c0a696c792dc26e6b2c913ca53a7bd592ad4f5e3fcba7e701ae",
+  "run_scope_digest": "674e3ce7ba46fd34dfeef363c6a8e932ef88399830b71f084a2ea14ed796c1ac",
+  "execution_commit_sha": "ac33946890ced63b7c238401ba3115643cb5ec61",
+  "audit_commit_sha": "e90d5bf0bd81b6bd8cf324068aa7606857db3f63",
+  "approval_evidence": {
+    "prepare_comment_id": 5154543789,
+    "run_comment_id": 5154589507
+  },
+  "fixed_test_result": {
+    "passed": 73,
+    "failed": 0
+  },
+  "artifact_hashes": {
+    "outputs/research/EXP-20260802-010/sapporo/raw_entry/entry_snapshot_20260802.csv": "32a5bb242b721166f205a22150a613bebd0d96268682cee743d85ddf4819a8cd",
+    "outputs/research/EXP-20260802-010/sapporo/raw_entry/capture_manifest_20260802.json": "5ec9afd98948bfaee2977fa1ff54b8fed30dd2a1878e68bf812b94a99af32ef3",
+    "outputs/research/EXP-20260802-010/sapporo/runner_snapshot/runner_snapshot_20260802.csv": "432e5e135015286e2a739f9f3c79f323a2c0ace2f5fd3e5b99c2e1f7d471f055",
+    "outputs/research/EXP-20260802-010/sapporo/runner_snapshot/feature_source_manifest_20260802.json": "b1617be954e13cc55beb284d147673a4ebd077b809683058f6e7e4ce08fe3585",
+    "outputs/research/EXP-20260802-010/sapporo/runner_snapshot/work/baseline_predictions_basic_ability.basic_ability_summary.json": "6b9caa8ce12f474c6d80417a19576156ec840d9c4f1394e978caf3e1111e57e4",
+    "outputs/research/EXP-20260802-010/sapporo/candidate_freeze/candidate_freeze_ledger.jsonl": "c69d383459d296edce8df1020b3f93ddaedccb593eac8d48babd27fa7440da7b",
+    "outputs/research/EXP-20260802-010/sapporo/candidate_freeze/candidate_freeze_summary.json": "9c93b3be0014e8dd973922a96d6888bcba5c046f50b5389cab9ba9b43c97816c",
+    "outputs/research/EXP-20260802-010/chukyo/raw_entry/entry_snapshot_20260802.csv": "94e8df6f1e4df2a81fb5e0429e4dabd2ef99795d9d872c9627e76fb161ee7706",
+    "outputs/research/EXP-20260802-010/chukyo/raw_entry/capture_manifest_20260802.json": "36df3c7082e6d821dbcc845ae77a07f46a24d2500a4242d6ff17171c0b47987b",
+    "outputs/research/EXP-20260802-010/chukyo/runner_snapshot/runner_snapshot_20260802.csv": "f035a00410a84bfea4d3a94cc13193da228aa5d66d171a8076c07553a4d8fcf8",
+    "outputs/research/EXP-20260802-010/chukyo/runner_snapshot/feature_source_manifest_20260802.json": "b34da87bfbbffea651f848c60042bcb7ef6c9d3ab6499c3d30b1286d79a3dcb5",
+    "outputs/research/EXP-20260802-010/chukyo/runner_snapshot/work/baseline_predictions_basic_ability.basic_ability_summary.json": "b0ed11cc405cc38e6d305bfc99c06f42aa6ba247d021875eb4461b84a6feb5e3",
+    "outputs/research/EXP-20260802-010/chukyo/candidate_freeze/candidate_freeze_ledger.jsonl": "467732c9b1d0b1b25fd4378d3f75289376fae7c34cb763e8f767cd1c699d684d",
+    "outputs/research/EXP-20260802-010/chukyo/candidate_freeze/candidate_freeze_summary.json": "71581cb7c0bae63c0beb5d8f78b942d68145333b50f386a1cf15d89675275297",
+    "outputs/research/EXP-20260802-010/niigata/raw_entry/entry_snapshot_20260802.csv": "70fa9bca746752e16b772f1401c2cd527c34764e77dd0bec8c68a36e577ca02b",
+    "outputs/research/EXP-20260802-010/niigata/raw_entry/capture_manifest_20260802.json": "86d4ce038c1aec403da818bc28ef6c4e2b03b55c28addc1034c3dc7f147c8264",
+    "outputs/research/EXP-20260802-010/niigata/runner_snapshot/runner_snapshot_20260802.csv": "db2bafdf5e1ff7e92226b7b74cfb93f64a5ba14db3f3157b49312bcb42459d30",
+    "outputs/research/EXP-20260802-010/niigata/runner_snapshot/feature_source_manifest_20260802.json": "77b8277d2a17da9207fa4525f322535b965d527bbe3140225696799db0b1929c",
+    "outputs/research/EXP-20260802-010/niigata/runner_snapshot/work/baseline_predictions_basic_ability.basic_ability_summary.json": "5b7f36f496213c02acbe79f3ad02c9fb0699a49e60bfae178330cb583b6e0750",
+    "outputs/research/EXP-20260802-010/niigata/candidate_freeze/candidate_freeze_ledger.jsonl": "17d47c06f4d799629fa28993a35ed162ae255a3be6bcdf55975a6b07b139f86b",
+    "outputs/research/EXP-20260802-010/niigata/candidate_freeze/candidate_freeze_summary.json": "d8434ecc53ef88581e9edd13a469559e6cae3695a572361e300e3315f8e0962a"
+  },
+  "packet_batch_root": {
+    "algorithm": "sha256(canonical_json(packet_file_sha256_list_in_card_and_ledger_order))",
+    "sha256": "c60da723de5477859fb445e176289ce4df931ab48987d073aeaece645558c809"
+  },
+  "review_metrics": {
+    "sapporo": {
+      "capture": {
+        "target_races": 12,
+        "captured_races": 12,
+        "runner_rows": 149,
+        "unavailable_races": 0,
+        "duplicate_race_horse_rows": 0,
+        "current_market_nonblank_values": 0,
+        "cache_hash_contract_ok": true
+      },
+      "runner_snapshot": {
+        "target_races": 12,
+        "source_contract_ok_races": 9,
+        "runner_rows": 149,
+        "duplicate_race_horse_rows": 0,
+        "matched_recent_result_file_count": 10,
+        "recent_result_history_rows": 3688,
+        "history_rows": 147402,
+        "history_date_max": "20260801"
+      },
+      "candidate_freeze": {
+        "expected_target_rows": 12,
+        "recorded_target_rows": 12,
+        "candidate_ready_rows": 9,
+        "failed_rows": 3,
+        "failure_reason_counts": {
+          "CANDIDATE_SOURCE_NOT_READY": 3
+        },
+        "duplicate_packet_rows": 0,
+        "max_set_probability_mass_error": 1.1102230246251565e-16,
+        "max_wide_probability_mass_error": 4.440892098500626e-16,
+        "packet_file_hash_contract_ok": true,
+        "candidate_record_hash_contract_ok": true,
+        "event_time_order_contract_ok": true
+      }
+    },
+    "chukyo": {
+      "capture": {
+        "target_races": 12,
+        "captured_races": 12,
+        "runner_rows": 138,
+        "unavailable_races": 0,
+        "duplicate_race_horse_rows": 0,
+        "current_market_nonblank_values": 0,
+        "cache_hash_contract_ok": true
+      },
+      "runner_snapshot": {
+        "target_races": 12,
+        "source_contract_ok_races": 8,
+        "runner_rows": 138,
+        "duplicate_race_horse_rows": 0,
+        "matched_recent_result_file_count": 10,
+        "recent_result_history_rows": 3688,
+        "history_rows": 147402,
+        "history_date_max": "20260801"
+      },
+      "candidate_freeze": {
+        "expected_target_rows": 12,
+        "recorded_target_rows": 12,
+        "candidate_ready_rows": 8,
+        "failed_rows": 4,
+        "failure_reason_counts": {
+          "CANDIDATE_SOURCE_NOT_READY": 4
+        },
+        "duplicate_packet_rows": 0,
+        "max_set_probability_mass_error": 1.1102230246251565e-16,
+        "max_wide_probability_mass_error": 4.440892098500626e-16,
+        "packet_file_hash_contract_ok": true,
+        "candidate_record_hash_contract_ok": true,
+        "event_time_order_contract_ok": true
+      }
+    },
+    "niigata": {
+      "capture": {
+        "target_races": 12,
+        "captured_races": 12,
+        "runner_rows": 177,
+        "unavailable_races": 0,
+        "duplicate_race_horse_rows": 0,
+        "current_market_nonblank_values": 0,
+        "cache_hash_contract_ok": true
+      },
+      "runner_snapshot": {
+        "target_races": 12,
+        "source_contract_ok_races": 8,
+        "runner_rows": 177,
+        "duplicate_race_horse_rows": 0,
+        "matched_recent_result_file_count": 10,
+        "recent_result_history_rows": 3688,
+        "history_rows": 147402,
+        "history_date_max": "20260801"
+      },
+      "candidate_freeze": {
+        "expected_target_rows": 12,
+        "recorded_target_rows": 12,
+        "candidate_ready_rows": 8,
+        "failed_rows": 4,
+        "failure_reason_counts": {
+          "CANDIDATE_SOURCE_NOT_READY": 4
+        },
+        "duplicate_packet_rows": 0,
+        "max_set_probability_mass_error": 1.1102230246251565e-16,
+        "max_wide_probability_mass_error": 4.440892098500626e-16,
+        "packet_file_hash_contract_ok": true,
+        "candidate_record_hash_contract_ok": true,
+        "event_time_order_contract_ok": true
+      }
+    }
+  },
+  "totals": {
+    "target_rows": 36,
+    "candidate_ready_rows": 25,
+    "failed_rows": 11,
+    "runner_rows": 464
+  },
+  "deterministic_failure_rows": [
+    {"card": "sapporo", "race_id": "202601010401", "race_no": 1, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "sapporo", "race_id": "202601010402", "race_no": 2, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "sapporo", "race_id": "202601010403", "race_no": 3, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "chukyo", "race_id": "202607020401", "race_no": 1, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "chukyo", "race_id": "202607020402", "race_no": 2, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "chukyo", "race_id": "202607020403", "race_no": 3, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "chukyo", "race_id": "202607020404", "race_no": 4, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "niigata", "race_id": "202604020401", "race_no": 1, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "niigata", "race_id": "202604020402", "race_no": 2, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "niigata", "race_id": "202604020403", "race_no": 3, "reason": "CANDIDATE_SOURCE_NOT_READY"},
+    {"card": "niigata", "race_id": "202604020404", "race_no": 4, "reason": "CANDIDATE_SOURCE_NOT_READY"}
+  ],
+  "safety_contract": {
+    "candidate_uses_odds": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "roi_calculated": false,
+    "production_path_executed": false,
+    "dashboard_mutated": false,
+    "notification_sent": false,
+    "order_path_executed": false
+  },
+  "not_validated_by_this_experiment": [
+    "strict T-3 quote capture",
+    "T-3 schedule and scratch decision contracts",
+    "T-3 decision commit",
+    "official outcome join",
+    "ROI or value policy",
+    "Grade-O lineage",
+    "formal BUY or order execution"
+  ],
+  "shadow_approval_effect": "Approval permits classification of the 25 ready candidate-freeze artifacts and 11 deterministic failure rows as shadow-only evidence. It does not authorize a T-3 run, production, merge, formal BUY, notifications, credentials, or orders."
+}

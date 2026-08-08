@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-014",
+  "reviewed_at": "2026-08-02T14:46:28Z",
+  "review_decision": "PASS_FOR_SHADOW_APPROVAL_REQUEST",
+  "shadow_scope": "Research-only terminal-ledger failure recovery and fixed synthetic evidence; no real race-day execution",
+  "proposal_scope_digest": "89d27b453946ef58e7164a713752d091102348d5ff375da9332decbab7858d2c",
+  "run_scope_digest": "e3f1b2ca7ecacb733edb0ef388fb832cd7b81fce3a5b6f534749cae53ffd1f5c",
+  "execution_commit_sha": "c96ccac626876345eeaf5d09a31295e281382566",
+  "audit_commit_sha": "30aa83e01d993133045b46d1f254c13db565d1bf",
+  "approval_evidence": {
+    "prepare_comment_id": 5158445313,
+    "run_comment_id": 5158601566
+  },
+  "fixed_test_result": {
+    "pre_registered_cases_passed": 12,
+    "pre_registered_cases_failed": 0,
+    "research_tests_passed": 192,
+    "research_tests_failed": 0
+  },
+  "artifact_hashes": {
+    "config/schedule_terminal_ledger_e2e_exp014.json": "557b434645a7e43018aee57dc468ed83fd021ae67f588a77353e4ad5073cba2b",
+    "scripts/research/run_strict_t3_shadow_decision_v1.py": "8284d4153f4625aecf7d3b92f289b6bf67575971c7aecddc56004df567eac423",
+    "scripts/research/schedule_only_provider_v1.py": "34c9332b0d615a40d72e94e2310b6a09d62a1ac44c4ca0447af7134f34d13529",
+    "scripts/research/build_strict_t3_capture_packet_v1.py": "e7aaac93b9498b882332774ea9311d0c63aa51f27508eaaf0fa1905a0f2baa20",
+    "tests/research/test_schedule_terminal_ledger_e2e_v1.py": "1f3b7fa548a653db99e62626770564e1b739d6a825507f18c4918c3c6d548a3c",
+    "research/scopes/EXP-20260802-014.run.json": "733fa9ef11f5b0ce61b18ab484989c2153c526d624d6fa2c86dee2a2cfbcd900",
+    "research/drafts/EXP-20260802-014-terminal-ledger.fold_manifest.json": "9b8fa227b9c4b6b6828a271546c9ac67c295d61cc8286e6db799b79f93b19245",
+    "research/drafts/EXP-20260802-014-runner-universe-manifest.json": "2fcb65459c6bcd1179e1cebc01dd6c5aa1501f2696e383f93d4150448148d8d8",
+    "research/drafts/EXP-20260802-014-environment-manifest.json": "3b375f8fec5ae0eb98dba835cb149b6412979dbf0822bf6907c050e6d3d6eef4"
+  },
+  "contract_results": {
+    "provider_unavailable_to_terminal_decision": "NO_BET_SCHEDULE_SOURCE_UNAVAILABLE",
+    "conflicting_version_to_terminal_decision": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "missing_source_time_to_terminal_decision": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "reversed_source_receive_time_to_terminal_decision": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "forbidden_odds_field_to_terminal_decision": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "late_schedule_update_to_terminal_decision": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "corrupt_persisted_schedule_lock_to_terminal_decision": "NO_BET_SCHEDULE_CONTRACT_FAILURE",
+    "duplicate_worker_invocation": "IDEMPOTENT_ONE_TERMINAL_DECISION",
+    "restart_after_failure_marker_before_decision": "RECOVERED_ONE_TERMINAL_DECISION",
+    "orphan_idempotency_marker": "RECOVERED_ONE_TERMINAL_DECISION",
+    "restart_after_ledger_append_before_summary": "SUMMARY_REBUILT_FROM_VERIFIED_LEDGER",
+    "mixed_failure_card": "TWELVE_OF_TWELVE_TERMINAL_DECISIONS"
+  },
+  "required_effect_audit": {
+    "case_pass_fraction": 1.0,
+    "synthetic_cases": 12,
+    "real_data_rows": 0,
+    "incorrect_failure_reasons": 0,
+    "missing_terminal_races": 0,
+    "duplicate_terminal_decisions": 0,
+    "pre_terminal_odds_requests": 0,
+    "summary_ledger_mismatches": 0,
+    "unrecovered_orphan_markers": 0,
+    "formal_buy_true_rows": 0,
+    "send_order_true_rows": 0,
+    "nonzero_stake_rows": 0
+  },
+  "safety_contract": {
+    "candidate_uses_odds": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "real_data_accessed": false,
+    "roi_calculated": false,
+    "production_path_executed": false,
+    "dashboard_mutated": false,
+    "notification_sent": false,
+    "order_path_executed": false
+  },
+  "review_limitations": [
+    "The suite proves deterministic single-process restart and duplicate-invocation behavior but does not stress simultaneous multi-process lock contention",
+    "Synthetic fixtures do not establish actual race-day filesystem latency, process supervision, or operational SLO"
+  ],
+  "remaining_blockers": [
+    "A real schedule observation producer and source remain unvalidated",
+    "Actual race-day persistence timing and simultaneous worker behavior require a separately approved engineering pilot",
+    "Real schedule shifts, strict T-3 quote freshness, quote availability, starter-universe changes, scratches, and decision deadlines remain unmeasured",
+    "No Grade-O lineage, prospective ROI, formal BUY, or order execution was evaluated"
+  ],
+  "not_validated_by_this_experiment": [
+    "real race-day schedule acquisition",
+    "real strict T-3 quote acquisition",
+    "real starter-universe and scratch flow",
+    "final candidate quote or official outcome join",
+    "ROI or value policy",
+    "Grade-O lineage",
+    "production deployment, merge, formal BUY, or order execution"
+  ],
+  "shadow_approval_effect": "Approval classifies only the terminal-ledger recovery implementation and twelve-case synthetic evidence as shadow research. It does not authorize real race-day execution, production, merge, dashboard mutation, credentials, notifications, formal BUY, nonzero stake, or orders."
+}

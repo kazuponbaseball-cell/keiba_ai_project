@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-004",
+  "manifest_type": "one_card_grade_r_runtime_environment",
+  "python_version": "3.12.13",
+  "implementation": "CPython",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "byteorder": "little",
+  "executable": "C:/Users/kazup/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+  "external_network_required_during_real_run": true,
+  "external_network_used_during_preparation": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

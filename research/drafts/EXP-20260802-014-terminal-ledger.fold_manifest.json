@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-014",
+  "design": "deterministic_synthetic_schedule_terminal_ledger_e2e",
+  "data_class": "synthetic",
+  "real_race_rows": 0,
+  "cases": [
+    {
+      "case_id": "PROVIDER_UNAVAILABLE_TO_TERMINAL_DECISION",
+      "expected_status": "NO_BET_SCHEDULE_SOURCE_UNAVAILABLE"
+    },
+    {
+      "case_id": "CONFLICTING_VERSION_TO_TERMINAL_DECISION",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "MISSING_SOURCE_TIME_TO_TERMINAL_DECISION",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "REVERSED_SOURCE_RECEIVE_TIME_TO_TERMINAL_DECISION",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "FORBIDDEN_ODDS_FIELD_TO_TERMINAL_DECISION",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "LATE_SCHEDULE_UPDATE_TO_TERMINAL_DECISION",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "CORRUPT_PERSISTED_SCHEDULE_LOCK_TO_TERMINAL_DECISION",
+      "expected_status": "NO_BET_SCHEDULE_CONTRACT_FAILURE"
+    },
+    {
+      "case_id": "DUPLICATE_WORKER_INVOCATION_IDEMPOTENT",
+      "expected_status": "ONE_TERMINAL_DECISION"
+    },
+    {
+      "case_id": "RESTART_AFTER_FAILURE_MARKER_BEFORE_DECISION",
+      "expected_status": "ONE_TERMINAL_DECISION"
+    },
+    {
+      "case_id": "ORPHAN_IDEMPOTENCY_MARKER_RECOVERED",
+      "expected_status": "ONE_TERMINAL_DECISION"
+    },
+    {
+      "case_id": "RESTART_AFTER_LEDGER_APPEND_BEFORE_SUMMARY",
+      "expected_status": "ONE_TERMINAL_DECISION_AND_REBUILT_SUMMARY"
+    },
+    {
+      "case_id": "MIXED_FAILURE_CARD_DENOMINATOR_COMPLETE",
+      "expected_status": "ALL_REGISTERED_RACES_TERMINAL"
+    }
+  ],
+  "chronology_contract": "candidate freeze remains earlier than schedule preflight; schedule failure becomes terminal NO_BET without any odds access",
+  "denominator_contract": "Every registered candidate has exactly one terminal decision after bounded restart recovery, including provider, contract, and persistence failures.",
+  "persistence_contract": "Append, idempotency marker, read-back verification, restart recovery, and summary rebuild cannot silently drop or duplicate a race.",
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "odds_access": false,
+    "real_data_access": false,
+    "production_write": false
+  }
+}

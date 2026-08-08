@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260801-004",
+  "config_id": "grade_r_one_card_pilot_v1",
+  "cohort_id": "grade_r_engineering_pilot_20260802_niigata_v1",
+  "timezone": "Asia/Tokyo",
+  "sidecar_config_path": "config/race_day_shadow_sidecar_v1.json",
+  "target_card": {
+    "race_date": "2026-08-02",
+    "venue_code": "04",
+    "venue_name": "Niigata",
+    "meeting_no": 2,
+    "day_no": 4,
+    "expected_race_numbers": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "expected_race_count": 12
+  },
+  "policy": {
+    "candidate_policy": "WIDE_1_NON_ODDS_FROZEN",
+    "ticket_type": "wide",
+    "candidate_substitution_allowed": false,
+    "alternative_pair_search_allowed": false,
+    "strict_cutoff_seconds_before_post": 180,
+    "wait_at_cutoff_becomes_no_bet": true,
+    "allowed_final_statuses": [
+      "NO_BET",
+      "PAPER_READY"
+    ]
+  },
+  "safety": {
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0,
+    "target_handoff": false,
+    "production_dashboard_write": false,
+    "real_data_during_preparation": false,
+    "roi_calculation": false
+  }
+}

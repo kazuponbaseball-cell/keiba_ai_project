@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260802-013",
+  "manifest_type": "schedule_provider_synthetic_runtime_environment",
+  "python_version": "3.12.13",
+  "implementation": "CPython",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "executable": "C:/Users/kazup/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/python.exe",
+  "packages": {
+    "numpy": "2.3.5",
+    "pandas": "3.0.1",
+    "lxml": "6.0.2"
+  },
+  "external_network_required_during_run": false,
+  "external_network_used_during_preparation": false,
+  "cpu_only": true,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
