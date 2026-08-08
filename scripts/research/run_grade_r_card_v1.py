@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -32,6 +33,8 @@ FORBIDDEN_COLUMNS = [
     "t3_odds",
 ]
 
+FULL_SHA256 = re.compile(r"[0-9a-f]{64}")
+
 
 def load_json(path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
@@ -50,8 +53,92 @@ def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
     os.replace(temporary, path)
 
 
+def _history_mode(config: dict[str, Any]) -> str:
+    mode = str(config.get("input_contract", {}).get("history_mode", "html"))
+    if mode not in {"html", "target_direct"}:
+        raise ValueError(f"unsupported history mode: {mode}")
+    return mode
+
+
+def _target_date_token(config: dict[str, Any]) -> str:
+    raw = str(config.get("race_date", "")).strip()
+    for fmt in ("%Y-%m-%d", "%Y%m%d"):
+        try:
+            return datetime.strptime(raw, fmt).strftime("%Y%m%d")
+        except ValueError:
+            continue
+    raise ValueError(f"invalid race_date: {raw!r}")
+
+
+def _source_observed_at(config: dict[str, Any]) -> datetime:
+    mode = _history_mode(config)
+    source_names = ["dr", "du", "html" if mode == "html" else "direct_history_manifest"]
+    observed: list[datetime] = []
+    for name in source_names:
+        source = config.get("input_sources", {}).get(name)
+        if not isinstance(source, dict) or not str(source.get("observed_at", "")).strip():
+            raise ValueError(f"{mode} history mode requires {name}.observed_at")
+        observed.append(candidate.parse_time(str(source["observed_at"]), config["timezone"]))
+    return max(observed)
+
+
+def _resolve_config_path(value: str) -> Path:
+    path = Path(value)
+    return path.resolve() if path.is_absolute() else (ROOT / path).resolve()
+
+
+def _validated_direct_history_override(
+    config: dict[str, Any],
+    path: Path | None,
+    sha256: str | None,
+) -> tuple[Path | None, str | None]:
+    mode = _history_mode(config)
+    supplied_together = path is not None and sha256 is not None
+    supplied_neither = path is None and sha256 is None
+    if not supplied_together and not supplied_neither:
+        raise ValueError("direct history manifest override requires both path and sha256")
+    if mode == "html":
+        if not supplied_neither:
+            raise ValueError(
+                "HTML history mode does not accept a direct history manifest override"
+            )
+        return None, None
+    if not supplied_together:
+        raise ValueError(
+            "target-direct history mode requires an explicit manifest path and sha256"
+        )
+    assert path is not None and sha256 is not None
+    normalized_sha = str(sha256).strip().lower()
+    if not FULL_SHA256.fullmatch(normalized_sha):
+        raise ValueError("direct history manifest sha256 must be a full SHA-256")
+    source = config.get("input_sources", {}).get("direct_history_manifest")
+    if not isinstance(source, dict):
+        raise ValueError("target-direct history mode requires a configured source manifest")
+    configured_path = _resolve_config_path(str(source.get("path", "")))
+    supplied_path = path.resolve()
+    if supplied_path != configured_path:
+        raise ValueError(
+            "direct history manifest path differs from frozen config: "
+            f"{supplied_path} != {configured_path}"
+        )
+    configured_sha = str(source.get("sha256", "")).strip().lower()
+    if normalized_sha != configured_sha:
+        raise ValueError(
+            f"direct history manifest sha256 differs from frozen config: "
+            f"{normalized_sha} != {configured_sha}"
+        )
+    return supplied_path, normalized_sha
+
+
 def _candidate_config(card_config: dict[str, Any], manifest: dict[str, Any]) -> dict[str, Any]:
     top = manifest["target_card"]
+    records = manifest.get("records", [])
+    race_numbers = sorted(int(record["race_no"]) for record in records)
+    source_priority = (
+        ["fixed_target_direct_dr_du_and_authority_manifest"]
+        if _history_mode(card_config) == "target_direct"
+        else ["fixed_target_multicard_html_and_du"]
+    )
     return {
         "schema_version": 1,
         "experiment_id": card_config["experiment_id"],
@@ -62,8 +149,8 @@ def _candidate_config(card_config: dict[str, Any], manifest: dict[str, Any]) -> 
             "venue_code": top["venue_code"],
             "meeting_no": top["meeting_no"],
             "day_no": top["day_no"],
-            "expected_race_numbers": list(range(1, 13)),
-            "expected_race_count": 12,
+            "expected_race_numbers": race_numbers,
+            "expected_race_count": len(race_numbers),
         },
         "bundle_contract": {
             "model_kind": "linear_top3_set_softmax",
@@ -75,7 +162,7 @@ def _candidate_config(card_config: dict[str, Any], manifest: dict[str, Any]) -> 
         "candidate_policy": card_config["candidate_policy"],
         "forbidden_candidate_columns": FORBIDDEN_COLUMNS,
         "runner_snapshot_contract": {
-            "source_priority": ["fixed_target_multicard_html_and_du"],
+            "source_priority": source_priority,
             "baseline_feature_config": card_config["history"]["baseline_config"],
             "baseline_model": card_config["history"]["baseline_model"],
             "current_market_columns_must_be_blank_before_inference": True,
@@ -260,12 +347,16 @@ def freeze_card_per_race(
     return summary
 
 
-def _candidate_table(output_root: Path, cards: list[dict[str, Any]]) -> pd.DataFrame:
+def _candidate_table(
+    output_root: Path,
+    cards: list[dict[str, Any]],
+    target_date: str,
+) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     for card in cards:
         slug = str(card["slug"])
         raw = pd.read_csv(
-            output_root / slug / "raw_entry" / "entry_snapshot_20260808.csv",
+            output_root / slug / "raw_entry" / f"entry_snapshot_{target_date}.csv",
             encoding="utf-8-sig",
             dtype=str,
         )
@@ -299,6 +390,7 @@ def _candidate_table(output_root: Path, cards: list[dict[str, Any]]) -> pd.DataF
                         else "NO_BET_CONTRACT"
                     ),
                     "failure_reason_codes": "|".join(packet.get("failure_reason_codes", [])),
+                    "candidate_uses_odds": False,
                     "formal_buy": False,
                     "send_order": False,
                     "stake": 0,
@@ -307,27 +399,100 @@ def _candidate_table(output_root: Path, cards: list[dict[str, Any]]) -> pd.DataF
     return pd.DataFrame(rows).sort_values(["venue", "race_no"], kind="mergesort")
 
 
-def run(config_path: Path, output_root: Path) -> dict[str, Any]:
+def _validate_candidate_table(
+    table: pd.DataFrame,
+    expected_race_ids: set[str],
+) -> dict[str, int]:
+    required = {
+        "race_id",
+        "record_status",
+        "candidate_uses_odds",
+        "formal_buy",
+        "send_order",
+        "stake",
+    }
+    missing_columns = sorted(required - set(table.columns))
+    if missing_columns:
+        raise ValueError(f"candidate table missing required columns: {missing_columns}")
+    race_ids = table["race_id"].astype(str)
+    duplicated = int(race_ids.duplicated(keep=False).sum())
+    observed = set(race_ids)
+    missing = expected_race_ids - observed
+    unexpected = observed - expected_race_ids
+    if duplicated or missing or unexpected or len(table) != len(expected_race_ids):
+        raise ValueError(
+            "candidate terminal denominator mismatch: "
+            f"rows={len(table)}, expected={len(expected_race_ids)}, duplicated={duplicated}, "
+            f"missing={sorted(missing)}, unexpected={sorted(unexpected)}"
+        )
+    if table["record_status"].astype(str).str.strip().eq("").any():
+        raise ValueError("candidate table contains a non-terminal blank record status")
+    if table["candidate_uses_odds"].astype(bool).any():
+        raise ValueError("candidate table contains candidate_uses_odds=true")
+    if table["formal_buy"].astype(bool).any() or table["send_order"].astype(bool).any():
+        raise ValueError("candidate table violates formal BUY/order safety")
+    if pd.to_numeric(table["stake"], errors="coerce").fillna(-1).ne(0).any():
+        raise ValueError("candidate table contains nonzero or invalid stake")
+    return {
+        "registered_target_rows": len(expected_race_ids),
+        "terminal_record_rows": len(table),
+        "missing_target_rows": 0,
+        "duplicate_target_rows": 0,
+    }
+
+
+def run(
+    config_path: Path,
+    output_root: Path,
+    *,
+    direct_history_manifest_path: Path | None = None,
+    direct_history_manifest_sha256: str | None = None,
+) -> dict[str, Any]:
     config = load_json(config_path)
-    candidate.assert_real_data_authorized(ROOT, config["experiment_id"])
-    import_summary = import_multicard(config_path, output_root)
-    source_observed_at = candidate.parse_time(
-        config["input_sources"]["html"]["observed_at"], config["timezone"]
+    target_date = _target_date_token(config)
+    direct_history_manifest_path, direct_history_manifest_sha256 = (
+        _validated_direct_history_override(
+            config,
+            direct_history_manifest_path,
+            direct_history_manifest_sha256,
+        )
     )
+    candidate.assert_real_data_authorized(ROOT, config["experiment_id"])
+    import_summary = import_multicard(
+        config_path,
+        output_root,
+        direct_history_manifest_path=direct_history_manifest_path,
+        direct_history_manifest_sha256=direct_history_manifest_sha256,
+    )
+    source_observed_at = _source_observed_at(config)
     card_summaries: list[dict[str, Any]] = []
+    expected_race_ids: set[str] = set()
     for card in config["cards"]:
         slug = str(card["slug"])
         target_manifest_path = ROOT / card["target_manifest"]
         manifest = load_json(target_manifest_path)
+        manifest_date = _target_date_token({"race_date": manifest["target_card"]["race_date"]})
+        if manifest_date != target_date:
+            raise ValueError(
+                f"target manifest date mismatch for {slug}: {manifest_date} != {target_date}"
+            )
+        if str(manifest.get("experiment_id", "")) != str(config["experiment_id"]):
+            raise ValueError(f"target manifest experiment mismatch for {slug}")
+        if str(manifest.get("cohort_id", "")) != str(card["cohort_id"]):
+            raise ValueError(f"target manifest cohort mismatch for {slug}")
+        card_race_ids = {str(record["race_id"]) for record in manifest.get("records", [])}
+        if expected_race_ids & card_race_ids:
+            raise ValueError(f"duplicate race_id across target manifests for {slug}")
+        expected_race_ids.update(card_race_ids)
         adapter_config = _candidate_config(config, manifest)
         adapter_config_path = output_root / slug / "candidate_adapter_config.json"
         write_json_atomic(adapter_config_path, adapter_config)
         adapter_config = candidate.load_adapter_config(adapter_config_path)
         card_root = output_root / slug
-        raw_entry = card_root / "raw_entry" / "entry_snapshot_20260808.csv"
+        raw_entry = card_root / "raw_entry" / f"entry_snapshot_{target_date}.csv"
         runner_dir = card_root / "runner_snapshot"
-        runner_snapshot = runner_dir / "runner_snapshot_20260808.csv"
-        source_manifest = runner_dir / "feature_source_manifest_20260808.json"
+        runner_snapshot = runner_dir / f"runner_snapshot_{target_date}.csv"
+        source_manifest = runner_dir / f"feature_source_manifest_{target_date}.json"
         prep_summary = candidate.prepare_runner_snapshot(
             target_manifest_path=target_manifest_path,
             raw_entry_path=raw_entry,
@@ -355,18 +520,27 @@ def run(config_path: Path, output_root: Path) -> dict[str, Any]:
         card_summaries.append(
             {"slug": slug, "runner_preparation": prep_summary, "candidate_freeze": freeze_summary}
         )
-    table = _candidate_table(output_root, config["cards"])
+    expected_races = int(config.get("input_contract", {}).get("expected_races", 0))
+    if len(expected_race_ids) != expected_races:
+        raise ValueError(
+            f"registered target count mismatch: {len(expected_race_ids)} != {expected_races}"
+        )
+    table = _candidate_table(output_root, config["cards"], target_date)
+    denominator = _validate_candidate_table(table, expected_race_ids)
     table_path = output_root / "candidate_shadow_actions.csv"
     table.to_csv(table_path, index=False, encoding="utf-8-sig")
     summary = {
         "schema_version": 1,
         "experiment_id": config["experiment_id"],
+        "target_date": target_date,
+        "history_mode": _history_mode(config),
         "import": import_summary,
         "cards": card_summaries,
         "candidate_table": str(table_path),
         "candidate_table_sha256": candidate.file_sha256(table_path),
         "candidate_ready": int(table["record_status"].eq("CANDIDATE_READY").sum()),
         "pending_strict_t3": int(table["shadow_action"].eq("PENDING_STRICT_T3").sum()),
+        **denominator,
         "formal_buy": False,
         "send_order": False,
         "stake": 0,
@@ -376,15 +550,28 @@ def run(config_path: Path, output_root: Path) -> dict[str, Any]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Run one approved Grade-R three-card candidate freeze.")
+    parser = argparse.ArgumentParser(
+        description="Run one approved Grade-R three-card candidate freeze."
+    )
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--direct-history-manifest", type=Path)
+    parser.add_argument("--direct-history-manifest-sha256")
     return parser
 
 
 def main(argv: Iterable[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    summary = run(args.config.resolve(), args.output_root.resolve())
+    summary = run(
+        args.config.resolve(),
+        args.output_root.resolve(),
+        direct_history_manifest_path=(
+            args.direct_history_manifest.resolve()
+            if args.direct_history_manifest is not None
+            else None
+        ),
+        direct_history_manifest_sha256=args.direct_history_manifest_sha256,
+    )
     print(json.dumps(summary, ensure_ascii=False, sort_keys=True))
     return 0
 
