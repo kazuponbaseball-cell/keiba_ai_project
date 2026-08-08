@@ -89,6 +89,11 @@ def _ra_line(
 
 
 class TargetMulticardEntryTests(unittest.TestCase):
+    def test_baseline_prediction_module_imports_with_tracked_loader(self) -> None:
+        from src.predict import predict_baseline
+
+        self.assertTrue(callable(predict_baseline.main))
+
     def test_contract_matrix_contains_exactly_24_synthetic_cases(self) -> None:
         cases = [
             ("芝1200m 1勝クラス", ("芝", 1200), "1勝クラス"),
