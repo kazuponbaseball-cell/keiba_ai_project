@@ -13,6 +13,8 @@ from scripts.research.build_grade_r_candidate_freeze_packets_v1 import (
     validate_target_manifest,
 )
 from scripts.research.import_target_multicard_entry_v1 import (
+    PREVIOUS_RACE_COLUMNS,
+    PREVIOUS_RACE_SOURCE_ALIASES,
     RaceMetadata,
     _race_class,
     _surface_and_distance,
@@ -70,11 +72,55 @@ def _du_line(
     return bytes(raw)
 
 
-def _html_block(frame_no: int, horse_no: int, horse_name: str) -> str:
+def _html_block(
+    frame_no: int,
+    horse_no: int,
+    horse_name: str,
+    history_html: str = "",
+) -> str:
     return (
         f"<HR><TD NOWRAP >{frame_no}枠 {horse_no}番"
-        f"<TD><B>{horse_name}</B><TD>synthetic history"
+        f"<TD><B>{horse_name}</B><TD>synthetic history{history_html}"
     )
+
+
+def _history_row(
+    source_date: str,
+    horse_name: str,
+    horse_id: str,
+    marker: str,
+) -> dict[str, str]:
+    row = {
+        "\u65e5\u4ed8S": source_date,
+        "\u99ac\u540d": horse_name,
+        "\u8840\u7d71\u767b\u9332\u756a\u53f7": horse_id,
+        "\u5358\u52dd\u30aa\u30c3\u30ba": "99.9",
+    }
+    for index, aliases in enumerate(PREVIOUS_RACE_SOURCE_ALIASES.values()):
+        row[aliases[0]] = f"{marker}-{index:02d}"
+    return row
+
+
+def _history_table(
+    *rows: dict[str, str],
+    omitted_header: str | None = None,
+) -> str:
+    headers = [
+        "\u65e5\u4ed8S",
+        "\u99ac\u540d",
+        "\u8840\u7d71\u767b\u9332\u756a\u53f7",
+        *(aliases[0] for aliases in PREVIOUS_RACE_SOURCE_ALIASES.values()),
+        "\u5358\u52dd\u30aa\u30c3\u30ba",
+    ]
+    if omitted_header is not None:
+        headers.remove(omitted_header)
+    output = ["<TABLE><TR>", *(f"<TH>{header}</TH>" for header in headers), "</TR>"]
+    for row in rows:
+        output.extend(
+            ["<TR>", *(f"<TD>{row.get(header, '')}</TD>" for header in headers), "</TR>"]
+        )
+    output.append("</TABLE>")
+    return "".join(output)
 
 
 def _ra_line(
@@ -150,6 +196,35 @@ class TargetMulticardEntryTests(unittest.TestCase):
         self.assertFalse(config["safety"]["formal_buy"])
         self.assertFalse(config["safety"]["send_order"])
         self.assertEqual(0, config["safety"]["stake"])
+
+    def test_exp020_config_freezes_policy_and_history_contract(self) -> None:
+        prior = json.loads(
+            (ROOT / "config" / "grade_r_card_20260808_exp019.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        config = json.loads(
+            (ROOT / "config" / "grade_r_card_20260808_exp020.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual("EXP-20260808-020", config["experiment_id"])
+        self.assertEqual(prior["candidate_policy"], config["candidate_policy"])
+        self.assertEqual(prior["bundle"], config["bundle"])
+        self.assertEqual(24, config["input_contract"]["required_previous_race_columns"])
+        self.assertEqual(420, config["input_contract"]["expected_experienced_runner_rows"])
+        self.assertEqual(42, config["input_contract"]["expected_no_history_runner_rows"])
+        self.assertFalse(config["safety"]["formal_buy"])
+        self.assertFalse(config["safety"]["send_order"])
+        self.assertEqual(0, config["safety"]["stake"])
+        for card in config["cards"]:
+            manifest = json.loads((ROOT / card["target_manifest"]).read_text(encoding="utf-8"))
+            self.assertEqual("EXP-20260808-020", manifest["experiment_id"])
+            self.assertEqual(12, len(manifest["records"]))
+            self.assertFalse(manifest["target_selection_uses_odds"])
+            self.assertFalse(manifest["formal_buy"])
+            self.assertFalse(manifest["send_order"])
+            self.assertEqual(0, manifest["stake"])
 
     def test_baseline_prediction_module_imports_with_tracked_loader(self) -> None:
         from src.predict import predict_baseline
@@ -258,6 +333,196 @@ class TargetMulticardEntryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "identity mismatch"):
             match_html_runner_groups_to_du(groups, runners)
 
+    def test_html_history_selects_latest_prior_row_and_maps_allowlist(self) -> None:
+        horse_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        horse_id = "2022000001"
+        older = _history_row("2026/07/01", horse_name, horse_id, "older")
+        latest = _history_row("2026/08/02", horse_name, horse_id, "latest")
+        source = _html_block(1, 1, horse_name, _history_table(older, latest))
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            groups = parse_html_runner_groups(
+                path,
+                expected_runner_rows=1,
+                expected_races=1,
+                target_date="20260808",
+            )
+        row = groups.iloc[0]
+        self.assertEqual("20260802", row["previous_race_source_date"])
+        self.assertTrue(row["previous_race_contract_ok"])
+        self.assertEqual("", row["previous_race_no_history_reason"])
+        for destination, aliases in PREVIOUS_RACE_SOURCE_ALIASES.items():
+            self.assertEqual(latest[aliases[0]], row[destination])
+        self.assertNotIn("\u5358\u52dd\u30aa\u30c3\u30ba", groups.columns)
+        self.assertEqual(24, len(PREVIOUS_RACE_COLUMNS))
+
+    def test_html_history_rejects_same_day_or_future_row(self) -> None:
+        horse_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        source = _html_block(
+            1,
+            1,
+            horse_name,
+            _history_table(_history_row("2026/08/08", horse_name, "2022000001", "same")),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            with self.assertRaisesRegex(ValueError, "same-day or future"):
+                parse_html_runner_groups(
+                    path,
+                    expected_runner_rows=1,
+                    expected_races=1,
+                    target_date="20260808",
+                )
+
+    def test_html_history_rejects_selected_row_identity_mismatch(self) -> None:
+        current_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        source = _html_block(
+            1,
+            1,
+            current_name,
+            _history_table(_history_row("2026/08/02", "\u5225\u99ac", "2022000001", "bad")),
+        )
+        runners = pd.DataFrame(
+            [
+                {
+                    "target_race_key": "2026080801010501",
+                    "horse_no": 1,
+                    "horse_name": current_name,
+                    "horse_id": "2022000001",
+                }
+            ]
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            groups = parse_html_runner_groups(
+                path,
+                expected_runner_rows=1,
+                expected_races=1,
+                target_date="20260808",
+            )
+        with self.assertRaisesRegex(ValueError, "history horse name identity mismatch"):
+            match_html_runner_groups_to_du(groups, runners)
+
+    def test_html_history_rejects_selected_row_horse_id_mismatch(self) -> None:
+        current_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        source = _html_block(
+            1,
+            1,
+            current_name,
+            _history_table(_history_row("2026/08/02", current_name, "2099999999", "bad-id")),
+        )
+        runners = pd.DataFrame(
+            [
+                {
+                    "target_race_key": "2026080801010501",
+                    "horse_no": 1,
+                    "horse_name": current_name,
+                    "horse_id": "2022000001",
+                }
+            ]
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            groups = parse_html_runner_groups(
+                path,
+                expected_runner_rows=1,
+                expected_races=1,
+                target_date="20260808",
+            )
+        with self.assertRaisesRegex(ValueError, "history horse id identity mismatch"):
+            match_html_runner_groups_to_du(groups, runners)
+
+    def test_html_history_marks_true_no_history_explicitly(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(_html_block(1, 1, "\u65b0\u99ac").encode("cp932"))
+            groups = parse_html_runner_groups(
+                path,
+                expected_runner_rows=1,
+                expected_races=1,
+                target_date="20260808",
+            )
+        row = groups.iloc[0]
+        self.assertEqual("NO_PRIOR_RACE_TABLE", row["previous_race_no_history_reason"])
+        self.assertEqual("", row["previous_race_source_date"])
+        self.assertTrue(all(row[column] == "" for column in PREVIOUS_RACE_COLUMNS))
+
+    def test_html_history_ignores_unrelated_layout_table_for_debut_runner(self) -> None:
+        source = _html_block(
+            1,
+            1,
+            "\u65b0\u99ac",
+            "<TABLE><TR><TD>profile</TD><TD>memo</TD></TR></TABLE>",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            groups = parse_html_runner_groups(
+                path,
+                expected_runner_rows=1,
+                expected_races=1,
+                target_date="20260808",
+            )
+        self.assertEqual(
+            "NO_PRIOR_RACE_TABLE",
+            groups.iloc[0]["previous_race_no_history_reason"],
+        )
+
+    def test_html_history_accepts_legacy_implicit_cell_closures(self) -> None:
+        horse_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        row = _history_row("2026/08/02", horse_name, "2022000001", "legacy")
+        headers = [
+            "\u65e5\u4ed8S",
+            "\u99ac\u540d",
+            "\u8840\u7d71\u767b\u9332\u756a\u53f7",
+            *(aliases[0] for aliases in PREVIOUS_RACE_SOURCE_ALIASES.values()),
+        ]
+        legacy_table = (
+            "<TABLE><TR>"
+            + "".join(f"<TD>{header}" for header in headers)
+            + "<TR>"
+            + "".join(f"<TD>{row[header]}" for header in headers)
+            + "</TABLE>"
+        )
+        source = _html_block(1, 1, horse_name, legacy_table)
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            groups = parse_html_runner_groups(
+                path,
+                expected_runner_rows=1,
+                expected_races=1,
+                target_date="20260808",
+            )
+        self.assertEqual("20260802", groups.iloc[0]["previous_race_source_date"])
+
+    def test_html_history_rejects_malformed_required_schema(self) -> None:
+        horse_name = "\u30c6\u30b9\u30c8\u30db\u30fc\u30b9"
+        missing_source = next(iter(PREVIOUS_RACE_SOURCE_ALIASES.values()))[0]
+        source = _html_block(
+            1,
+            1,
+            horse_name,
+            _history_table(
+                _history_row("2026/08/02", horse_name, "2022000001", "bad"),
+                omitted_header=missing_source,
+            ),
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "entry.htm"
+            path.write_bytes(source.encode("cp932"))
+            with self.assertRaisesRegex(ValueError, "missing required headers"):
+                parse_html_runner_groups(
+                    path,
+                    expected_runner_rows=1,
+                    expected_races=1,
+                    target_date="20260808",
+                )
+
     def test_ra_metadata_uses_official_fixed_byte_fields(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "DR.DAT"
@@ -319,6 +584,7 @@ class TargetMulticardEntryTests(unittest.TestCase):
 
     def test_build_entry_rows_preserves_12_race_denominator_and_blanks_market(self) -> None:
         rows = []
+        history_rows = []
         records = []
         metadata = {}
         for race_no in range(1, 13):
@@ -342,6 +608,7 @@ class TargetMulticardEntryTests(unittest.TestCase):
                 race_class="未勝利",
                 race_name="札幌 synthetic",
                 runner_name_match_count=3,
+                html_group_index=race_no,
             )
             for horse_no in range(1, 4):
                 rows.append(
@@ -366,14 +633,33 @@ class TargetMulticardEntryTests(unittest.TestCase):
                         "jockey_name": "騎手",
                     }
                 )
+                history_rows.append(
+                    {
+                        "html_group_index": race_no,
+                        "horse_no": horse_no,
+                        **{column: f"history-{race_no}-{horse_no}" for column in PREVIOUS_RACE_COLUMNS},
+                        "previous_race_source_date": "20260802",
+                        "previous_race_source_record_hash": f"hash-{race_no}-{horse_no}",
+                        "previous_race_no_history_reason": "",
+                        "previous_race_contract_ok": True,
+                    }
+                )
         manifest = {"records": records}
-        frame = build_entry_rows(pd.DataFrame(rows), manifest, metadata)
+        frame = build_entry_rows(
+            pd.DataFrame(rows),
+            manifest,
+            metadata,
+            html_history=pd.DataFrame(history_rows),
+        )
         self.assertEqual(36, len(frame))
         self.assertEqual(12, frame["race_id"].nunique())
         self.assertTrue(frame["人気"].eq("").all())
         self.assertTrue(frame["単勝オッズ"].eq("").all())
         self.assertTrue(frame["確定着順"].eq("").all())
         self.assertEqual({"flat_turf"}, set(frame["race_domain"]))
+        self.assertTrue(set(PREVIOUS_RACE_COLUMNS).issubset(frame.columns))
+        self.assertTrue(frame["previous_race_source_date"].eq("20260802").all())
+        self.assertTrue(frame[PREVIOUS_RACE_COLUMNS[0]].astype(str).str.startswith("history-").all())
 
     def test_build_entry_rows_rejects_missing_runner(self) -> None:
         manifest = {

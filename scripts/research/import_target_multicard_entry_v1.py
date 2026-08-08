@@ -8,6 +8,7 @@ import re
 import unicodedata
 from dataclasses import dataclass, replace
 from datetime import datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -39,6 +40,36 @@ FORBIDDEN_CURRENT_FIELDS = {
     "roi",
 }
 ODDS_PREFIX = "odds_"
+PREVIOUS_RACE_SOURCE_ALIASES: dict[str, tuple[str, ...]] = {
+    "\u524d\u8d70\u30ec\u30fc\u30b9ID(\u65b0/\u99ac\u756a\u7121)": ("\u30ec\u30fc\u30b9ID(\u65b0/\u99ac\u756a\u7121)",),
+    "\u524d\u8d70\u8d70\u7834\u30bf\u30a4\u30e0": ("\u30bf\u30a4\u30e0", "\u8d70\u7834\u30bf\u30a4\u30e0"),
+    "\u524d\u8d70\u5e73\u57471F\u30bf\u30a4\u30e0": ("\u5e73\u57471F", "\u5e73\u57471F\u30bf\u30a4\u30e0"),
+    "\u524d\u8d70\u57fa\u6e96\u30bf\u30a4\u30e0": ("\u57fa\u30bf\u30a4\u30e0", "\u57fa\u6e96\u30bf\u30a4\u30e0"),
+    "\u524d\u8d70\u7740\u5dee\u30bf\u30a4\u30e0": ("\u7740\u5dee", "\u7740\u5dee\u30bf\u30a4\u30e0"),
+    "\u524d\u8d70\u4eba\u6c17": ("\u4eba", "\u4eba\u6c17"),
+    "\u524d\u8d70\u982d\u6570": ("\u982d", "\u982d\u6570"),
+    "\u524d\u8d70\u51fa\u8d70\u982d\u6570": ("R\u982d", "\u51fa\u8d70\u982d\u6570"),
+    "\u524d\u8d70\u99ac\u756a": ("\u756a", "\u99ac\u756a"),
+    "\u524d\u8d70\u65a4\u91cf": ("\u65a4\u91cf",),
+    "\u524d\u829d\u30fb\u30c0": ("TR", "\u829d\u30fb\u30c0"),
+    "\u524d\u8ddd\u96e2": ("\u8ddd\u96e2",),
+    "\u524d\u8d70\u99ac\u5834\u72b6\u614b": ("\u72b6", "\u99ac\u5834\u72b6\u614b"),
+    "\u524d\u8d70\u4e0a3F\u5730\u70b9\u5dee": ("-3F\u5dee", "\u4e0a3F\u5730\u70b9\u5dee"),
+    "\u524d\u8d70Ave-3F": ("Ave-3F",),
+    "\u524d\u8d70\u4e0a\u308a3F": ("\u4e0a3F", "\u4e0a\u308a3F"),
+    "\u524d\u8d70\u4e0a\u308a3F\u9806": ("3F\u9806", "\u4e0a\u308a3F\u9806"),
+    "\u524dPCI": ("PCI",),
+    "\u524d\u8d70PCI3": ("PCI3",),
+    "\u524d\u8d70RPCI": ("RPCI",),
+    "\u524d\u8d70\u99ac\u4f53\u91cd": ("\u4f53\u91cd", "\u99ac\u4f53\u91cd"),
+    "\u524d\u8d70\u99ac\u4f53\u91cd\u5897\u6e1b": ("\u00b1", "\u99ac\u4f53\u91cd\u5897\u6e1b"),
+    "\u524d\u8d70\u9a0e\u624b\u30b3\u30fc\u30c9": ("\u9a0e\u30b3\u30fc\u30c9", "\u9a0e\u624b\u30b3\u30fc\u30c9"),
+    "\u524d\u8d70\u30c8\u30e9\u30c3\u30af\u30b3\u30fc\u30c9": ("TrC", "\u30c8\u30e9\u30c3\u30af\u30b3\u30fc\u30c9"),
+}
+PREVIOUS_RACE_COLUMNS = tuple(PREVIOUS_RACE_SOURCE_ALIASES)
+HISTORY_DATE_ALIASES = ("\u65e5\u4ed8S", "\u65e5\u4ed8")
+HISTORY_HORSE_NAME_ALIASES = ("\u99ac\u540d",)
+HISTORY_HORSE_ID_ALIASES = ("\u8840\u7d71\u767b\u9332\u756a\u53f7", "horse_id")
 TRACK_SURFACE = {
     **{f"{value:02d}": "芝" for value in range(10, 20)},
     **{f"{value:02d}": "ダ" for value in range(20, 30)},
@@ -142,6 +173,254 @@ def _normalized_text(value: str) -> str:
     return re.sub(r"\s+", " ", unicodedata.normalize("NFKC", html_module.unescape(value)))
 
 
+def _canonical_history_header(value: str) -> str:
+    return (
+        _normalized_text(value)
+        .strip()
+        .replace("\u30fb", "/")
+        .replace("\uff0f", "/")
+        .replace("\u2212", "-")
+        .replace("\uff0d", "-")
+        .replace(" ", "")
+        .casefold()
+    )
+
+
+def _canonical_history_identity(value: str) -> str:
+    digits = re.sub(r"\D", "", _normalized_text(value))
+    if len(digits) == 8:
+        return "20" + digits
+    return digits
+
+
+def _normalize_history_date(value: str) -> str:
+    digits = re.sub(r"\D", "", _normalized_text(value))
+    if len(digits) == 6:
+        digits = "20" + digits
+    if len(digits) != 8:
+        raise ValueError(f"invalid DI history date: {value!r}")
+    datetime.strptime(digits, "%Y%m%d")
+    return digits
+
+
+class _TableExtractor(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.tables: list[list[list[str]]] = []
+        self._depth = 0
+        self._rows: list[list[str]] | None = None
+        self._row: list[str] | None = None
+        self._cell_parts: list[str] | None = None
+
+    def _finish_cell(self) -> None:
+        if self._cell_parts is None or self._row is None:
+            return
+        self._row.append(_normalized_text("".join(self._cell_parts)).strip())
+        self._cell_parts = None
+
+    def _finish_row(self) -> None:
+        self._finish_cell()
+        if self._row is not None and self._rows is not None and any(self._row):
+            self._rows.append(self._row)
+        self._row = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        del attrs
+        name = tag.lower()
+        if name == "table":
+            if self._depth == 0:
+                self._rows = []
+            self._depth += 1
+            return
+        if self._depth != 1:
+            return
+        if name == "tr":
+            self._finish_row()
+            self._row = []
+        elif name in {"td", "th"}:
+            if self._row is None:
+                self._row = []
+            self._finish_cell()
+            self._cell_parts = []
+        elif name == "br" and self._cell_parts is not None:
+            self._cell_parts.append(" ")
+
+    def handle_endtag(self, tag: str) -> None:
+        name = tag.lower()
+        if self._depth == 1 and name in {"td", "th"}:
+            self._finish_cell()
+        elif self._depth == 1 and name == "tr":
+            self._finish_row()
+        if name != "table" or self._depth == 0:
+            return
+        self._depth -= 1
+        if self._depth == 0:
+            self._finish_row()
+            if self._rows:
+                self.tables.append(self._rows)
+            self._rows = None
+
+    def handle_data(self, data: str) -> None:
+        if self._depth == 1 and self._cell_parts is not None:
+            self._cell_parts.append(data)
+
+
+def _history_header_index(header: list[str], aliases: tuple[str, ...]) -> int | None:
+    normalized = [_canonical_history_header(value) for value in header]
+    accepted = {_canonical_history_header(value) for value in aliases}
+    matches = [index for index, value in enumerate(normalized) if value in accepted]
+    if len(matches) > 1:
+        raise ValueError(f"duplicate DI history header for aliases={aliases}")
+    return matches[0] if matches else None
+
+
+def _empty_previous_race_payload(*, horse_no: int, horse_name: str, reason: str) -> dict[str, Any]:
+    payload: dict[str, Any] = {column: "" for column in PREVIOUS_RACE_COLUMNS}
+    payload.update(
+        {
+            "previous_race_source_date": "",
+            "previous_race_source_record_hash": hashlib.sha256(
+                canonical_json(
+                    {
+                        "horse_no": horse_no,
+                        "horse_name": horse_name,
+                        "reason": reason,
+                    }
+                ).encode("utf-8")
+            ).hexdigest(),
+            "previous_race_no_history_reason": reason,
+            "previous_race_contract_ok": True,
+            "_history_horse_name": "",
+            "_history_horse_id": "",
+        }
+    )
+    return payload
+
+
+def _parse_latest_previous_race(
+    body: str,
+    *,
+    target_date: str,
+    horse_no: int,
+    horse_name: str,
+) -> dict[str, Any]:
+    parser = _TableExtractor()
+    parser.feed(body)
+    parser.close()
+    candidates: list[tuple[list[list[str]], int]] = []
+    for table in parser.tables:
+        for row_index, row in enumerate(table):
+            if _history_header_index(row, HISTORY_DATE_ALIASES) is not None:
+                candidates.append((table, row_index))
+    if not candidates:
+        history_aliases = {
+            _canonical_history_header(alias)
+            for aliases in (
+                *PREVIOUS_RACE_SOURCE_ALIASES.values(),
+                HISTORY_HORSE_NAME_ALIASES,
+                HISTORY_HORSE_ID_ALIASES,
+            )
+            for alias in aliases
+        }
+        history_like_table_found = any(
+            len(
+                {
+                    _canonical_history_header(cell)
+                    for row in table
+                    for cell in row
+                }.intersection(history_aliases)
+            )
+            >= 3
+            for table in parser.tables
+        )
+        if history_like_table_found:
+            raise ValueError(f"DI history table lacks a date header for horse_no={horse_no}")
+        return _empty_previous_race_payload(
+            horse_no=horse_no,
+            horse_name=horse_name,
+            reason="NO_PRIOR_RACE_TABLE",
+        )
+    if len(candidates) != 1:
+        raise ValueError(f"ambiguous DI history table for horse_no={horse_no}")
+
+    table, header_row_index = candidates[0]
+    header = table[header_row_index]
+    date_index = _history_header_index(header, HISTORY_DATE_ALIASES)
+    assert date_index is not None
+    source_indices: dict[str, int] = {}
+    missing_headers: list[str] = []
+    for destination, aliases in PREVIOUS_RACE_SOURCE_ALIASES.items():
+        index = _history_header_index(header, aliases)
+        if index is None:
+            missing_headers.append(destination)
+        else:
+            source_indices[destination] = index
+    if missing_headers:
+        raise ValueError(f"DI history table missing required headers: {missing_headers}")
+    name_index = _history_header_index(header, HISTORY_HORSE_NAME_ALIASES)
+    horse_id_index = _history_header_index(header, HISTORY_HORSE_ID_ALIASES)
+
+    parsed_rows: list[tuple[str, list[str]]] = []
+    for raw_row in table[header_row_index + 1 :]:
+        row = list(raw_row)
+        if len(row) > len(header):
+            if any(value.strip() for value in row[len(header) :]):
+                raise ValueError(f"DI history row wider than header for horse_no={horse_no}")
+            row = row[: len(header)]
+        if len(row) < len(header):
+            raise ValueError(f"DI history row shorter than header for horse_no={horse_no}")
+        if not any(value.strip() for value in row):
+            continue
+        raw_date = row[date_index].strip()
+        if not raw_date:
+            if any(row[index].strip() for index in source_indices.values()):
+                raise ValueError(f"DI history row lacks date for horse_no={horse_no}")
+            continue
+        source_date = _normalize_history_date(raw_date)
+        if source_date >= target_date:
+            raise ValueError(
+                f"same-day or future DI history row for horse_no={horse_no}: {source_date}"
+            )
+        parsed_rows.append((source_date, row))
+    if not parsed_rows:
+        return _empty_previous_race_payload(
+            horse_no=horse_no,
+            horse_name=horse_name,
+            reason="NO_PRIOR_RACE_ROW",
+        )
+    latest_date = max(source_date for source_date, _ in parsed_rows)
+    latest_rows = [row for source_date, row in parsed_rows if source_date == latest_date]
+    if len(latest_rows) != 1:
+        raise ValueError(f"duplicate latest DI history date for horse_no={horse_no}: {latest_date}")
+    latest = latest_rows[0]
+    selected_values = {
+        destination: latest[index].strip() for destination, index in source_indices.items()
+    }
+    history_horse_name = latest[name_index].strip() if name_index is not None else ""
+    history_horse_id = latest[horse_id_index].strip() if horse_id_index is not None else ""
+    selected_record = {
+        "horse_no": horse_no,
+        "horse_name": horse_name,
+        "history_horse_name": history_horse_name,
+        "history_horse_id": history_horse_id,
+        "source_date": latest_date,
+        "values": selected_values,
+    }
+    selected_values.update(
+        {
+            "previous_race_source_date": latest_date,
+            "previous_race_source_record_hash": hashlib.sha256(
+                canonical_json(selected_record).encode("utf-8")
+            ).hexdigest(),
+            "previous_race_no_history_reason": "",
+            "previous_race_contract_ok": True,
+            "_history_horse_name": history_horse_name,
+            "_history_horse_id": history_horse_id,
+        }
+    )
+    return selected_values
+
+
 @dataclass(frozen=True)
 class RaceMetadata:
     venue: str
@@ -200,6 +479,7 @@ def parse_html_runner_groups(
     *,
     expected_runner_rows: int,
     expected_races: int,
+    target_date: str = "20260808",
 ) -> pd.DataFrame:
     source = path.read_bytes().decode("cp932", errors="replace")
     block_pattern = re.compile(
@@ -220,12 +500,19 @@ def parse_html_runner_groups(
         horse_name = _normalized_horse_name(name_match.group("name"))
         if not horse_name:
             raise ValueError(f"HTML horse name empty at runner block {len(rows) + 1}")
+        previous_race = _parse_latest_previous_race(
+            match.group("body"),
+            target_date=target_date,
+            horse_no=horse_no,
+            horse_name=horse_name,
+        )
         rows.append(
             {
                 "html_group_index": group_index,
                 "frame_no": int(match.group("frame")),
                 "horse_no": horse_no,
                 "horse_name": horse_name,
+                **previous_race,
             }
         )
         previous_horse_no = horse_no
@@ -275,6 +562,28 @@ def match_html_runner_groups_to_du(
         group_id = candidates[0]
         if group_id in used_groups:
             raise ValueError(f"HTML runner group reused: {group_id}")
+        html_group = html_groups.loc[html_groups["html_group_index"].eq(group_id)]
+        du_by_no = {int(row.horse_no): row for row in race.itertuples(index=False)}
+        for history_row in html_group.to_dict(orient="records"):
+            horse_no = int(history_row["horse_no"])
+            du_row = du_by_no[horse_no]
+            history_name = str(history_row.get("_history_horse_name", "") or "")
+            if history_name and _normalized_horse_name(history_name) != _normalized_horse_name(
+                str(du_row.horse_name)
+            ):
+                raise ValueError(
+                    f"DI history horse name identity mismatch for {target_race_key}/"
+                    f"{horse_no}"
+                )
+            history_id = _canonical_history_identity(
+                str(history_row.get("_history_horse_id", "") or "")
+            )
+            du_horse_id = _canonical_history_identity(str(getattr(du_row, "horse_id", "") or ""))
+            if history_id and du_horse_id and history_id != du_horse_id:
+                raise ValueError(
+                    f"DI history horse id identity mismatch for {target_race_key}/"
+                    f"{horse_no}"
+                )
         used_groups.add(group_id)
         matches[str(target_race_key)] = {
             "html_group_index": group_id,
@@ -426,6 +735,7 @@ def build_entry_rows(
     metadata: dict[str, RaceMetadata],
     *,
     historical: pd.DataFrame | None = None,
+    html_history: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     records = target_manifest.get("records")
     if not isinstance(records, list) or len(records) != 12:
@@ -437,10 +747,55 @@ def build_entry_rows(
     expected_count = sum(int(record["runner_count"]) for record in records)
     if len(selected) != expected_count:
         raise ValueError(f"runner count mismatch: {len(selected)} != {expected_count}")
+    history_lookup: dict[tuple[int, int], dict[str, Any]] = {}
+    if html_history is not None:
+        required_history_columns = {
+            "html_group_index",
+            "horse_no",
+            *PREVIOUS_RACE_COLUMNS,
+            "previous_race_source_date",
+            "previous_race_source_record_hash",
+            "previous_race_no_history_reason",
+            "previous_race_contract_ok",
+        }
+        missing = sorted(required_history_columns.difference(html_history.columns))
+        if missing:
+            raise ValueError(f"HTML history frame missing required columns: {missing}")
+        if html_history.duplicated(["html_group_index", "horse_no"]).any():
+            raise ValueError("HTML history frame contains duplicate runner keys")
+        for history_row in html_history.to_dict(orient="records"):
+            key = (int(history_row["html_group_index"]), int(history_row["horse_no"]))
+            history_lookup[key] = history_row
     output: list[dict[str, Any]] = []
     for row in selected.to_dict(orient="records"):
         target = manifest_by_key[str(row["target_race_key"])]
         race_meta = metadata[str(row["target_race_key"])]
+        previous_payload: dict[str, Any] = {column: "" for column in PREVIOUS_RACE_COLUMNS}
+        previous_payload.update(
+            {
+                "previous_race_source_date": "",
+                "previous_race_source_record_hash": "",
+                "previous_race_no_history_reason": "HISTORY_NOT_ATTACHED",
+                "previous_race_contract_ok": html_history is None,
+            }
+        )
+        if html_history is not None:
+            history_key = (int(race_meta.html_group_index), int(row["horse_no"]))
+            history_row = history_lookup.get(history_key)
+            if history_row is None:
+                raise ValueError(f"HTML history runner missing: {history_key}")
+            if history_row["previous_race_contract_ok"] is not True:
+                raise ValueError(f"HTML history contract failed: {history_key}")
+            previous_payload = {
+                column: history_row[column]
+                for column in (
+                    *PREVIOUS_RACE_COLUMNS,
+                    "previous_race_source_date",
+                    "previous_race_source_record_hash",
+                    "previous_race_no_history_reason",
+                    "previous_race_contract_ok",
+                )
+            }
         race_domain = (
             "obstacle"
             if race_meta.surface == "障害" or str(target.get("race_domain")) == "obstacle"
@@ -500,6 +855,7 @@ def build_entry_rows(
                 "dr_data_kbn": race_meta.data_category,
                 "dr_record_hash": race_meta.record_hash,
                 "source_url": "",
+                **previous_payload,
             }
         )
     frame = pd.DataFrame(output).sort_values(["race_no", "horse_no"], kind="mergesort")
@@ -530,11 +886,38 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
     expected_races = int(config["input_contract"]["expected_races"])
     if len(du) != expected_total:
         raise ValueError(f"DU active runner count mismatch: {len(du)} != {expected_total}")
+    target_dates = sorted(set(du["race_date"].astype(str)))
+    if len(target_dates) != 1:
+        raise ValueError(f"DU source spans multiple target dates: {target_dates}")
     html_groups = parse_html_runner_groups(
         html_path,
         expected_runner_rows=expected_total,
         expected_races=expected_races,
+        target_date=target_dates[0],
     )
+    input_contract = config["input_contract"]
+    expected_previous_columns = int(input_contract.get("required_previous_race_columns", 24))
+    observed_previous_columns = sum(
+        column in html_groups.columns for column in PREVIOUS_RACE_COLUMNS
+    )
+    if observed_previous_columns != expected_previous_columns:
+        raise ValueError(
+            "DI previous-race column contract mismatch: "
+            f"{observed_previous_columns} != {expected_previous_columns}"
+        )
+    mapped_history = html_groups["previous_race_source_date"].astype(str).ne("")
+    expected_mapped = input_contract.get("expected_experienced_runner_rows")
+    if expected_mapped is not None and int(mapped_history.sum()) != int(expected_mapped):
+        raise ValueError(
+            f"DI experienced-runner history count mismatch: {int(mapped_history.sum())} "
+            f"!= {int(expected_mapped)}"
+        )
+    expected_no_history = input_contract.get("expected_no_history_runner_rows")
+    if expected_no_history is not None and int((~mapped_history).sum()) != int(expected_no_history):
+        raise ValueError(
+            f"DI no-history runner count mismatch: {int((~mapped_history).sum())} "
+            f"!= {int(expected_no_history)}"
+        )
     html_matches = match_html_runner_groups_to_du(html_groups, du)
     ra_metadata = parse_ra_race_metadata(dr_path, expected_races=expected_races)
     manifests: dict[str, dict[str, Any]] = {}
@@ -556,7 +939,13 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
     cards: list[dict[str, Any]] = []
     for card in config["cards"]:
         manifest = manifests[str(card["slug"])]
-        frame = build_entry_rows(du, manifest, metadata, historical=historical)
+        frame = build_entry_rows(
+            du,
+            manifest,
+            metadata,
+            historical=historical,
+            html_history=html_groups,
+        )
         card_dir = output_root / str(card["slug"]) / "raw_entry"
         card_dir.mkdir(parents=True, exist_ok=True)
         output_csv = card_dir / "entry_snapshot_20260808.csv"
@@ -571,8 +960,15 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
                 "unknown_domain_races": int(
                     frame.loc[frame["race_domain"].eq("unknown"), "race_id"].nunique()
                 ),
+                "experienced_runner_rows_mapped": int(
+                    frame["previous_race_source_date"].astype(str).ne("").sum()
+                ),
+                "no_history_runner_rows": int(
+                    frame["previous_race_no_history_reason"].astype(str).ne("").sum()
+                ),
             }
         )
+    mapped_dates = html_groups["previous_race_source_date"].astype(str)
     summary = {
         "schema_version": 1,
         "experiment_id": config["experiment_id"],
@@ -584,6 +980,17 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
         "html_runner_groups": int(html_groups["html_group_index"].nunique()),
         "html_du_identity_matches": int(len(html_matches)),
         "ra_race_rows": int(len(ra_metadata)),
+        "required_previous_race_columns_present": int(
+            sum(column in html_groups.columns for column in PREVIOUS_RACE_COLUMNS)
+        ),
+        "experienced_runner_rows_mapped": int(mapped_dates.ne("").sum()),
+        "no_history_runner_rows": int(
+            html_groups["previous_race_no_history_reason"].astype(str).ne("").sum()
+        ),
+        "history_max_date": max((value for value in mapped_dates if value), default=""),
+        "history_contract_failures": int(
+            (~html_groups["previous_race_contract_ok"].astype(bool)).sum()
+        ),
         "cards": cards,
         "candidate_uses_odds": False,
         "formal_buy": False,
