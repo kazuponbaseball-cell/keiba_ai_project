@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kazuponbaseball-cell/keiba_ai_project/research/schemas/gpt_strategy_proposal_v1.schema.json",
+  "title": "GPT Strategy Proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "strategy_id",
+    "brain_model_id",
+    "brain_prompt_hash",
+    "context_manifest_hash",
+    "proposal_scope",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "strategy_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$"
+    },
+    "brain_model_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "brain_prompt_hash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "context_manifest_hash": {
+      "$ref": "#/$defs/sha256"
+    },
+    "proposal_scope": {
+      "$ref": "#/$defs/proposalScope"
+    },
+    "safety": {
+      "$ref": "#/$defs/safety"
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/nonEmptyString"
+      }
+    },
+    "manifestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      }
+    },
+    "scoreComponents": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_information",
+        "racing_mechanism",
+        "outer_oos_failure_evidence",
+        "leakage_safety",
+        "minimal_falsifiability",
+        "acquisition_implementation_cost"
+      ],
+      "properties": {
+        "independent_information": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 25
+        },
+        "racing_mechanism": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "outer_oos_failure_evidence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "leakage_safety": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 15
+        },
+        "minimal_falsifiability": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        },
+        "acquisition_implementation_cost": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10
+        }
+      }
+    },
+    "proposalScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "experiment_id",
+        "title",
+        "hypothesis",
+        "null_hypothesis",
+        "racing_mechanism",
+        "target_population",
+        "in_scope",
+        "out_of_scope",
+        "expected_changed_paths",
+        "raw_data_sources",
+        "data_as_of",
+        "allowed_columns",
+        "forbidden_columns",
+        "lineage_hash_requirements",
+        "chronological_fold_design",
+        "fold_manifest",
+        "purge_embargo",
+        "primary_metric",
+        "required_effect",
+        "rejection_gate",
+        "stop_conditions",
+        "compute_budget",
+        "allowed_variant_count",
+        "allowed_threshold_search_count",
+        "base_commit",
+        "score_components",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "experiment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$"
+        },
+        "title": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "hypothesis": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "null_hypothesis": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "racing_mechanism": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "target_population": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "in_scope": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "out_of_scope": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "expected_changed_paths": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "raw_data_sources": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "data_as_of": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "allowed_columns": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "forbidden_columns": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "lineage_hash_requirements": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "chronological_fold_design": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "fold_manifest": {
+          "$ref": "#/$defs/manifestRef"
+        },
+        "purge_embargo": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "primary_metric": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "required_effect": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "rejection_gate": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "stop_conditions": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        },
+        "compute_budget": {
+          "type": "object",
+          "minProperties": 1
+        },
+        "allowed_variant_count": {
+          "const": 1
+        },
+        "allowed_threshold_search_count": {
+          "const": 0
+        },
+        "base_commit": {
+          "$ref": "#/$defs/gitSha"
+        },
+        "score_components": {
+          "$ref": "#/$defs/scoreComponents"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "const": 0
+        }
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_codex_dispatch",
+        "automatic_github_approval",
+        "candidate_policy_change",
+        "credential_access",
+        "external_api_calls",
+        "formal_buy",
+        "merge",
+        "notification_side_effects",
+        "production_change",
+        "purchase_path_access",
+        "real_data_execution",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "actual_codex_dispatch": {
+          "const": false
+        },
+        "automatic_github_approval": {
+          "const": false
+        },
+        "candidate_policy_change": {
+          "const": false
+        },
+        "credential_access": {
+          "const": false
+        },
+        "external_api_calls": {
+          "const": false
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "merge": {
+          "const": false
+        },
+        "notification_side_effects": {
+          "const": false
+        },
+        "production_change": {
+          "const": false
+        },
+        "purchase_path_access": {
+          "const": false
+        },
+        "real_data_execution": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "const": 0
+        }
+      }
+    }
+  }
+}
