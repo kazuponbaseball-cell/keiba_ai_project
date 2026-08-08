@@ -4,15 +4,14 @@ import argparse
 import hashlib
 import html as html_module
 import json
-import math
 import re
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable
 
 import pandas as pd
-from lxml import html
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +39,14 @@ FORBIDDEN_CURRENT_FIELDS = {
     "roi",
 }
 ODDS_PREFIX = "odds_"
+TRACK_SURFACE = {
+    **{f"{value:02d}": "芝" for value in range(10, 20)},
+    **{f"{value:02d}": "ダ" for value in range(20, 30)},
+    **{f"{value:02d}": "障害" for value in range(51, 60)},
+}
+RA_MINIMUM_LENGTH = 883
+RA_RACE_KEY_OFFSET = 11
+RA_RACE_KEY_LENGTH = 16
 
 
 def canonical_json(value: Any) -> str:
@@ -144,6 +151,17 @@ class RaceMetadata:
     race_class: str
     race_name: str
     runner_name_match_count: int
+    target_race_key: str = ""
+    html_group_index: int = 0
+    data_category: str = ""
+    race_type_code: str = ""
+    grade_code: str = ""
+    condition_code: str = ""
+    track_code: str = ""
+    course_code: str = ""
+    scheduled_post_hhmm: str = ""
+    registered_runner_count: int = 0
+    record_hash: str = ""
 
 
 def _surface_and_distance(text: str) -> tuple[str, int | None]:
@@ -172,61 +190,222 @@ def _race_class(text: str) -> str:
     return ""
 
 
-def parse_html_race_metadata(
+def _normalized_horse_name(value: str) -> str:
+    text = re.sub(r"<[^>]+>", "", value)
+    return re.sub(r"\s+", "", _normalized_text(text))
+
+
+def parse_html_runner_groups(
     path: Path,
-    runners: pd.DataFrame,
     *,
-    minimum_name_match_fraction: float = 0.60,
-) -> dict[tuple[str, int], RaceMetadata]:
+    expected_runner_rows: int,
+    expected_races: int,
+) -> pd.DataFrame:
     source = path.read_bytes().decode("cp932", errors="replace")
-    document = html.fromstring(source)
-    text = _normalized_text(document.text_content())
-    compact_text = re.sub(r"\s+", "", text)
-    all_headings = list(
-        re.finditer(r"(?:札幌|函館|福島|新潟|東京|中山|中京|京都|阪神|小倉)\s*\d{1,2}\s*R", text)
+    block_pattern = re.compile(
+        r"<HR>\s*<TD\s+NOWRAP\s*>\s*(?P<frame>\d+)\s*枠\s*"
+        r"(?P<horse_no>\d+)\s*番(?P<body>.*?)(?=<HR>\s*<TD\s+NOWRAP|\Z)",
+        flags=re.IGNORECASE | re.DOTALL,
     )
-    metadata: dict[tuple[str, int], RaceMetadata] = {}
-    for (venue, race_no), group in runners.groupby(["venue", "race_no"], sort=True):
-        names = [re.sub(r"\s+", "", str(value)) for value in group["horse_name"]]
-        heading = re.compile(rf"{re.escape(str(venue))}\s*{int(race_no)}\s*R", re.IGNORECASE)
-        candidates: list[tuple[int, str, int]] = []
-        for match in heading.finditer(text):
-            next_positions = [item.start() for item in all_headings if item.start() > match.start()]
-            end = min(next_positions) if next_positions else min(len(text), match.start() + 30000)
-            window = text[match.start() : end]
-            compact_window = re.sub(r"\s+", "", window)
-            score = sum(bool(name and name in compact_window) for name in names)
-            candidates.append((score, window, match.start()))
-        if not candidates:
-            # TARGET exports sometimes omit the R suffix but retain the 16-digit key.
-            key = str(group.iloc[0]["target_race_key"])
-            for match in re.finditer(re.escape(key), compact_text):
-                start = max(0, match.start() - 1000)
-                window = compact_text[start : match.start() + 30000]
-                score = sum(bool(name and name in window) for name in names)
-                candidates.append((score, window, start))
-        if not candidates:
-            raise ValueError(f"HTML race heading not found: {venue} {race_no}R")
-        score, window, _position = max(candidates, key=lambda item: (item[0], -item[2]))
-        minimum_matches = max(1, math.ceil(len(names) * minimum_name_match_fraction))
-        if score < minimum_matches:
-            raise ValueError(
-                f"HTML/DU runner identity mismatch for {venue} {race_no}R: {score}/{len(names)}"
-            )
-        header_window = window[:5000]
-        surface, distance = _surface_and_distance(header_window)
-        race_class = _race_class(header_window)
-        title = re.sub(r"\s+", " ", header_window[:300]).strip()
-        metadata[(str(venue), int(race_no))] = RaceMetadata(
-            venue=str(venue),
-            race_no=int(race_no),
-            surface=surface,
-            distance=distance,
-            race_class=race_class,
-            race_name=title,
-            runner_name_match_count=score,
+    rows: list[dict[str, Any]] = []
+    group_index = 1
+    previous_horse_no: int | None = None
+    for match in block_pattern.finditer(source):
+        horse_no = int(match.group("horse_no"))
+        if previous_horse_no is not None and horse_no <= previous_horse_no:
+            group_index += 1
+        name_match = re.search(r"<B\b[^>]*>(?P<name>.*?)</B>", match.group("body"), re.I | re.S)
+        if name_match is None:
+            raise ValueError(f"HTML horse name missing at runner block {len(rows) + 1}")
+        horse_name = _normalized_horse_name(name_match.group("name"))
+        if not horse_name:
+            raise ValueError(f"HTML horse name empty at runner block {len(rows) + 1}")
+        rows.append(
+            {
+                "html_group_index": group_index,
+                "frame_no": int(match.group("frame")),
+                "horse_no": horse_no,
+                "horse_name": horse_name,
+            }
         )
+        previous_horse_no = horse_no
+    frame = pd.DataFrame(rows)
+    if len(frame) != expected_runner_rows:
+        raise ValueError(f"HTML runner block count mismatch: {len(frame)} != {expected_runner_rows}")
+    if frame["html_group_index"].nunique() != expected_races:
+        raise ValueError(
+            "HTML runner group count mismatch: "
+            f"{frame['html_group_index'].nunique()} != {expected_races}"
+        )
+    if frame.duplicated(["html_group_index", "horse_no"]).any():
+        raise ValueError("HTML runner group contains duplicate horse number")
+    for group_id, group in frame.groupby("html_group_index", sort=True):
+        numbers = group["horse_no"].tolist()
+        if numbers != sorted(numbers) or len(numbers) != len(set(numbers)):
+            raise ValueError(f"HTML runner order is not strictly increasing in group {group_id}")
+    return frame
+
+
+def _runner_signature(frame: pd.DataFrame) -> tuple[tuple[int, str], ...]:
+    return tuple(
+        sorted(
+            (int(row.horse_no), _normalized_horse_name(str(row.horse_name)))
+            for row in frame[["horse_no", "horse_name"]].itertuples(index=False)
+        )
+    )
+
+
+def match_html_runner_groups_to_du(
+    html_groups: pd.DataFrame,
+    du: pd.DataFrame,
+) -> dict[str, dict[str, int]]:
+    html_by_signature: dict[tuple[tuple[int, str], ...], list[int]] = {}
+    for group_id, group in html_groups.groupby("html_group_index", sort=True):
+        html_by_signature.setdefault(_runner_signature(group), []).append(int(group_id))
+    matches: dict[str, dict[str, int]] = {}
+    used_groups: set[int] = set()
+    for target_race_key, race in du.groupby("target_race_key", sort=True):
+        signature = _runner_signature(race)
+        candidates = html_by_signature.get(signature, [])
+        if len(candidates) != 1:
+            raise ValueError(
+                f"HTML/DU runner identity mismatch for {target_race_key}: "
+                f"candidate_groups={candidates}"
+            )
+        group_id = candidates[0]
+        if group_id in used_groups:
+            raise ValueError(f"HTML runner group reused: {group_id}")
+        used_groups.add(group_id)
+        matches[str(target_race_key)] = {
+            "html_group_index": group_id,
+            "runner_name_match_count": len(signature),
+        }
+    expected_groups = set(html_groups["html_group_index"].astype(int).unique())
+    if used_groups != expected_groups:
+        raise ValueError("HTML runner groups include an unmatched group")
+    return matches
+
+
+def _ascii_field(raw: bytes, start: int, length: int) -> str:
+    return raw[start : start + length].decode("ascii", errors="ignore").strip()
+
+
+def _text_field(raw: bytes, start: int, length: int) -> str:
+    return _normalized_text(raw[start : start + length].decode("cp932", errors="replace")).strip()
+
+
+def _race_class_from_ra(grade_code: str, condition_code: str) -> str:
+    grade_map = {"A": "Ｇ１", "B": "Ｇ２", "C": "Ｇ３", "L": "OP(L)"}
+    if grade_code in grade_map:
+        return grade_map[grade_code]
+    return {
+        "701": "新馬",
+        "703": "未勝利",
+        "005": "1勝",
+        "010": "2勝",
+        "016": "3勝",
+        "999": "ｵｰﾌﾟﾝ",
+    }.get(condition_code, "")
+
+
+def parse_ra_race_metadata(
+    path: Path,
+    *,
+    expected_races: int,
+) -> dict[str, RaceMetadata]:
+    metadata: dict[str, RaceMetadata] = {}
+    for line_no, raw in enumerate(path.read_bytes().splitlines(), start=1):
+        if len(raw) < RA_MINIMUM_LENGTH or not raw.startswith(b"RA"):
+            continue
+        data_category = _ascii_field(raw, 2, 1)
+        target_race_key = _ascii_field(raw, RA_RACE_KEY_OFFSET, RA_RACE_KEY_LENGTH)
+        if len(target_race_key) != 16 or not target_race_key.isdigit():
+            raise ValueError(f"invalid RA race key at line {line_no}")
+        if target_race_key in metadata:
+            raise ValueError(f"duplicate RA race key: {target_race_key}")
+        venue_code = target_race_key[8:10]
+        track_code = _ascii_field(raw, 705, 2)
+        surface = TRACK_SURFACE.get(track_code, "")
+        distance_text = _ascii_field(raw, 697, 4)
+        runner_count_text = _ascii_field(raw, 881, 2)
+        grade_code = _ascii_field(raw, 614, 1)
+        condition_code = _ascii_field(raw, 634, 3)
+        race_name = _text_field(raw, 32, 60) or _text_field(raw, 572, 20)
+        metadata[target_race_key] = RaceMetadata(
+            venue=VENUES.get(venue_code, venue_code),
+            race_no=int(target_race_key[-2:]),
+            surface=surface,
+            distance=int(distance_text) if distance_text.isdigit() else None,
+            race_class=_race_class_from_ra(grade_code, condition_code),
+            race_name=race_name,
+            runner_name_match_count=0,
+            target_race_key=target_race_key,
+            data_category=data_category,
+            race_type_code=_ascii_field(raw, 616, 2),
+            grade_code=grade_code,
+            condition_code=condition_code,
+            track_code=track_code,
+            course_code=_ascii_field(raw, 709, 2),
+            scheduled_post_hhmm=_ascii_field(raw, 873, 4),
+            registered_runner_count=(
+                int(runner_count_text) if runner_count_text.isdigit() else 0
+            ),
+            record_hash=hashlib.sha256(raw).hexdigest(),
+        )
+    if len(metadata) != expected_races:
+        raise ValueError(f"RA race count mismatch: {len(metadata)} != {expected_races}")
     return metadata
+
+
+def bind_fixed_input_metadata(
+    *,
+    du: pd.DataFrame,
+    html_matches: dict[str, dict[str, int]],
+    ra_metadata: dict[str, RaceMetadata],
+    target_records: list[dict[str, Any]],
+) -> dict[str, RaceMetadata]:
+    target_by_key = {str(record["target_race_key"]): record for record in target_records}
+    du_keys = set(du["target_race_key"].astype(str).unique())
+    expected_keys = set(target_by_key)
+    if du_keys != expected_keys or set(html_matches) != expected_keys or set(ra_metadata) != expected_keys:
+        raise ValueError("HTM/DU/RA/manifest race identity mismatch")
+    bound: dict[str, RaceMetadata] = {}
+    for key in sorted(expected_keys):
+        target = target_by_key[key]
+        meta = ra_metadata[key]
+        du_count = int(du["target_race_key"].eq(key).sum())
+        expected_count = int(target["runner_count"])
+        if meta.data_category != "2":
+            raise ValueError(f"RA record is not pre-race data category 2: {key}")
+        if du_count != expected_count or meta.registered_runner_count != expected_count:
+            raise ValueError(
+                f"RA/DU/manifest runner count mismatch for {key}: "
+                f"{meta.registered_runner_count}/{du_count}/{expected_count}"
+            )
+        scheduled_hhmm = datetime.fromisoformat(str(target["scheduled_post_time"])).strftime("%H%M")
+        if meta.scheduled_post_hhmm != scheduled_hhmm:
+            raise ValueError(
+                f"RA/manifest post time mismatch for {key}: "
+                f"{meta.scheduled_post_hhmm} != {scheduled_hhmm}"
+            )
+        match = html_matches[key]
+        if int(match["runner_name_match_count"]) != expected_count:
+            raise ValueError(f"HTML/manifest runner count mismatch for {key}")
+        bound[key] = replace(
+            meta,
+            runner_name_match_count=int(match["runner_name_match_count"]),
+            html_group_index=int(match["html_group_index"]),
+        )
+    return bound
+
+
+def _baseline_track_code(meta: RaceMetadata) -> str:
+    if meta.surface == "ダ":
+        return "1"
+    if meta.surface != "芝":
+        return ""
+    # Today's only explicit outer-course code is Niigata turf outer (12).
+    return "8" if meta.track_code == "12" else "0"
 
 
 def _sex_from_history(horse_id: str, history: pd.DataFrame | None) -> str:
@@ -244,7 +423,7 @@ def _sex_from_history(horse_id: str, history: pd.DataFrame | None) -> str:
 def build_entry_rows(
     du: pd.DataFrame,
     target_manifest: dict[str, Any],
-    metadata: dict[tuple[str, int], RaceMetadata],
+    metadata: dict[str, RaceMetadata],
     *,
     historical: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
@@ -261,7 +440,7 @@ def build_entry_rows(
     output: list[dict[str, Any]] = []
     for row in selected.to_dict(orient="records"):
         target = manifest_by_key[str(row["target_race_key"])]
-        race_meta = metadata[(str(row["venue"]), int(row["race_no"]))]
+        race_meta = metadata[str(row["target_race_key"])]
         race_domain = (
             "obstacle"
             if race_meta.surface == "障害" or str(target.get("race_domain")) == "obstacle"
@@ -275,7 +454,7 @@ def build_entry_rows(
             {
                 "キャリア": "",
                 "クラス名": race_meta.race_class,
-                "トラックコード": race_meta.surface,
+                "トラックコード": _baseline_track_code(race_meta),
                 "レースID(新/馬番無)": target["race_id"],
                 "休み明け～戦目": "",
                 "出走頭数": int(target["runner_count"]),
@@ -285,7 +464,7 @@ def build_entry_rows(
                 "斤量": row["assigned_weight_kg"] if row["assigned_weight_kg"] is not None else "",
                 "日付": str(row["race_date"])[2:],
                 "枠番": row["frame_no"],
-                "競走種別": "",
+                "競走種別": race_meta.race_type_code,
                 "芝・ダ": race_meta.surface,
                 "血統登録番号": row["horse_id"],
                 "調教師コード": row["trainer_code"],
@@ -296,7 +475,7 @@ def build_entry_rows(
                 "馬場状態": "",
                 "馬番": row["horse_no"],
                 "騎手コード": row["jockey_code"],
-                "レース名": race_meta.race_name,
+                "レース名": race_meta.race_name or race_meta.race_class,
                 "人気": "",
                 "単勝オッズ": "",
                 "日付S": str(row["race_date"]),
@@ -312,6 +491,14 @@ def build_entry_rows(
                 "horse_name": row["horse_name"],
                 "race_domain": race_domain,
                 "target_race_key": row["target_race_key"],
+                "jv_track_code": race_meta.track_code,
+                "course_code": race_meta.course_code,
+                "grade_code": race_meta.grade_code,
+                "condition_code": race_meta.condition_code,
+                "html_runner_group_index": race_meta.html_group_index,
+                "html_identity_match_count": race_meta.runner_name_match_count,
+                "dr_data_kbn": race_meta.data_category,
+                "dr_record_hash": race_meta.record_hash,
                 "source_url": "",
             }
         )
@@ -332,22 +519,43 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
     sources = config["input_sources"]
     html_path = Path(sources["html"]["path"])
     du_path = Path(sources["du"]["path"])
-    for name, path in (("html", html_path), ("du", du_path)):
+    dr_path = Path(sources["dr"]["path"])
+    for name, path in (("html", html_path), ("du", du_path), ("dr", dr_path)):
         expected = str(sources[name]["sha256"]).lower()
         observed = file_sha256(path)
         if observed != expected:
             raise ValueError(f"{name} source hash mismatch: {observed} != {expected}")
     du = parse_du(du_path)
     expected_total = int(config["input_contract"]["expected_runner_rows"])
+    expected_races = int(config["input_contract"]["expected_races"])
     if len(du) != expected_total:
         raise ValueError(f"DU active runner count mismatch: {len(du)} != {expected_total}")
-    metadata = parse_html_race_metadata(html_path, du)
+    html_groups = parse_html_runner_groups(
+        html_path,
+        expected_runner_rows=expected_total,
+        expected_races=expected_races,
+    )
+    html_matches = match_html_runner_groups_to_du(html_groups, du)
+    ra_metadata = parse_ra_race_metadata(dr_path, expected_races=expected_races)
+    manifests: dict[str, dict[str, Any]] = {}
+    target_records: list[dict[str, Any]] = []
+    for card in config["cards"]:
+        manifest = load_json(ROOT / card["target_manifest"])
+        manifests[str(card["slug"])] = manifest
+        target_records.extend(manifest.get("records", []))
+    if len(target_records) != expected_races:
+        raise ValueError(f"target manifest race count mismatch: {len(target_records)} != {expected_races}")
+    metadata = bind_fixed_input_metadata(
+        du=du,
+        html_matches=html_matches,
+        ra_metadata=ra_metadata,
+        target_records=target_records,
+    )
     historical_path = Path(config["history"]["historical_csv"])
     historical = pd.read_csv(historical_path, encoding="cp932", low_memory=False)
     cards: list[dict[str, Any]] = []
     for card in config["cards"]:
-        manifest_path = ROOT / card["target_manifest"]
-        manifest = load_json(manifest_path)
+        manifest = manifests[str(card["slug"])]
         frame = build_entry_rows(du, manifest, metadata, historical=historical)
         card_dir = output_root / str(card["slug"]) / "raw_entry"
         card_dir.mkdir(parents=True, exist_ok=True)
@@ -370,8 +578,12 @@ def import_multicard(config_path: Path, output_root: Path) -> dict[str, Any]:
         "experiment_id": config["experiment_id"],
         "html_sha256": file_sha256(html_path),
         "du_sha256": file_sha256(du_path),
+        "dr_sha256": file_sha256(dr_path),
         "runner_rows": int(len(du)),
         "race_count": int(du["target_race_key"].nunique()),
+        "html_runner_groups": int(html_groups["html_group_index"].nunique()),
+        "html_du_identity_matches": int(len(html_matches)),
+        "ra_race_rows": int(len(ra_metadata)),
         "cards": cards,
         "candidate_uses_odds": False,
         "formal_buy": False,

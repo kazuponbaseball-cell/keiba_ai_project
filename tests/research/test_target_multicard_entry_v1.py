@@ -11,9 +11,12 @@ from scripts.research.import_target_multicard_entry_v1 import (
     _race_class,
     _surface_and_distance,
     build_entry_rows,
+    bind_fixed_input_metadata,
     canonical_candidate_race_id,
+    match_html_runner_groups_to_du,
     parse_du,
-    parse_html_race_metadata,
+    parse_html_runner_groups,
+    parse_ra_race_metadata,
 )
 
 
@@ -49,8 +52,44 @@ def _du_line(
     return bytes(raw)
 
 
+def _html_block(frame_no: int, horse_no: int, horse_name: str) -> str:
+    return (
+        f"<HR><TD NOWRAP >{frame_no}枠 {horse_no}番"
+        f"<TD><B>{horse_name}</B><TD>synthetic history"
+    )
+
+
+def _ra_line(
+    *,
+    target_race_key: str,
+    race_name: str = "",
+    grade_code: str = "",
+    race_type_code: str = "13",
+    condition_code: str = "005",
+    distance: int = 1600,
+    track_code: str = "11",
+    post_hhmm: str = "1200",
+    runner_count: int = 3,
+) -> bytes:
+    raw = bytearray(b" " * 890)
+    _put(raw, 0, 3, "RA2")
+    _put(raw, 3, 11, "20260808")
+    _put(raw, 11, 27, target_race_key)
+    _put(raw, 32, 92, race_name)
+    _put(raw, 572, 592, race_name)
+    _put(raw, 614, 615, grade_code)
+    _put(raw, 616, 618, race_type_code)
+    _put(raw, 634, 637, condition_code)
+    _put(raw, 697, 701, f"{distance:04d}")
+    _put(raw, 705, 707, track_code)
+    _put(raw, 709, 711, "A")
+    _put(raw, 873, 877, post_hhmm)
+    _put(raw, 881, 883, f"{runner_count:02d}")
+    return bytes(raw)
+
+
 class TargetMulticardEntryTests(unittest.TestCase):
-    def test_contract_matrix_contains_exactly_18_synthetic_cases(self) -> None:
+    def test_contract_matrix_contains_exactly_24_synthetic_cases(self) -> None:
         cases = [
             ("芝1200m 1勝クラス", ("芝", 1200), "1勝クラス"),
             ("ダート1800m 未勝利", ("ダ", 1800), "未勝利"),
@@ -70,8 +109,14 @@ class TargetMulticardEntryTests(unittest.TestCase):
             ("ダ1900m 1勝クラス", ("ダ", 1900), "1勝クラス"),
             ("芝3000m 未勝利", ("芝", 3000), "未勝利"),
             ("障害2890m 障害未勝利", ("障害", 2890), "未勝利"),
+            ("芝1800m 1勝クラス", ("芝", 1800), "1勝クラス"),
+            ("ダ2000m 2勝クラス", ("ダ", 2000), "2勝クラス"),
+            ("芝1200m 3勝クラス", ("芝", 1200), "3勝クラス"),
+            ("ダ1700m オープン", ("ダ", 1700), "オープン"),
+            ("芝1600m GII", ("芝", 1600), "GII"),
+            ("障害3000m 未勝利", ("障害", 3000), "未勝利"),
         ]
-        self.assertEqual(18, len(cases))
+        self.assertEqual(24, len(cases))
         for text, expected_course, expected_class in cases:
             with self.subTest(text=text):
                 self.assertEqual(expected_course, _surface_and_distance(text))
@@ -102,52 +147,108 @@ class TargetMulticardEntryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "duplicate"):
                 parse_du(path)
 
-    def test_html_metadata_uses_runner_names_to_select_current_heading(self) -> None:
-        runners = pd.DataFrame(
+    def test_html_runner_groups_match_du_by_exact_runner_signature(self) -> None:
+        source = "".join(
             [
-                {
-                    "venue": "札幌",
-                    "race_no": 1,
-                    "target_race_key": "2026080801010501",
-                    "horse_name": name,
-                }
-                for name in ("アルファ", "ベータ", "ガンマ")
+                _html_block(1, 1, "アルファ"),
+                _html_block(2, 2, "ベータ"),
+                _html_block(3, 3, "ガンマ"),
+                _html_block(1, 1, "デルタ"),
+                _html_block(2, 2, "イプシロン"),
             ]
         )
-        source = """
-        <html><body>
-          <h2>札幌1R 過去情報 芝1800m</h2><p>別馬</p>
-          <h2>札幌1R 3歳未勝利 芝1200m</h2>
-          <p>アルファ ベータ ガンマ</p>
-        </body></html>
-        """
+        runners = pd.DataFrame(
+            [
+                {"target_race_key": key, "horse_no": no, "horse_name": name}
+                for key, entries in (
+                    ("2026080801010501", [(1, "アルファ"), (2, "ベータ"), (3, "ガンマ")]),
+                    ("2026080801010502", [(1, "デルタ"), (2, "イプシロン")]),
+                )
+                for no, name in entries
+            ]
+        )
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "entry.htm"
             path.write_bytes(source.encode("cp932"))
-            metadata = parse_html_race_metadata(path, runners)
-        race = metadata[("札幌", 1)]
-        self.assertEqual("芝", race.surface)
-        self.assertEqual(1200, race.distance)
-        self.assertEqual("未勝利", race.race_class)
-        self.assertEqual(3, race.runner_name_match_count)
+            groups = parse_html_runner_groups(
+                path, expected_runner_rows=5, expected_races=2
+            )
+        matches = match_html_runner_groups_to_du(groups, runners)
+        self.assertEqual(2, groups["html_group_index"].nunique())
+        self.assertEqual(3, matches["2026080801010501"]["runner_name_match_count"])
+        self.assertEqual(2, matches["2026080801010502"]["html_group_index"])
 
-    def test_html_metadata_fails_closed_on_identity_mismatch(self) -> None:
+    def test_html_runner_group_fails_closed_on_identity_mismatch(self) -> None:
         runners = pd.DataFrame(
-            [
-                {
-                    "venue": "新潟",
-                    "race_no": 2,
-                    "target_race_key": "2026080804020502",
-                    "horse_name": name,
-                }
-                for name in ("アルファ", "ベータ", "ガンマ")
-            ]
+            [{"target_race_key": "2026080804020502", "horse_no": 1, "horse_name": "別馬"}]
         )
         with tempfile.TemporaryDirectory() as temporary:
             path = Path(temporary) / "entry.htm"
-            path.write_bytes("<h2>新潟2R 芝1600m</h2><p>アルファ</p>".encode("cp932"))
-            with self.assertRaisesRegex(ValueError, "identity mismatch"):
-                parse_html_race_metadata(path, runners)
+            path.write_bytes(_html_block(1, 1, "アルファ").encode("cp932"))
+            groups = parse_html_runner_groups(
+                path, expected_runner_rows=1, expected_races=1
+            )
+        with self.assertRaisesRegex(ValueError, "identity mismatch"):
+            match_html_runner_groups_to_du(groups, runners)
+
+    def test_ra_metadata_uses_official_fixed_byte_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "DR.DAT"
+            path.write_bytes(
+                _ra_line(
+                    target_race_key="2026080801010501",
+                    condition_code="703",
+                    distance=1700,
+                    track_code="24",
+                    post_hhmm="1000",
+                    runner_count=14,
+                )
+                + b"\r\n"
+                + _ra_line(
+                    target_race_key="2026080801010511",
+                    race_name="エルムステークス",
+                    grade_code="C",
+                    condition_code="999",
+                    distance=1700,
+                    track_code="24",
+                    post_hhmm="1525",
+                    runner_count=11,
+                )
+            )
+            metadata = parse_ra_race_metadata(path, expected_races=2)
+        maiden = metadata["2026080801010501"]
+        grade = metadata["2026080801010511"]
+        self.assertEqual(("ダ", 1700, "未勝利", "1000"), (
+            maiden.surface, maiden.distance, maiden.race_class, maiden.scheduled_post_hhmm
+        ))
+        self.assertEqual(("Ｇ３", "エルムステークス", 11), (
+            grade.race_class, grade.race_name, grade.registered_runner_count
+        ))
+
+    def test_bind_metadata_rejects_post_time_or_data_category_drift(self) -> None:
+        key = "2026080801010501"
+        du = pd.DataFrame(
+            [{"target_race_key": key, "horse_no": no, "horse_name": f"馬{no}"} for no in range(1, 4)]
+        )
+        target = {
+            "target_race_key": key,
+            "runner_count": 3,
+            "scheduled_post_time": "2026-08-08T12:00:00+09:00",
+        }
+        meta = RaceMetadata(
+            venue="札幌", race_no=1, surface="芝", distance=1600,
+            race_class="1勝", race_name="", runner_name_match_count=0,
+            target_race_key=key, data_category="2", race_type_code="13",
+            condition_code="005", track_code="11", scheduled_post_hhmm="1201",
+            registered_runner_count=3,
+        )
+        with self.assertRaisesRegex(ValueError, "post time mismatch"):
+            bind_fixed_input_metadata(
+                du=du,
+                html_matches={key: {"html_group_index": 1, "runner_name_match_count": 3}},
+                ra_metadata={key: meta},
+                target_records=[target],
+            )
 
     def test_build_entry_rows_preserves_12_race_denominator_and_blanks_market(self) -> None:
         rows = []
@@ -166,7 +267,7 @@ class TargetMulticardEntryTests(unittest.TestCase):
                     "race_domain": "flat",
                 }
             )
-            metadata[("札幌", race_no)] = RaceMetadata(
+            metadata[target_key] = RaceMetadata(
                 venue="札幌",
                 race_no=race_no,
                 surface="芝",
