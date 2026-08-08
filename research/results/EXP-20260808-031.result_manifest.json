@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-031",
+  "run_scope_digest": "5aac4066bd3839509990369998568bb8d30df77b2391e11cbf141f980c837804",
+  "execution_commit_sha": "62ecd946992e2abe90672712f616dfa31e19904d",
+  "artifacts": [
+    {
+      "path": "research/results/EXP-20260808-031.synthetic_result.json",
+      "sha256": "26c18159a3dc05cf294778027a527f89d9a76a5836d8dfbf728bda6a68d3fa3f"
+    }
+  ],
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

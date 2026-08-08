@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-031",
+  "completed_at": "2026-08-08T15:41:50Z",
+  "execution_commit_sha": "62ecd946992e2abe90672712f616dfa31e19904d",
+  "proposal_scope_digest": "3f97b3d9c57a79ebbcc91746d6e5f27a37253395095019658d49aa5389672410",
+  "run_scope_digest": "5aac4066bd3839509990369998568bb8d30df77b2391e11cbf141f980c837804",
+  "execution_kind": "synthetic",
+  "decision": "PASS_SYNTHETIC_CAPABILITY_CONTRACT",
+  "primary_metric": {
+    "name": "execution_kind_capability_contract_pass_fraction",
+    "passed": 5,
+    "total": 5,
+    "value": 1.0
+  },
+  "verification": {
+    "focused_contract_tests": {
+      "passed": 5,
+      "total": 5
+    },
+    "lifecycle_module_tests": {
+      "passed": 42,
+      "total": 42
+    },
+    "research_os_suite_tests": {
+      "passed": 74,
+      "total": 74
+    },
+    "python_compile_ok": true
+  },
+  "observed_running_capabilities": {
+    "synthetic_fixture_tests_allowed": true,
+    "real_data_execution_allowed": false,
+    "automatic_execution_allowed": true,
+    "execution_authorized": true
+  },
+  "safety": {
+    "external_api_calls": 0,
+    "real_data_rows": 0,
+    "roi_calculations": 0,
+    "actual_codex_dispatch_calls": 0,
+    "production_changes": 0,
+    "purchase_or_order_side_effects": 0,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0
+  },
+  "limitations": [
+    "This result verifies the Research OS governance capability contract only.",
+    "It contains no model-performance, historical OOS, ROI, race-data, or production evidence."
+  ]
+}
