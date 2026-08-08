@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-029",
+  "race_date": "2026-08-09",
+  "timezone": "Asia/Tokyo",
+  "bundle": {
+    "candidate_policy_sha256": "f392ce91aad54101a5a843a22cd6d984ec612077f42a74d5dde70d50d5c82f08",
+    "inference_bundle": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/umaren_wide_rebuild_v1/m1c_variance_inference_bundle_v1/artifacts/m1c_variance_final_grade_r_live_candidate_artifact.json",
+    "sha256": "abec14df7231e82ddd02494d9fa0c7d3af1ea4254631296c76440ec130a7c31e"
+  },
+  "candidate_policy": {
+    "action_calibrator_offset_intercept": 0.130654047367905,
+    "action_calibrator_type": "C0_offset",
+    "alternative_pair_search_allowed": false,
+    "candidate_substitution_allowed": false,
+    "horse_id_columns": [
+      "horse_id_1",
+      "horse_id_2",
+      "horse_id_3"
+    ],
+    "name": "WIDE_1_NON_ODDS_COHERENT_TOP3",
+    "primary_confidence_threshold": 0.21275851149504352,
+    "tie_break": "canonical_numeric_then_text_horse_id_pair"
+  },
+  "cards": [
+    {
+      "cohort_id": "grade_r_candidate_freeze_20260809_sapporo_exp029_v1",
+      "expected_runner_rows": 159,
+      "slug": "sapporo",
+      "target_manifest": "research/drafts/EXP-20260808-029-sapporo-target-manifest.json",
+      "venue_code": "01"
+    },
+    {
+      "cohort_id": "grade_r_candidate_freeze_20260809_niigata_exp029_v1",
+      "expected_runner_rows": 172,
+      "slug": "niigata",
+      "target_manifest": "research/drafts/EXP-20260808-029-niigata-target-manifest.json",
+      "venue_code": "04"
+    },
+    {
+      "cohort_id": "grade_r_candidate_freeze_20260809_chukyo_exp029_v1",
+      "expected_runner_rows": 164,
+      "slug": "chukyo",
+      "target_manifest": "research/drafts/EXP-20260808-029-chukyo-target-manifest.json",
+      "venue_code": "07"
+    }
+  ],
+  "history": {
+    "ability_history_dir": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/content_bridge_member_features_v1",
+    "baseline_config": "config/baseline_features.json",
+    "baseline_model": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/models/baseline/baseline_ranker.pkl",
+    "entry_globs": [
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/worktrees/EXP-20260808-019-execution/research/drafts/EXP-20260808-019-entry_snapshot_netkeiba_20260802_target_de_overlay_enriched_workout_knowledge.csv",
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/data/datasets/inference/weekly/entry_snapshot_netkeiba_*.csv"
+    ],
+    "historical_csv": "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/date/raw/全競走馬成績.csv",
+    "maximum_history_date": "20260808",
+    "minimum_history_date": "20260802",
+    "recent_result_globs": [
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/worktrees/EXP-20260808-019-execution/research/drafts/EXP-20260808-019-recent-results-20260802.csv",
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/race_day_review_*/parsed_results_all_horses.csv",
+      "C:/Users/kazup/OneDrive/デスクトップ/keiba_ai_project/outputs/analysis/*bias_review/horse_results.csv"
+    ]
+  },
+  "input_contract": {
+    "current_market_fields_must_be_blank": true,
+    "expected_experienced_runner_rows": 447,
+    "expected_no_history_runner_rows": 48,
+    "expected_ra_rows": 36,
+    "expected_races": 36,
+    "expected_runner_rows": 495,
+    "history_mode": "target_direct",
+    "require_history_bridge_manifest": true,
+    "public_entry_requests": 0,
+    "public_schedule_requests": 0,
+    "required_previous_race_columns": 24
+  },
+  "input_sources": {
+    "dr": {
+      "observed_at": "2026-08-08T19:11:06.8372518+09:00",
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DR20260809.DAT",
+      "sha256": "ea331f6d5da7ef14bb3b1f14783388f36d6f4da603e873004a19257259a8b177"
+    },
+    "du": {
+      "observed_at": "2026-08-08T19:11:21.8844603+09:00",
+      "path": "C:/Users/kazup/Data Lab/DE_DATA/2026/DU20260809.DAT",
+      "sha256": "d644e3b128e4643ecee14e688893e8589182c770e9b4edcca2eab0ad82a893e6"
+    },
+    "direct_history_manifest": {
+      "observed_at": "2026-08-08T21:24:02+09:00",
+      "path": "outputs/research/EXP-20260808-027/target_direct_history_source_manifest_20260809.json",
+      "sha256": "b008392d3ca8af8703ad5b8308f8a90157511a0434066a6eb7b774ada656da7c"
+    },
+    "history_bridge_manifest": {
+      "path": "research/drafts/EXP-20260808-029-history-bridge-manifest.json",
+      "sha256": "00a77ce8e52820f8009d5d182c68241f346e5f39854e22a98df1c95d77e5c5c4"
+    }
+  },
+  "preparation_status": "HASH_BOUND_EXP027_AUTHORITY_READY",
+  "safety": {
+    "credential_access": false,
+    "formal_buy": false,
+    "notification": false,
+    "order_module_import": false,
+    "production_dashboard_write": false,
+    "roi_calculation": false,
+    "send_order": false,
+    "stake": 0
+  }
+}

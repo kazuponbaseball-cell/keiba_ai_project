@@ -130,6 +130,169 @@ def _validated_direct_history_override(
     return supplied_path, normalized_sha
 
 
+def _validate_history_bridge_manifest(config: dict[str, Any]) -> dict[str, Any]:
+    required = bool(
+        config.get("input_contract", {}).get("require_history_bridge_manifest", False)
+    )
+    source = config.get("input_sources", {}).get("history_bridge_manifest")
+    if not required:
+        if source is not None:
+            raise ValueError(
+                "history bridge manifest is configured but not required by input contract"
+            )
+        return {"required": False, "contract_ok": True, "artifacts": []}
+    if not isinstance(source, dict):
+        raise ValueError("required history bridge manifest is not configured")
+
+    manifest_path = _resolve_config_path(str(source.get("path", "")))
+    expected_manifest_sha = str(source.get("sha256", "")).strip().lower()
+    if not FULL_SHA256.fullmatch(expected_manifest_sha):
+        raise ValueError("history bridge manifest sha256 must be a full SHA-256")
+    if not manifest_path.is_file():
+        raise ValueError(f"history bridge manifest is missing: {manifest_path}")
+    actual_manifest_sha = candidate.file_sha256(manifest_path)
+    if actual_manifest_sha != expected_manifest_sha:
+        raise ValueError(
+            "history bridge manifest hash mismatch: "
+            f"{actual_manifest_sha} != {expected_manifest_sha}"
+        )
+
+    manifest = load_json(manifest_path)
+    if str(manifest.get("experiment_id", "")) != str(config["experiment_id"]):
+        raise ValueError("history bridge manifest experiment mismatch")
+    if (
+        bool(manifest.get("formal_buy"))
+        or bool(manifest.get("send_order"))
+        or int(manifest.get("stake", -1)) != 0
+    ):
+        raise ValueError("history bridge manifest violates BUY/order safety")
+
+    artifacts = manifest.get("artifacts")
+    if not isinstance(artifacts, list) or len(artifacts) != 2:
+        raise ValueError("history bridge manifest must contain exactly two artifacts")
+    roles = [str(artifact.get("role", "")) for artifact in artifacts]
+    if sorted(roles) != ["entry_snapshot", "recent_results"]:
+        raise ValueError("history bridge manifest roles are incomplete or duplicated")
+
+    checked: list[dict[str, Any]] = []
+    history = config.get("history", {})
+    for artifact in artifacts:
+        role = str(artifact["role"])
+        artifact_path = _resolve_config_path(str(artifact.get("path", "")))
+        history_key = str(artifact.get("config_history_key", ""))
+        configured_values = history.get(history_key)
+        if not isinstance(configured_values, list):
+            raise ValueError(f"history bridge {role} has invalid config binding")
+        configured_paths = {
+            _resolve_config_path(str(value)) for value in configured_values
+        }
+        if artifact_path not in configured_paths:
+            raise ValueError(f"history bridge {role} is not bound to {history_key}")
+        if not artifact_path.is_file():
+            raise ValueError(f"history bridge artifact is missing: {artifact_path}")
+
+        expected_sha = str(artifact.get("sha256", "")).strip().lower()
+        if not FULL_SHA256.fullmatch(expected_sha):
+            raise ValueError(f"history bridge {role} sha256 is invalid")
+        actual_sha = candidate.file_sha256(artifact_path)
+        if actual_sha != expected_sha:
+            raise ValueError(
+                f"history bridge {role} hash mismatch: {actual_sha} != {expected_sha}"
+            )
+        expected_bytes = int(artifact.get("byte_count", -1))
+        actual_bytes = artifact_path.stat().st_size
+        if actual_bytes != expected_bytes:
+            raise ValueError(
+                f"history bridge {role} byte count mismatch: "
+                f"{actual_bytes} != {expected_bytes}"
+            )
+
+        frame = pd.read_csv(
+            artifact_path,
+            dtype=str,
+            keep_default_na=False,
+            encoding="utf-8-sig",
+        )
+        expected_rows = int(artifact.get("row_count", -1))
+        if len(frame) != expected_rows:
+            raise ValueError(
+                f"history bridge {role} row count mismatch: {len(frame)} != {expected_rows}"
+            )
+        race_id_column = str(artifact.get("race_id_column", ""))
+        horse_key_column = str(artifact.get("horse_key_column", ""))
+        required_columns = [race_id_column, horse_key_column]
+        if not set(required_columns).issubset(frame.columns):
+            raise ValueError(f"history bridge {role} required columns are missing")
+        blank_keys = frame[required_columns].apply(
+            lambda series: series.str.strip().eq("")
+        )
+        if blank_keys.any().any():
+            raise ValueError(f"history bridge {role} contains blank race/horse keys")
+
+        actual_races = frame[race_id_column].nunique(dropna=False)
+        expected_races = int(artifact.get("race_count", -1))
+        if actual_races != expected_races:
+            raise ValueError(
+                f"history bridge {role} race count mismatch: "
+                f"{actual_races} != {expected_races}"
+            )
+        duplicate_rows = int(frame.duplicated([race_id_column, horse_key_column]).sum())
+        expected_duplicates = int(artifact.get("duplicate_race_horse_rows", -1))
+        if duplicate_rows != expected_duplicates:
+            raise ValueError(
+                f"history bridge {role} duplicate count mismatch: "
+                f"{duplicate_rows} != {expected_duplicates}"
+            )
+
+        date_column = artifact.get("date_column")
+        if date_column:
+            if str(date_column) not in frame.columns:
+                raise ValueError(f"history bridge {role} date column is missing")
+            dates = frame[str(date_column)].astype(str).str.strip()
+        else:
+            prefix_length = int(artifact.get("date_from_race_id_prefix", 0))
+            if prefix_length <= 0:
+                raise ValueError(f"history bridge {role} has no date derivation contract")
+            dates = frame[race_id_column].astype(str).str.slice(0, prefix_length)
+        if dates.empty or not dates.str.fullmatch(r"\d{8}").all():
+            raise ValueError(f"history bridge {role} contains invalid dates")
+        actual_min_date = str(dates.min())
+        actual_max_date = str(dates.max())
+        expected_min_date = str(artifact.get("minimum_date", ""))
+        expected_max_date = str(artifact.get("maximum_date", ""))
+        if (actual_min_date, actual_max_date) != (
+            expected_min_date,
+            expected_max_date,
+        ):
+            raise ValueError(
+                f"history bridge {role} date range mismatch: "
+                f"{actual_min_date}..{actual_max_date} != "
+                f"{expected_min_date}..{expected_max_date}"
+            )
+        checked.append(
+            {
+                "role": role,
+                "path": str(artifact_path),
+                "sha256": actual_sha,
+                "byte_count": actual_bytes,
+                "row_count": len(frame),
+                "race_count": actual_races,
+                "duplicate_race_horse_rows": duplicate_rows,
+                "minimum_date": actual_min_date,
+                "maximum_date": actual_max_date,
+                "contract_ok": True,
+            }
+        )
+
+    return {
+        "required": True,
+        "contract_ok": True,
+        "manifest_path": str(manifest_path),
+        "manifest_sha256": actual_manifest_sha,
+        "artifacts": checked,
+    }
+
+
 def _candidate_config(card_config: dict[str, Any], manifest: dict[str, Any]) -> dict[str, Any]:
     top = manifest["target_card"]
     records = manifest.get("records", [])
@@ -458,6 +621,7 @@ def run(
         )
     )
     candidate.assert_real_data_authorized(ROOT, config["experiment_id"])
+    history_bridge_preflight = _validate_history_bridge_manifest(config)
     import_summary = import_multicard(
         config_path,
         output_root,
@@ -534,6 +698,7 @@ def run(
         "experiment_id": config["experiment_id"],
         "target_date": target_date,
         "history_mode": _history_mode(config),
+        "history_bridge_preflight": history_bridge_preflight,
         "import": import_summary,
         "cards": card_summaries,
         "candidate_table": str(table_path),

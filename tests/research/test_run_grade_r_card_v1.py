@@ -101,6 +101,106 @@ class GradeRCardRunnerTests(unittest.TestCase):
         config_path.write_text(json.dumps(config, ensure_ascii=False), encoding="utf-8")
         return config, config_path, direct_manifest
 
+    def _add_history_bridge(
+        self,
+        root: Path,
+        config: dict[str, object],
+    ) -> tuple[Path, Path, Path]:
+        recent = root / "recent-results.csv"
+        entry = root / "entry-snapshot.csv"
+        pd.DataFrame(
+            [
+                {
+                    "race_id": "2026080201010101",
+                    "horse_no": "1",
+                    "finish": "1",
+                },
+                {
+                    "race_id": "2026080201010101",
+                    "horse_no": "2",
+                    "finish": "2",
+                },
+            ]
+        ).to_csv(recent, index=False, encoding="utf-8-sig")
+        pd.DataFrame(
+            [
+                {
+                    "race_id": "2026080201010101",
+                    "馬番": "1",
+                    "horse_id": "horse-1",
+                    "日付S": "20260802",
+                },
+                {
+                    "race_id": "2026080201010101",
+                    "馬番": "2",
+                    "horse_id": "horse-2",
+                    "日付S": "20260802",
+                },
+            ]
+        ).to_csv(entry, index=False, encoding="utf-8-sig")
+        manifest = root / "history-bridge.json"
+        manifest.write_text(
+            json.dumps(
+                {
+                    "schema_version": 1,
+                    "experiment_id": config["experiment_id"],
+                    "artifacts": [
+                        {
+                            "role": "recent_results",
+                            "config_history_key": "recent_result_globs",
+                            "path": str(recent),
+                            "sha256": module.candidate.file_sha256(recent),
+                            "byte_count": recent.stat().st_size,
+                            "row_count": 2,
+                            "race_count": 1,
+                            "race_id_column": "race_id",
+                            "horse_key_column": "horse_no",
+                            "date_column": None,
+                            "date_from_race_id_prefix": 8,
+                            "minimum_date": "20260802",
+                            "maximum_date": "20260802",
+                            "duplicate_race_horse_rows": 0,
+                        },
+                        {
+                            "role": "entry_snapshot",
+                            "config_history_key": "entry_globs",
+                            "path": str(entry),
+                            "sha256": module.candidate.file_sha256(entry),
+                            "byte_count": entry.stat().st_size,
+                            "row_count": 2,
+                            "race_count": 1,
+                            "race_id_column": "race_id",
+                            "horse_key_column": "馬番",
+                            "date_column": "日付S",
+                            "date_from_race_id_prefix": 0,
+                            "minimum_date": "20260802",
+                            "maximum_date": "20260802",
+                            "duplicate_race_horse_rows": 0,
+                        },
+                    ],
+                    "formal_buy": False,
+                    "send_order": False,
+                    "stake": 0,
+                },
+                ensure_ascii=False,
+            ),
+            encoding="utf-8",
+        )
+        input_contract = config["input_contract"]
+        input_sources = config["input_sources"]
+        history = config["history"]
+        assert isinstance(input_contract, dict)
+        assert isinstance(input_sources, dict)
+        assert isinstance(history, dict)
+        input_contract["require_history_bridge_manifest"] = True
+        input_sources["history_bridge_manifest"] = {
+            "path": str(manifest),
+            "sha256": module.candidate.file_sha256(manifest),
+        }
+        history["recent_result_globs"] = [str(recent)]
+        history["entry_globs"] = [str(entry)]
+        return manifest, recent, entry
+
     @staticmethod
     def _terminal_table() -> pd.DataFrame:
         return pd.DataFrame(
@@ -176,6 +276,43 @@ class GradeRCardRunnerTests(unittest.TestCase):
             )
             self.assertEqual(direct_manifest.resolve(), path)
             self.assertEqual(DIRECT_SHA256, sha256)
+
+    def test_history_bridge_preflight_verifies_hash_shape_and_binding(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config, _, _ = self._config(root)
+            manifest, _, _ = self._add_history_bridge(root, config)
+            summary = module._validate_history_bridge_manifest(config)
+        self.assertTrue(summary["required"])
+        self.assertTrue(summary["contract_ok"])
+        self.assertEqual(manifest.resolve(), Path(summary["manifest_path"]))
+        self.assertEqual(2, len(summary["artifacts"]))
+        self.assertEqual(
+            {"entry_snapshot", "recent_results"},
+            {artifact["role"] for artifact in summary["artifacts"]},
+        )
+
+    def test_history_bridge_preflight_fails_before_import_on_artifact_drift(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            config, config_path, direct_manifest = self._config(root)
+            _, recent, _ = self._add_history_bridge(root, config)
+            config_path.write_text(
+                json.dumps(config, ensure_ascii=False), encoding="utf-8"
+            )
+            recent.write_text("tampered\n", encoding="utf-8")
+            with (
+                patch.object(module.candidate, "assert_real_data_authorized"),
+                patch.object(module, "import_multicard") as importer,
+                self.assertRaisesRegex(ValueError, "recent_results hash mismatch"),
+            ):
+                module.run(
+                    config_path,
+                    root / "output",
+                    direct_history_manifest_path=direct_manifest,
+                    direct_history_manifest_sha256=DIRECT_SHA256,
+                )
+            importer.assert_not_called()
 
     def test_candidate_adapter_source_priority_matches_history_mode(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -362,6 +499,68 @@ class GradeRCardRunnerTests(unittest.TestCase):
         self.assertEqual(36, len(all_records))
         self.assertEqual(495, sum(int(record["runner_count"]) for record in all_records))
         self.assertEqual(1, sum(record["race_domain"] == "obstacle" for record in all_records))
+
+    def test_exp029_config_preserves_exp028_prediction_contract(self) -> None:
+        exp028 = json.loads(
+            (ROOT / "config" / "grade_r_card_20260809_exp028.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        exp029 = json.loads(
+            (ROOT / "config" / "grade_r_card_20260809_exp029.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual("EXP-20260808-029", exp029["experiment_id"])
+        self.assertEqual(exp028["bundle"], exp029["bundle"])
+        self.assertEqual(exp028["candidate_policy"], exp029["candidate_policy"])
+        self.assertEqual(exp028["race_date"], exp029["race_date"])
+        self.assertEqual(exp028["safety"], exp029["safety"])
+        self.assertEqual(
+            exp028["input_sources"]["direct_history_manifest"],
+            exp029["input_sources"]["direct_history_manifest"],
+        )
+        self.assertTrue(exp029["input_contract"]["require_history_bridge_manifest"])
+        self.assertEqual(
+            "00a77ce8e52820f8009d5d182c68241f346e5f39854e22a98df1c95d77e5c5c4",
+            exp029["input_sources"]["history_bridge_manifest"]["sha256"],
+        )
+        bridge_path = ROOT / exp029["input_sources"]["history_bridge_manifest"]["path"]
+        self.assertEqual(
+            exp029["input_sources"]["history_bridge_manifest"]["sha256"],
+            module.candidate.file_sha256(bridge_path),
+        )
+        for key in (
+            "ability_history_dir",
+            "baseline_config",
+            "baseline_model",
+            "historical_csv",
+            "maximum_history_date",
+            "minimum_history_date",
+        ):
+            self.assertEqual(exp028["history"][key], exp029["history"][key])
+
+        all_records: list[dict[str, object]] = []
+        for card028, card029 in zip(exp028["cards"], exp029["cards"], strict=True):
+            old_manifest = json.loads(
+                (ROOT / card028["target_manifest"]).read_text(encoding="utf-8")
+            )
+            new_manifest = json.loads(
+                (ROOT / card029["target_manifest"]).read_text(encoding="utf-8")
+            )
+            self.assertEqual("EXP-20260808-029", new_manifest["experiment_id"])
+            self.assertEqual(old_manifest["records"], new_manifest["records"])
+            self.assertEqual(old_manifest["target_card"], new_manifest["target_card"])
+            self.assertEqual(
+                old_manifest["source_fold_manifest"],
+                new_manifest["source_fold_manifest"],
+            )
+            self.assertFalse(new_manifest["formal_buy"])
+            self.assertFalse(new_manifest["send_order"])
+            self.assertEqual(0, new_manifest["stake"])
+            all_records.extend(new_manifest["records"])
+        self.assertEqual(36, len(all_records))
+        self.assertEqual(495, sum(int(record["runner_count"]) for record in all_records))
 
 
 if __name__ == "__main__":
