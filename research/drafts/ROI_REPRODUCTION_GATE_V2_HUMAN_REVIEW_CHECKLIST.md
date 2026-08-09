@@ -11,8 +11,10 @@ machine-readable map:
 状態: `REVIEW_ONLY / NON_AUTHORITY / NOT_IMPLEMENTED`
 
 > このchecklistへの記入はGitHub approval、proposal scope、run scope、execution lease、
-> merge approvalではない。実装を進める場合も、PR #36の人間判断後のnew mainから
-> 別human-owned Draftを作り、G1とG2を順にreview・mergeする。
+> merge approvalではない。PR #36は`fbbebc804c7a2393aff26a6de9ad7c55caa5bc92`として
+> mainへmerge済みである。実装を進める場合は、その子孫から別human-owned Draftを作り、
+> G1とG2を順にreview・mergeする。G2 activation後の通常experiment transitionには
+> Ready、merge、rebase、branch refreshを要求しない。
 
 ## A. Review metadata
 
@@ -42,18 +44,20 @@ Reviewer decision:
 
 - [ ] G1はschema/policy/compiler/synthetic fixtureだけで、全authorityをfalseにする。
 - [ ] G2はG1がhuman mergeされた後の別Draftにし、attester、authority verifier、
-  supervised executor、durable one-shot lease ledgerをreviewする。
+  reusable reference catalog、supervised executor、durable runtime/one-shot lease ledgerをreviewする。
 - [ ] G1/G2/Aは自身や`infrastructure_safety_v1`で自己承認しない。
-- [ ] PR #36の未merge branchをroot of trustまたはapproval baseにしない。
-- [ ] PR #36の人間判断後、new mainへrebaseしてからimplementationを開始する。
+- [ ] PR #36の過去branchやPR #37 branchをroot of trustまたはapproval baseにしない。
+- [ ] implementationはmerged main `fbbebc8...`の子孫から開始する。
 - [ ] governance DraftのCIが変更されたexecutor、model、real-data testを自動実行しない。
+- [ ] G2がhuman merge・durability検証されるまでは`EXECUTION_FORBIDDEN`を維持する。
 
 Reviewer decision:
 
 ## D. State machine and terminal meaning — P0
 
-- [ ] prepare → manifest approval/attest → run approval/run → result reviewの順序を固定する。
-- [ ] `MANIFEST_ATTESTED`が存在しないrun scopeを拒否する。
+- [ ] proposalはprepublished catalog release/entryをexact bindしてから作る。
+- [ ] prepare → internal `CATALOG_BOUND`再検証 → run approval/run → result reviewの順序を固定する。
+- [ ] catalog release/entry digestが不一致または未解決のrun scopeを拒否する。
 - [ ] terminalを`REPRODUCED`、`RECONSTRUCTED_NOT_REPRODUCED`、
   `REPRODUCTION_FAILED`、`REJECTED`、`INVALID`に分ける。
 - [ ] scientific negativeは`REPRODUCTION_FAILED`、human evidence rejectionは
@@ -64,30 +68,43 @@ Reviewer decision:
 
 Reviewer decision:
 
-## E. Four GitHub grants — P0
+## E. Three routine GitHub grants and operator budget — P0
 
-- [ ] 次の4 keywordとdigest bindingを承認する。
+- [ ] 通常success pathの人間操作を次の3 keyword/digest bindingだけにする。
   - `APPROVED_TO_PREPARE <proposal_scope_digest>`
-  - `APPROVED_TO_ATTEST_MANIFEST <manifest_scope_digest>`
   - `APPROVED_TO_RUN <run_scope_digest>`
   - `ACKNOWLEDGED_REPRODUCTION_RESULT <review_digest>`
-- [ ] 4 comment IDは相互に異なり、schema/gate kindを跨いでregistry全体で未使用とする。
+- [ ] 通常experimentのReady/merge/rebase/branch refreshを0回とする。
+- [ ] 承認以外を含む人間のvisible action合計を3回以下にする。
+- [ ] `APPROVED_TO_PREPARE`をworkflowの開始/再開操作とし、別のexperiment開始操作を要求しない。
+- [ ] `APPROVED_TO_RUN`をsupervised run開始操作とし、別の「実行開始」確認を要求しない。
+- [ ] `clean_a`/`clean_b`のreplicaごとの人間確認を要求しない。
+- [ ] 3 comment IDは相互に異なり、schema/gate kindを跨いでglobal grant index全体で未使用とする。
 - [ ] `APPROVERS.json`はproposal base commit上のGitHub blobを正本とする。
 - [ ] authorはallowlist済み`User`のみとし、bot/Codex/automationを拒否する。
 - [ ] comment編集、削除、ID再利用、body/digest/timestamp不一致をfail-closeする。
 - [ ] 各phase直前に必要な全grant、current main、ancestryをGitHubから再検証する。
-- [ ] manifest attester/providerとrun approverのrole separationを必須にするか決定する。
+- [ ] catalog更新、scope drift、retryを追加clickで救済せず、別maintenance/new scopeへfail-closeする。
+- [ ] catalog publisher/attesterとrun approverのrole separationを必須にするか決定する。
 
 Role-separation decision: `REQUIRED / RECOMMENDED / NOT_REQUIRED`
 
-## F. Registry and authority boundary — P0
+## F. Durable runtime ledger and authority boundary — P0
 
-- [ ] mixed v2/v3/v4 historyをbyte-preservingで読み、legacy eventを再serializeしない。
-- [ ] event ID、sequence、previous chain、全historical transitionを検証する。
-- [ ] current-main `REGISTRY.jsonl`とのexact equalityを全statusで要求する。
-- [ ] main headをlock内でappend直前に再取得し、一度に1 eventだけappendする。
-- [ ] alternate registry、symlink/junction、stale main、concurrent writerを拒否する。
-- [ ] pending branch event、queue、scope、commentをexecution authorityとして扱わない。
+- [ ] G2 activation時にmixed v2/v3のfull event chain、全comment ID、各experimentのlatest
+  sequence/head/statusをterminal・nonterminalともbyte/hash-bound importする。
+- [ ] 既存nonterminal headの欠落、fork、再初期化を拒否する。
+- [ ] cutoverはactivation epoch、exact main/registry blob/content digest、old-writer freeze、
+  import後のsecond compare、atomic active-backend switchを要求する。
+- [ ] snapshotからactivationまでにevent/grantが変化したらabort/reimportする。
+- [ ] durable ledgerはglobal sequenceとexperiment/catalog-scope/release-statusごとのsubject sequence、
+  previous subject hash、terminalityを検証する。
+- [ ] expected head CAS、event append、comment-ID reservation、lease issue/consumeを原子的に行う。
+- [ ] activation後の全new v2/v3/v4 grantを同じglobal indexへrouteし、dual writerを拒否する。
+- [ ] `research/REGISTRY.jsonl`はperiodic audit checkpointで、次transitionのmerge前提にしない。
+- [ ] local JSON、worktree、branch file、alternate registryをauthority fallbackにしない。
+- [ ] backend outage、split brain、stale head、concurrent writer、restore rollbackをfail-closeする。
+- [ ] event、queue、scope、commentをexecution tokenとして扱わない。
 - [ ] registry event safetyは常にauthority/automatic execution/production/merge/BUY=false、
   `formal_buy=false`、`send_order=false`、`stake=0`とする。
 
@@ -95,13 +112,30 @@ Reviewer decision:
 
 ## G. One-shot lease and supervised executor — P0
 
-- [ ] verifierはcurrent main、registry bytes、全grant、scope、capability、command、
+- [ ] verifierはcurrent main root-of-trust、durable ledger head、全grant、scope、capability、command、
   execution commitをreplica直前に再検証する。
-- [ ] leaseへphase、replica、全digest、expiry、consumption、human supervisor、retry budgetを固定する。
-- [ ] leaseのrequired fieldをphase別にし、manifest leaseへ未生成のattestation/run digest、
-  preparation/manifest leaseへ未生成のreplica IDをnullで先取りしない。
+- [ ] leaseへphase、replica、proposal/catalog/run digest、expiry、human supervisor、retry budgetを固定し、
+  consumptionは別のimmutable receiptで追跡する。
+- [ ] preparation leaseへ未生成のrun/replica fieldをnullで先取りしない。
 - [ ] M0は`clean_a`と`clean_b`の2 replicaに別leaseを発行する。
 - [ ] durable storeで同じlease/run/replicaの再利用を拒否する。
+- [ ] required lifecycle transitionまたはstate不変operation append + lease issueを1 transaction、
+  lease consume + dispatch reservationを別の1 transactionとしてそれぞれ原子的にし、部分成功と
+  二重dispatchを拒否する。state不変issue receiptは既存authorizing lifecycle-event digestをbindする。
+- [ ] immutable issue receiptとconsume receiptを分け、`consumed_at`で発行済みleaseを更新しない。
+- [ ] lease operation sequence/headをlifecycle event sequence/headと分離し、replica/provider operationが
+  `RUNNING`または`CATALOG_PUBLISHING`のself-transitionを作らない。
+- [ ] receiptと別のimmutable lease-operation recordを正本にし、subject/kind/sequence/previous digest、
+  authorizing event、lease、kind別scope/grant/replica/dispatch、policy/schema、安全定数をexact bindする。
+- [ ] operation recordはself digestを含めず、canonical recordからnew digestを計算してreceiptへattestし、
+  expected previous operation headとglobal headを同一transactionでCASする。
+- [ ] preparation consume recordはproposal digest + dispatch reservationをbindしrun/replica fieldを拒否し、
+  historical run consume recordはrun digest + replica IDを必須にする。
+- [ ] consumption receiptもphase-conditioned exact shapeとし、preparationはproposal digestのみ、
+  historical run replicaはrun digest + replica IDのみを許す。
+- [ ] receiptはbackend/writer identity、transaction/idempotency key、previous/new head、
+  global/operation sequence、event/grant/lease/run/replica digest、policy/schema digest、timestamp、signer evidence、
+  安全定数を固定する。
 - [ ] durable consumptionを証明できない間はno-authorityのままにする。
 - [ ] crash後のautomatic retryとshared mutable cacheを拒否する。
 - [ ] G2初版はhuman-invokedに限定するか、Codex dispatchを別capability・別reviewへ
@@ -116,16 +150,49 @@ Reviewer decision:
 
 Executor invocation decision: `HUMAN_ONLY / FUTURE_SEPARATE_CODEX_CAPABILITY_REVIEW`
 
-## H. Manifest attestation — P0
+## H. Reusable reference catalog — P0
 
-- [ ] manifest scopeをprepare/runと別digest・別grantにする。
+- [ ] per-experiment manifest grant/provider readを廃止し、prepublished catalogだけを使う。
+- [ ] catalog release publicationをroutine experiment外のseparate maintenance reviewにする。
+- [ ] data read前にcatalog publication scope digestを作り、
+  `APPROVED_TO_PUBLISH_REFERENCE_CATALOG <catalog_publication_scope_digest>`を検証する。
+- [ ] release digestをread前grantへ循環bindせず、releaseはscope/approval/provider receiptをbindする。
+- [ ] catalog provider leaseはpublication scope ID/digestをsubjectにし、`experiment_id`、run scope、
+  replica IDを禁止してprovider/code/env/command/capability/ledger head/expiryを固定する。
+- [ ] catalog provider issue receiptもexperiment execution receiptと別shapeにする。
+- [ ] catalog provider consume receiptはrun/replica receiptを流用せず、scope、provider lease/
+  identity、dispatch reservation、previous/new ledger headをexact bindし、future output digestを
+  先取りしない。
+- [ ] catalog grantもbase-commit allowlist、User actor、global unused ID、edit/delete/reuse
+  fail-closeを継承し、provider lease直前にGitHubから再取得する。
+- [ ] published releaseをexperimentへbindするときもcatalog grant evidenceをproposal binding、
+  run-scope freeze、`RUNNING`直前、result sealing、terminal classificationで再取得し、
+  mutation/revocation時はproposal前だけ
+  `BLOCKED_CATALOG`、`PROPOSED`以後はterminal `INVALID`で停止する。
+- [ ] provider retry budgetを0とし、scope digest + grant IDごとにlease/publicationを1回だけ
+  reserveする。crash/failure retryは新scope/new grantを要求する。
+- [ ] catalog maintenance terminalを`CATALOG_PUBLISHED`、`CATALOG_PUBLICATION_FAILED`、
+  `INVALID`に固定し、terminal resurrectionを拒否する。
+- [ ] catalog maintenance専用event schemaでscope、global/subject sequence、previous event/status、
+  grant reservation、provider lease issue/consume receipt、publication receipt、release、policy/schema、
+  安全定数をbindし、experiment event fieldとの混在を拒否する。
+- [ ] catalog eventはscope proposed→approved→publishing→published/failedと各nonterminal→`INVALID`
+  だけを許し、grant/lease/publication receipt条件のないskipを拒否する。
+- [ ] publication eventを後更新せず、別のappend-only release-status eventでpublish時に`ACTIVE`、
+  その後は`ACTIVE -> REVOKED`だけを許し、release/reason/evidence/effective time/signerをbindする。
 - [ ] caller absolute pathではなくopaque logical source IDを使用する。
 - [ ] code-owned versioned providerだけを許可する。
-- [ ] attestation outputはhash、size、schema、count、times、lineage、snapshot IDだけに制限する。
-- [ ] raw row/value/path、username、secret、credential、arbitrary globを返さない。
-- [ ] output digestをrun scopeへ埋め、RUNNING直前に再検証する。
+- [ ] catalog entryはhash、size、schema、count、times、lineage、snapshot IDだけに制限する。
+- [ ] raw row/value/path、username、secret、credential、arbitrary globをcatalogへ含めない。
+- [ ] catalog entryとentry refにも`formal_buy=false`、`send_order=false`、`stake=0`を要求する。
+- [ ] catalog publication receiptはscope/approval/provider lease/code/env/command、entry-set/
+  snapshot-set、provider consume-receipt digest、signer evidenceをexact bindする。
+- [ ] release/entry digestをproposalとrun scopeへ埋め、RUNNING直前に再検証する。
+- [ ] proposalの有限domainからexactly one entryを決定論的に解決し、proposal後の選択/更新を拒否する。
+- [ ] missing/expired/revoked/ambiguous entryはproposal前だけ`BLOCKED_CATALOG`とし、
+  `PROPOSED`以後のcatalog再検証失敗はterminal `INVALID`とする。
 - [ ] content-addressed immutable snapshotを必須にし、TOCTOUを拒否する。
-- [ ] metadata hash readを`real_data_execution=true`として正直に記録しつつ、
+- [ ] catalog publication時のmetadata hash readを`real_data_execution=true`として正直に記録しつつ、
   model access/training/replay/price/payoff/ROIをfalseにする。
 
 Reviewer decision:
@@ -142,7 +209,7 @@ Reviewer decision:
 - [ ] acknowledgementでcomputed outcomeを`REPRODUCED`へupgradeできない。
 - [ ] acknowledgementはcomputed outcomeと同じterminalか`REJECTED`だけを選べる。
   computed `INVALID`は`INVALID`以外へ変更できない。
-- [ ] proposal、manifest scope/attestation、run、result、review、event/receiptの全artifactで
+- [ ] proposal、catalog release/entry ref、run、result、review、event/receiptの全artifactで
   `formal_buy=false`、`send_order=false`、`stake=0`をexact fieldとして要求する。
 - [ ] 手動OpenAI受け渡しはprovider/model、prompt、sanitized context、responseのhashを
   proposalへbindし、API keyやraw secretを保存しない。
@@ -153,7 +220,7 @@ Reviewer decision:
 
 - [ ] proposalは1つのlegacy reference familyと有限のidentity domainだけを固定し、
   未読referenceのexact identityを推測しない。
-- [ ] manifest attestationはproposal domain外を選べず、run scope前にexactly one
+- [ ] prepublished catalogはproposal domain外を選べず、proposal作成前にexactly one
   recipe/reference/input universeへ解決する。
 - [ ] `legacy_run_mode`を`core`または`full`に確定し、UNKNOWNを拒否する。
 - [ ] canonical probability stageを`M0_raw`または`M0_temperature_scaled`に確定する。
@@ -207,10 +274,13 @@ Reviewer decision:
 
 - [ ] legacy v2 proposal/run/event digestsを変更しない。
 - [ ] PR #36 infra queue/event v3を変更しない。
+- [ ] merged `research/INFRASTRUCTURE_GATE.json`をread-only compatibility inputとし、
+  in-place変更やfuture changed-path候補に含めない。
 - [ ] new event schema v4を明示dispatchする。
 - [ ] legacy unbound real-data RUNNINGはreconciliation/INVALID以外をfail-closeする。
-- [ ] negative testsにkind spoof、score laundering、comment reuse、stale registry、
-  capability flip、duplicate lease、terminal resurrectionを含める。
+- [ ] activation後にnew grantを発行するlegacy/infra writerもdurable global indexへrouteする。
+- [ ] negative testsにkind spoof、score laundering、comment reuse、ledger split-brain/rollback、
+  catalog poisoning/revocation、capability flip、duplicate dispatch/lease、terminal resurrectionを含める。
 - [ ] Python 3.11/3.12とmixed-schema regressionを確認する。
 - [ ] docs、policy、schema、normalizer、compiler、event field集合をcross-checkする。
 
@@ -223,7 +293,8 @@ Reviewer decision:
 - [ ] future paired ROIは別`roi_prospective_model_validation_v2`へ送り、
   新ID、75点以上、新approvals、price-blind freeze chainを必須にする。
 - [ ] user stake、order、notification、credential、purchase APIへ接続しない。
-- [ ] mergeとDraft解除を人間に残す。
+- [ ] governance root変更のmergeとDraft解除を人間に残す。
+- [ ] 通常experiment transitionにはPR Ready/mergeを要求しない。
 
 Reviewer decision:
 
@@ -231,7 +302,8 @@ Reviewer decision:
 
 Choose exactly one:
 
-- [ ] `ACCEPT_DESIGN` — G1 human-owned Draft設計へ進めてよい。実装・実行承認ではない。
+- [ ] `ACCEPT_DESIGN` — 3-action/no-routine-mergeを含むG1/G2 human-owned Draft設計へ
+  進めてよい。実装・実行承認ではない。
 - [ ] `REQUEST_CHANGES` — 下記変更後に再reviewする。
 - [ ] `REJECT_DESIGN` — reproduction-only audit classを導入しない。
 
