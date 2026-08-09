@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-031",
+  "population": "synthetic_lifecycle_contract_cases_only",
+  "race_count": 0,
+  "runner_count": 0,
+  "runner_universe_hash": null,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

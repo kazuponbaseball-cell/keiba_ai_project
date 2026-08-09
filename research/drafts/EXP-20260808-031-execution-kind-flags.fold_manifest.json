@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-031",
+  "design": "synthetic_lifecycle_contract_cases_only",
+  "cases": [
+    "synthetic_running_allows_synthetic_and_denies_real_data",
+    "real_data_running_allows_real_data_without_mislabeling_synthetic",
+    "running_rejects_execution_kind_none",
+    "real_data_rejects_non_running_status",
+    "post_run_review_disables_all_execution_capabilities"
+  ],
+  "real_data_rows": 0,
+  "external_api_calls": 0,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

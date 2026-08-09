@@ -646,6 +646,54 @@ class ExperimentLifecycleTests(unittest.TestCase):
             extra=["--execution-kind", "real-data"],
         )
 
+    def test_synthetic_running_allows_synthetic_and_denies_real_data(self) -> None:
+        experiment_id = "exp-running-synthetic-capabilities"
+        self._approved_run(experiment_id)
+        event = self._append(
+            experiment_id,
+            "RUNNING",
+            extra=["--execution-kind", "synthetic"],
+        )["event"]
+        self.assertTrue(event["synthetic_fixture_tests_allowed"])
+        self.assertFalse(event["real_data_execution_allowed"])
+        self.assertTrue(event["automatic_execution_allowed"])
+        self.assertTrue(event["execution_authorized"])
+
+    def test_real_data_running_does_not_claim_synthetic_capability(self) -> None:
+        experiment_id = "exp-running-real-data-capabilities"
+        self._approved_run(experiment_id)
+        event = self._append(
+            experiment_id,
+            "RUNNING",
+            extra=["--execution-kind", "real-data"],
+        )["event"]
+        self.assertFalse(event["synthetic_fixture_tests_allowed"])
+        self.assertTrue(event["real_data_execution_allowed"])
+        self.assertTrue(event["automatic_execution_allowed"])
+        self.assertTrue(event["execution_authorized"])
+
+    def test_running_rejects_execution_kind_none(self) -> None:
+        experiment_id = "exp-running-kind-none"
+        self._approved_run(experiment_id)
+        self._append_error(
+            experiment_id,
+            "RUNNING",
+            "RUNNING requires --execution-kind synthetic or real-data",
+        )
+
+    def test_post_run_review_disables_all_execution_capabilities(self) -> None:
+        experiment_id = "exp-post-run-capabilities"
+        self._running(experiment_id)
+        event = self._append(
+            experiment_id,
+            "REVIEW_REQUIRED",
+            extra=["--artifact", "result.json"],
+        )["event"]
+        self.assertFalse(event["synthetic_fixture_tests_allowed"])
+        self.assertFalse(event["real_data_execution_allowed"])
+        self.assertFalse(event["automatic_execution_allowed"])
+        self.assertFalse(event["execution_authorized"])
+
     def test_each_major_proposal_scope_change_is_detected(self) -> None:
         mutations: dict[str, Callable[[dict[str, Any]], None]] = {
             "hypothesis": lambda scope: scope.__setitem__("hypothesis", "changed"),
