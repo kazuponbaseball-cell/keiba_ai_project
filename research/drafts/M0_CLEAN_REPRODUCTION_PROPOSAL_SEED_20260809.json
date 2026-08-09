@@ -1,0 +1,640 @@
+{
+  "base_commit": "b282cafb39435d15098bc409e76b4efaa6690f08",
+  "created_date": "2026-08-09",
+  "document_kind": "m0_reproduction_gate_proposal_seed_v1",
+  "formalization": {
+    "canonical_experiment_created": false,
+    "canonical_proposal_scope_created": false,
+    "github_approval_evidence_present": false,
+    "registry_event_created": false
+  },
+  "governance": {
+    "honest_score": {
+      "components": {
+        "acquisition_implementation_cost": 5,
+        "independent_information": 0,
+        "leakage_safety": 8,
+        "minimal_falsifiability": 10,
+        "outer_oos_failure_evidence": 0,
+        "racing_mechanism": 0
+      },
+      "status": "BLOCKED_SCORE",
+      "total": 23
+    },
+    "reason_not_canonical": "M0 reproduction is a prerequisite gate, not a new racing strategy. The canonical reference, lineage, fold manifest, environment, and numeric tolerance are not frozen.",
+    "status": "DRAFT_NOT_CANONICAL_BLOCKED_PREREQUISITES"
+  },
+  "hypothesis": "If M0 source, data lineage, runner universe, target, features, folds, environment, seed, commands, and reference artifacts are hash-bound, a clean checkout can reproduce the M0 structural contracts and preregistered numeric tolerances, creating a valid counterfactual for a later challenger.",
+  "future_v2_required_field_map": {
+    "required_fields": [
+      "schema_version",
+      "proposal_id and execution_kind",
+      "title, hypothesis, null_hypothesis, and non-promotion purpose",
+      "brain_model_id, brain_prompt_hash, and context_manifest_hash when the GPT proposal schema is reused",
+      "base_commit and exact expected changed paths",
+      "target_population, in_scope, out_of_scope, raw_data_sources, and data_as_of",
+      "exact allowed_columns, forbidden_columns, and lineage_hash_requirements",
+      "chronological_fold_design, fold_manifest path and hash, purge, and embargo",
+      "primary_metric, required_effect, rejection_gate, and stop_conditions",
+      "compute_budget, allowed_variant_count, and allowed_threshold_search_count",
+      "exact phase-specific safety and capability object",
+      "GitHub approval and manifest-attestation evidence bindings"
+    ],
+    "schema_defined": false,
+    "status": "UNRESOLVED_BLOCKER"
+  },
+  "legacy_fold_reference": [
+    {
+      "calibration": [
+        "2024-04-01",
+        "2024-06-30"
+      ],
+      "fold": "fold1",
+      "reused_test": [
+        "2024-07-01",
+        "2024-12-31"
+      ],
+      "train": [
+        "2023-01-01",
+        "2023-12-31"
+      ],
+      "validation": [
+        "2024-01-01",
+        "2024-03-31"
+      ]
+    },
+    {
+      "calibration": [
+        "2024-10-01",
+        "2024-12-31"
+      ],
+      "fold": "fold2",
+      "reused_test": [
+        "2025-01-01",
+        "2025-06-30"
+      ],
+      "train": [
+        "2023-01-01",
+        "2024-06-30"
+      ],
+      "validation": [
+        "2024-07-01",
+        "2024-09-30"
+      ]
+    },
+    {
+      "calibration": [
+        "2025-04-01",
+        "2025-06-30"
+      ],
+      "fold": "fold3",
+      "reused_test": [
+        "2025-07-01",
+        "2025-12-31"
+      ],
+      "train": [
+        "2023-01-01",
+        "2024-12-31"
+      ],
+      "validation": [
+        "2025-01-01",
+        "2025-03-31"
+      ]
+    },
+    {
+      "calibration": [
+        "2025-10-01",
+        "2025-12-31"
+      ],
+      "fold": "fold4",
+      "reused_test": [
+        "2026-01-01",
+        "2026-06-30"
+      ],
+      "train": [
+        "2023-01-01",
+        "2025-06-30"
+      ],
+      "validation": [
+        "2025-07-01",
+        "2025-09-30"
+      ]
+    }
+  ],
+  "legacy_model_recipe_reference": {
+    "allowed_threshold_search_count": 0,
+    "allowed_variant_count": 1,
+    "authority": false,
+    "compute_budget": "UNRESOLVED_BLOCKER",
+    "canonical_probability_stage": "UNKNOWN_PENDING_CANONICAL_REFERENCE_M0_RAW_OR_M0_TEMPERATURE_SCALED",
+    "legacy_run_mode": "UNKNOWN_PENDING_CANONICAL_REFERENCE_STATIC_DEFAULT_CORE_ALTERNATIVE_FULL",
+    "external_top3_universe_prevalidation_in_legacy_trainer": false,
+    "features": [
+      "sum_primary_strength",
+      "min_primary_strength",
+      "sum_rank_strength",
+      "min_rank_strength",
+      "critical_missing_count"
+    ],
+    "fit": {
+      "candidate_epochs": 100,
+      "candidate_preprocessing_population": "train_only",
+      "internal_l2_candidate_count": 4,
+      "internal_selection_is_not_a_pipeline_variant": true,
+      "l2_grid": [
+        0.0,
+        0.005,
+        0.02,
+        0.08
+      ],
+      "learning_rate": 0.18,
+      "intercept": false,
+      "model_fit_rng": "none_zero_initialization",
+      "numeric_contract": {
+        "softmax_utility_difference_clip": [
+          -50.0,
+          50.0
+        ],
+        "standard_deviation_ddof": 0,
+        "zero_standard_deviation_replacement": 1.0
+      },
+      "refit_epochs": 140,
+      "refit_population": "train_plus_validation",
+      "refit_preprocessing_population": "train_plus_validation",
+      "selection_metric": "validation_grouped_set_nll",
+      "tie_break": "first_grid_value"
+    },
+    "legacy_outputs": [
+      "top3_set_m0_fold_summary.csv",
+      "top3_set_m0_model_comparison_summary.csv",
+      "top3_set_m0_oos_race_details.csv",
+      "top3_set_m0_pooled_oos_summary.csv",
+      "top3_set_m0_year_half_field_size_summary.csv",
+      "top3_set_m0_aggregate_summary.csv",
+      "summary.json",
+      "review.md"
+    ],
+    "legacy_output_parity_scope": "UNKNOWN_PENDING_CANONICAL_REFERENCE_INCLUDING_WHETHER_B0_B1_B2_AND_COMPARISON_ARE_IN_SCOPE",
+    "model": "linear_race_group_softmax",
+    "runner_transforms": [
+      "within_race_ai_score_rank_percentile_ascending_average_missing_0_5",
+      "ai_rank_missing_filled_with_field_size_strength_0_and_invalid_denominator_0_5",
+      "critical_ai_score_or_ai_rank_missing_flag"
+    ],
+    "silent_external_top3_merge_missing_fill_in_legacy": 0.0,
+    "silent_fill_policy_in_canonical_package": "FAIL_CLOSE_AND_RECORD_AS_INTENTIONAL_SAFETY_DELTA",
+    "target": "unordered_triple_exactly_equals_set_of_runners_with_finish_num_le_3",
+    "temperature": {
+      "calibration_only": true,
+      "candidate_count": 37,
+      "grid": [
+        0.2,
+        0.25,
+        0.3,
+        0.35,
+        0.4,
+        0.45,
+        0.5,
+        0.55,
+        0.6,
+        0.65,
+        0.7,
+        0.75,
+        0.8,
+        0.85,
+        0.9,
+        0.95,
+        1.0,
+        1.1,
+        1.2,
+        1.3,
+        1.4,
+        1.5,
+        1.6,
+        1.7,
+        1.8,
+        1.9,
+        2.0,
+        2.1,
+        2.2,
+        2.3,
+        2.4,
+        2.5,
+        2.6,
+        2.7,
+        2.8,
+        2.9,
+        3.0
+      ],
+      "selection_metric": "calibration_grouped_set_nll",
+      "tie_break": "first_grid_value"
+    },
+    "outer_derived_reselection_count": 0
+  },
+  "legacy_reference": {
+    "evidence_class": "B_LOCAL_HASHED",
+    "implementation": {
+      "authority": false,
+      "path": "scripts/train_top3_set_m0_v1.py",
+      "sha256_observed_2026_08_09": "5b91fb586c5d418f834081d8f64c4f81a46e9f3d20f041934f30d083d784f4b8",
+      "tracked_at_base_commit": false
+    },
+    "universe_builder": {
+      "abnormal_result_behavior": {
+        "cancellation_disqualification_demotion": "trusts_upstream_runner_and_finish_state",
+        "dead_heat": "finish_le_3_count_gt_3_or_finish_le_2_count_gt_2",
+        "is_refund": false,
+        "starter_snapshot": "unknown_reference_only",
+        "training_ineligible_additional_conditions": [
+          "pair_count_mismatch",
+          "result_incomplete",
+          "label_mass_mismatch"
+        ],
+        "universe": "reference_derived"
+      },
+      "authority": false,
+      "default_sources": [
+        "outputs/analysis/historical_reference_2023plus_prediction_detail_v1/prediction_detail_reference_2023plus.csv",
+        "data/processed/target/wide_payoffs.csv"
+      ],
+      "direct_dependencies": [
+        "numpy_unpinned",
+        "pandas_unpinned",
+        "python_stdlib"
+      ],
+      "market_and_payoff_columns_co_located": true,
+      "path": "scripts/build_full_unordered_pair_universe_v1.py",
+      "sha256_observed_2026_08_09": "ac003fd12fdce76ffca5f4167cd7f562bea96de495722f8d2281ae709b6f0a74",
+      "tracked_at_base_commit": false
+    },
+    "recorded_metrics": {
+      "average_set_nll": 4.701877,
+      "legacy_script_avg_nll_weighting": "UNWEIGHTED_FOLD_MEAN",
+      "state_average_set_nll_source_column": "UNCONFIRMED",
+      "reported_mass_error": 0.0,
+      "reported_mass_error_scope": "ROUNDED_DERIVED_WIDE_MASS_ONLY_NOT_INDEPENDENT_FULL_UNIVERSE_PROOF",
+      "top1_set_hit_rate": 0.0827575,
+      "legacy_script_hit_rate_unit": "PERCENTAGE_POINTS",
+      "state_top1_set_hit_rate_provenance_unit": "UNCONFIRMED",
+      "wide_top1_hit_rate": 0.275505,
+      "state_wide_top1_hit_rate_provenance_unit": "UNCONFIRMED"
+    },
+    "tracked_probability_validator": {
+      "git_blob": "d90c87135789c6a76d16120211c0a772ed49933f",
+      "legacy_output_directly_compatible": false,
+      "path": "scripts/research/check_probability_contracts.py"
+    },
+    "reference_population": {
+      "chronological_development_folds": 4,
+      "races": 5336,
+      "reused_development_oos": true,
+      "valid_as_new_performance_evidence": false
+    },
+    "source_of_record": "research/STATE.yaml"
+  },
+  "null_hypothesis": "The canonical reference lineage cannot be frozen, the race/runner/target/fold universe differs, or clean-checkout reconstruction exceeds a tolerance committed before any unread canonical legacy artifact is exposed beyond the already observed STATE values and static script. In any of those cases reproduction fails and challenger or ROI evaluation must not proceed.",
+  "prerequisites": [
+    "Host-assigned proposal or experiment ID and versioned execution kind",
+    "Exact external brain model, prompt hash, and context hash when AI-generated",
+    "Canonical legacy reference artifact paths and hashes",
+    "Canonical pair and Top3 input paths, hashes, and source lineage",
+    "Upstream ai_score and ai_rank OOF, as-of, and price-blind lineage",
+    "Exact runner-universe and abnormal-result label policy",
+    "Exact dependency and environment manifest",
+    "Deterministic serialization and preregistered numeric tolerances",
+    "Target population, in-scope, out-of-scope, raw sources, and data as-of",
+    "Exact allowed and forbidden column policy",
+    "Fold manifest path and hash, purge, and embargo",
+    "Compute budget, primary metric, required effect, rejection gate, and stop conditions",
+    "allowed_variant_count equals 1 and allowed_threshold_search_count equals 0",
+    "Exact expected changed paths",
+    "Host-assigned experiment ID and refreshed main base commit",
+    "Research OS route capable of model and real-data execution with two GitHub approvals"
+  ],
+  "proposed_execution_route": {
+    "current_infrastructure_safety_v1_eligible": false,
+    "governance_change_must_be_human_reviewed_and_merged_first": true,
+    "kinds": [
+      "roi_reproduction_audit_v2",
+      "roi_prospective_model_validation_v2"
+    ],
+    "manifest_attestation_contract": {
+      "approval_keyword": "APPROVED_TO_ATTEST_MANIFEST <manifest_scope_digest>",
+      "authority": "github_backed_unused_comment_id_bound_to_exact_scope",
+      "caller_asserted_or_local_human_approved_manifest_allowed": false,
+      "fail_close_on_attestation_or_hash_mismatch": true,
+      "must_bind": [
+        "Repository, base branch, verified current-main SHA, compare URL and status, and merge-base SHA",
+        "APPROVERS blob SHA and content SHA-256",
+        "Provider kind and version",
+        "Execution commit and provider code hash",
+        "Environment hash and provider identity",
+        "Attester identity and creation time",
+        "Issue number and URL",
+        "Approval comment ID and URL, author login and type, body and body SHA-256, keyword and digest, created_at, and updated_at",
+        "Source object hash",
+        "Exact returned metadata schema",
+        "Manifest output digest and run-scope binding"
+      ],
+      "new_comment_id_globally_unused_and_distinct_from_prepare_and_run": true,
+      "provider_may_return_raw_rows_paths_or_secrets": false,
+      "revalidation_points": [
+        "run_scope_freeze",
+        "immediately_before_APPROVED_TO_RUN",
+        "immediately_before_RUNNING"
+      ],
+      "status": "UNRESOLVED_BLOCKER"
+    },
+    "required_components": [
+      "Versioned schemas and policy",
+      "Execution-kind capability binding",
+      "Supervised executor",
+      "Distinct GitHub prepare and run approvals",
+      "Non-promotion REPRODUCED or REPRODUCTION_REVIEWED terminal state",
+      "Dedicated reproduction-audit eligibility that neither inflates nor bypasses the 75-point strategy gate"
+    ],
+    "success_grants_model_or_buy_authority": false
+  },
+  "price_firewall": {
+    "allowed_classes": [
+      "Race and runner identifiers",
+      "Pre-cutoff non-market race conditions",
+      "Pre-cutoff horse, pedigree, workout, pace, and historical performance facts with proven as-of lineage",
+      "Field size and preregistered race-relative transformations",
+      "Model scores proven to depend only on allowed classes"
+    ],
+    "exact_column_policy": {
+      "alias_registry_required": true,
+      "derivation_lineage_must_be_recursive": true,
+      "final_m0_feature_allowlist_candidate": [
+        "critical_missing_count",
+        "min_primary_strength",
+        "min_rank_strength",
+        "sum_primary_strength",
+        "sum_rank_strength"
+      ],
+      "formalization_status": "UNRESOLVED_BLOCKER",
+      "normalization_rules_must_be_frozen": true,
+      "upstream_ai_score_and_ai_rank_are_conditionally_blocked_until_proven": true
+    },
+    "candidate_artifact_must_be_hash_frozen_before_price_join": true,
+    "forbidden_classes": [
+      "Current, final, or historical odds",
+      "Popularity or market rank",
+      "Payout, payoff, return, profit, or ROI",
+      "BUY, stake, or order information",
+      "Future or outer-test result information",
+      "Aliases, aggregates, ratios, residuals, embeddings, or derivatives of any forbidden class"
+    ],
+    "outer_price_and_result_join_location": "evaluation_only_after_prediction_candidate_and_ticket_digest_freeze",
+    "stage_access": {
+      "historical_result_labels": "target_builder_only_after_partition_and_as_of_freeze",
+      "outer_results": "evaluator_only_after_prediction_candidate_final_ticket_unit_notional_and_no_bet_digests_freeze",
+      "price_and_payoff": "offline_evaluator_only"
+    }
+  },
+  "probability_contract": {
+    "canonical_per_set_columns": [
+      "race_id",
+      "horse_id_1",
+      "horse_id_2",
+      "horse_id_3",
+      "runner_count",
+      "top3_probability"
+    ],
+    "derived_wide_mass_absolute_error_max": 1e-10,
+    "finite_and_range_checks_required": true,
+    "frozen_starter_id_manifest_required": true,
+    "label_and_runner_validator_separate_from_probability_validator": true,
+    "runner_universe": "All unordered C(n,3) sets after frozen cancellation handling",
+    "top3_set_mass_absolute_error_max": 1e-10,
+    "unique_sets_and_pairs_required": true,
+    "validator_cli_mapping": {
+      "horse_columns": [
+        "horse_id_1",
+        "horse_id_2",
+        "horse_id_3"
+      ],
+      "probability_column": "top3_probability",
+      "race_column": "race_id",
+      "runner_count_column": "runner_count"
+    }
+  },
+  "proposal_seed_id": "M0-REPRO-SEED-20260809",
+  "future_proposal_b": {
+    "approval_comment_ids_reused_from_proposal_a": false,
+    "candidate_mapping_frozen_before_outer": true,
+    "challenger_count": 1,
+    "outer_open_count": 1,
+    "paired_same_race_universe": true,
+    "score": {
+      "current_total": null,
+      "illustrative_ceiling_only": {
+        "components": {
+          "acquisition_implementation_cost": 5,
+          "independent_information": 13,
+          "leakage_safety": 15,
+          "minimal_falsifiability": 10,
+          "outer_oos_failure_evidence": 0,
+          "racing_mechanism": 10
+        },
+        "not_execution_authority": true,
+        "prerequisites": [
+          "A named challenger and target population",
+          "A specific racing mechanism",
+          "Result-independent non-identity and ablation evidence",
+          "Complete challenger OOF, as-of, and price-blind lineage"
+        ],
+        "total": 53
+      },
+      "status": "BLOCKED_DEFINITION_AND_SCORE"
+    },
+    "primary_metric": "delta_nll_equals_nll_challenger_minus_nll_frozen_m0",
+    "required_effect_candidate": {
+      "all_predeclared_outer_subperiod_delta_nll_max": 0.0,
+      "delta_nll_max": -0.005,
+      "race_block_bootstrap_one_sided_90_percent_upper_bound_max": 0.0
+    },
+    "required_sequence": [
+      "Finish training, validation, and calibration",
+      "Freeze M0, challenger, price-blind ticket policy, and all manifests",
+      "Open each prospective outer race once while result-blind",
+      "Freeze each arm's final ticket universe, candidate-to-ticket mapping, unit-notional vector, no-bet or abstention decision, and prediction, candidate, and ticket digests before exposing price or result",
+      "Append the sealed T-3 price snapshot in the evaluator",
+      "Append official result, payout, cancellation, refund, and dead-heat settlement evidence",
+      "Evaluate probability gates first, then the preregistered paired ROI endpoint without changing any frozen artifact; the evaluator may only join and calculate returns"
+    ],
+    "roi_role": "secondary_diagnostic_only_after_probability_gates",
+    "roi_success_gate_candidate": {
+      "absolute_profitability_gate_applies_to": "challenger_arm",
+      "all_outer_blocks_roi_percent_min": 100.0,
+      "paired_endpoint": {
+        "definition": "net_return_challenger_minus_net_return_m0",
+        "point_effect_strictly_greater_than": 0.0,
+        "race_block_one_sided_90_percent_lower_bound_min": 0.0
+      },
+      "minimum_grade_o_t3_rows": 150,
+      "point_roi_percent_strictly_greater_than": 100.0,
+      "power_and_effective_race_count_must_be_preregistered": true,
+      "race_block_one_sided_90_percent_lower_bound_min": 100.0,
+      "settlement_contract_required": [
+        "Quote source and received timestamp",
+        "Missing-odds rule",
+        "Cancellation and refund rule",
+        "Dead-heat rule",
+        "ROI numerator and denominator",
+        "Unit notional and no-bet rule",
+        "Outer block definition"
+      ],
+      "single_race_profit_contribution_fraction_max_exclusive": 0.2
+    },
+    "threshold_search_count": 0,
+    "within_this_seed_scope": false
+  },
+  "racing_mechanism": "No new racing mechanism. M0 reproduction is an attribution and evidence-integrity gate.",
+    "roi_causal_bridge": [
+    "Reproduce M0 from a clean checkout",
+    "Freeze one common counterfactual and immutable lineage",
+    "Freeze M0, one challenger, price-blind ticket policy, and manifests after calibration and before prospective results",
+    "Generate result-blind outer predictions and freeze each arm's ticket universe, mapping, unit notional, no-bet decision, and prediction, candidate, and ticket digests before price or result",
+    "Join sealed T-3 price, result, and payout only in the evaluation layer",
+    "Treat ROI as a secondary diagnostic rather than an M0 reproduction claim"
+  ],
+  "current_document_actions": {
+    "actual_codex_dispatch": false,
+    "automatic_github_approval": false,
+    "candidate_policy_change": false,
+    "credential_access": false,
+    "external_api_calls": false,
+    "formal_buy": false,
+    "merge": false,
+    "notification_side_effects": false,
+    "production_change": false,
+    "purchase_path_access": false,
+    "real_data_execution": false,
+    "send_order": false,
+    "stake": 0
+  },
+  "proposed_future_capabilities": {
+    "proposal_a_reproduction_run": {
+      "binding": {
+        "effective_only_after": "kind_bound_APPROVED_TO_RUN_and_revalidation",
+        "mode": "historical_reproduction_only"
+      },
+      "flags": {
+        "actual_codex_dispatch": false,
+        "automatic_github_approval": false,
+        "candidate_policy_change": false,
+        "credential_access": false,
+        "external_api_calls": false,
+        "formal_buy": false,
+        "merge": false,
+        "notification_side_effects": false,
+        "offline_unit_notional_evaluation": false,
+        "production_change": false,
+        "purchase_path_access": false,
+        "real_data_execution": true,
+        "roi_calculation": false,
+        "send_order": false,
+        "stake": 0
+      }
+    },
+    "proposal_b_prospective_run": {
+      "binding": {
+        "effective_only_after": "strategy_score_eligibility_and_kind_bound_APPROVED_TO_RUN_and_revalidation",
+        "mode": "prospective_model_validation_only"
+      },
+      "flags": {
+        "actual_codex_dispatch": false,
+        "automatic_github_approval": false,
+        "candidate_policy_change": false,
+        "credential_access": false,
+        "external_api_calls": false,
+        "formal_buy": false,
+        "merge": false,
+        "notification_side_effects": false,
+        "offline_unit_notional_evaluation": true,
+        "production_change": false,
+        "purchase_path_access": false,
+        "real_data_execution": true,
+        "roi_calculation": true,
+        "send_order": false,
+        "stake": 0
+      }
+    }
+  },
+  "proposal_a": {
+    "approval_rules": {
+      "all_comment_ids_globally_unused_at_new_grant": true,
+      "human_comment_cannot_override_score_or_kind_ineligibility": true,
+      "prepare_and_run_comment_ids_distinct": true,
+      "prepare_evidence_revalidated_before_approved_to_run": true,
+      "prepare_and_run_evidence_revalidated_before_running": true,
+      "proposal_b_must_use_new_prepare_and_run_comment_ids": true
+    },
+    "preparation_a0": {
+      "allowed": [
+        "Tracked clean-checkout implementation preparation",
+        "Dependency and environment pinning",
+        "Manifest schemas and fail-closed validators",
+        "Synthetic-only probability, runner-universe, label, and price-firewall tests",
+        "Tolerance preregistration before any unread canonical legacy artifact is exposed"
+      ],
+      "deliverables": [
+        "Tracked implementation and dependency lock",
+        "Schemas and templates for source, data, feature, target, fold, environment, runner, command, and reference manifests",
+        "Price-blind allowlist and forbidden-field firewall",
+        "Synthetic contract tests",
+        "Preregistered deterministic and numeric reproduction tolerances"
+      ],
+      "forbidden": [
+        "Real race, data, model, or output artifact access",
+        "Training, backtest, historical replay, outer OOS, or ROI",
+        "Network, credential, BUY, order, notification, or production side effects"
+      ],
+      "data_manifest_input_route": "github_backed_versioned_metadata_only_supervised_provider_after_dedicated_manifest_approval",
+      "github_approval_required": "APPROVED_TO_PREPARE <proposal_scope_digest>",
+      "name": "A0_preparation_package"
+    },
+    "reproduction_run_a": {
+      "acceptance": [
+        "Exact reference race, runner, target, fold, and C(n,3) universe",
+        "Zero race overlap across train, validation, calibration, and test within each fold",
+        "Top3-set mass and derived-wide mass errors no greater than 1e-10",
+        "Zero non-finite, out-of-range, duplicate, or invalid-cardinality rows",
+        "All preregistered metric and artifact tolerances pass",
+        "Repeat-run deterministic output contract passes",
+        "No production, candidate-policy, BUY, order, notification, or credential effect"
+      ],
+      "canonical_reference_digest_required_for_reproduced_status": true,
+      "github_approval_required": "APPROVED_TO_RUN <run_scope_digest>",
+      "name": "A_historical_reproduction",
+      "performance_or_promotion_evidence": false,
+      "primary_metrics": {
+        "clean_replay_determinism_digest_match": {
+          "comparison": "two_clean_checkouts_with_identical_environment_and_run_scope",
+          "required_value": true
+        },
+        "legacy_numeric_equivalence": {
+          "comparison": "preregistered_tolerance_only",
+          "does_not_grant_reproduced_status_without_canonical_reference_digest": true
+        }
+      },
+      "reference_population_only": true,
+      "status_when_reference_digest_missing": "RECONSTRUCTED_NOT_REPRODUCED",
+      "threshold_search_count": 0,
+      "variant_count": 1
+    }
+  },
+  "stop_conditions": [
+    "Any prerequisite hash, lineage, fold, environment, or tolerance is unresolved at run-scope freeze",
+    "Upstream ai_score or ai_rank is not proven OOF, as-of, and price-blind",
+    "Race, runner, target, or fold mismatch",
+    "Probability mass, finite, range, duplicate, or label-cardinality violation",
+    "Dirty or untracked code, config, input, environment, or artifact dependency",
+    "Reproduction tolerance failure or nondeterminism",
+    "Price, market, payoff, or ROI enters model features or the candidate or ticket process at any time and changes selection, exclusion, rank, tier, weight, or no-bet decisions",
+    "Current or outer result enters the model, candidate, or ticket process before prediction, candidate, final-ticket, unit-notional, and no-bet digests are frozen",
+    "Any network, credential, BUY, order, notification, production, or scope side effect"
+  ]
+}
