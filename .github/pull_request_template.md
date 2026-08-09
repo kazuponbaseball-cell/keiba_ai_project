@@ -1,6 +1,7 @@
 ## Purpose and lineage
 
 - Experiment / governance ID:
+- Gate profile: `roi_research_v1` / `infrastructure_safety_v1` / `governance_core`
 - Issue:
 - This PR succeeds PR #:
 - Draft retained: yes / no
@@ -62,6 +63,23 @@
 - [ ] Markdownを承認scopeの正本にしていない。
 - [ ] exact commit、config/data/fold/runner/environment hash、seed、commandsをrun scopeで固定した。
 - [ ] 実行後にだけ生成されるresult/candidate/price artifactをrun scopeから分離した。
+
+## Infrastructure safety contract — applicable when selected above
+
+- Gate policy path / SHA-256:
+- Gate bootstrap source: merged `main` / governance-core human review
+- [ ] 数値ROI scoreを代用せず、全hard checkの論理ANDで判定した。
+- [ ] `execution_kind=synthetic`をrun scopeへ固定し、CLI値と一致させた。
+- [ ] execution commitがproposal baseの子孫であり、base-to-execution変更path/blobをexpected pathと一致させた。
+- [ ] config/synthetic/environmentはexecution commit blobへ固定し、dirty/untracked materialは0。
+- [ ] commandはcode-owned unittest templateから生成した`-B -I -S` argvで、repository-root cwd、継承environmentなし、timeoutを固定した。
+- [ ] infra testは`research/infra_tests/`に置き、`tests/research/`を変更せず、PR作成だけで自動実行されない。
+- [ ] network/API、credential、real data、training、backtest、outer OOS、ROI、actual Codex dispatchは0。
+- [ ] model、feature、candidate、value、production、BUY、order、notification差分は0。
+- [ ] gate policy、approval verifier、APPROVERS、憲章、scorecardなどroot-of-trustをinfra gateで自己変更していない。
+- [ ] verified current mainのregistry blobとlocal ledgerが完全一致し、append直前のmain head再検証後に1 pending eventだけを作成した。
+- [ ] pending infra eventのpreparation/execution authorityはfalseで、人間merge前のeventを実行根拠にしていない。
+- [ ] infra lifecycleから`APPROVED_FOR_SHADOW`へ遷移していない。
 
 ## Research contracts
 

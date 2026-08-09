@@ -213,6 +213,7 @@ class GitHubTrustTests(unittest.TestCase):
 
         self.assertEqual(allowlist["approvers"], {APPROVER.lower()})
         self.assertNotIn("malicious-main-user", allowlist["approvers"])
+
         self.assertEqual(
             provider.calls,
             [
@@ -241,6 +242,42 @@ class GitHubTrustTests(unittest.TestCase):
                 "verification_time": VERIFIED_AT,
             },
         )
+
+    def test_base_commit_policy_file_is_bound_to_raw_content_hash(self) -> None:
+        provider = FakeGitHubApprovalProvider()
+        path = "research/INFRASTRUCTURE_GATE.json"
+        content = b'{"gate_kind":"infrastructure_safety_v1"}\n'
+        payload = contents_payload(content, blob_sha="f" * 40)
+        payload["path"] = path
+        provider.file_payloads[BASE_COMMIT] = payload
+        expected_hash = hashlib.sha256(content).hexdigest()
+
+        observed, evidence = github_approval.verify_github_file_at_commit(
+            provider=provider,
+            repository=REPOSITORY,
+            path=path,
+            ref=BASE_COMMIT,
+            expected_content_sha256=expected_hash,
+        )
+        self.assertEqual(observed, content)
+        self.assertEqual(
+            evidence,
+            {
+                "path": path,
+                "ref": BASE_COMMIT,
+                "blob_sha": "f" * 40,
+                "content_sha256": expected_hash,
+            },
+        )
+
+        with self.assertRaisesRegex(ValueError, "content hash mismatch"):
+            github_approval.verify_github_file_at_commit(
+                provider=provider,
+                repository=REPOSITORY,
+                path=path,
+                ref=BASE_COMMIT,
+                expected_content_sha256="0" * 64,
+            )
 
     def test_identical_base_and_current_main_is_allowed(self) -> None:
         provider = FakeGitHubApprovalProvider()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import contextlib
 import hashlib
 import importlib.util
@@ -17,6 +18,7 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 import scope_contract
+import infrastructure_safety_contract
 
 
 MODULE_PATH = SCRIPT_DIR / "update_registry.py"
@@ -64,6 +66,88 @@ REQUIRED_EVENT_TYPES: dict[str, type[object]] = {
     "notes": str,
     "queue_file": str,
 }
+V2_EVENT_FIELDS = set(REQUIRED_EVENT_TYPES) | {
+    "previous_status",
+    "previous_event_id",
+    "run_scope_digest",
+    "review_digest",
+    "github_trust_evidence",
+    "approval_evidence",
+    "run_scope_file",
+}
+
+
+class RegistryMainProvider:
+    """Read-only in-memory GitHub fixture with an immutable-current-main view."""
+
+    repository = "kazuponbaseball-cell/keiba_ai_project"
+    base_commit = "a" * 40
+
+    def __init__(self) -> None:
+        self.current_main = self.base_commit
+        self.registry_content = b""
+        self.approvers_content = json.dumps(
+            {
+                "schema_version": 1,
+                "approvers": [{"login": "registry-human"}],
+                "denied_login_patterns": ["bot", "codex", "automation"],
+            },
+            separators=(",", ":"),
+        ).encode("utf-8")
+
+    def get_repository(self, repository: str) -> dict[str, object]:
+        return {"full_name": self.repository, "default_branch": "main"}
+
+    def get_branch_ref(self, repository: str, branch: str) -> dict[str, object]:
+        return {
+            "ref": "refs/heads/main",
+            "object": {"type": "commit", "sha": self.current_main},
+        }
+
+    def compare_commits(
+        self,
+        repository: str,
+        base_commit: str,
+        head_commit: str,
+    ) -> dict[str, object]:
+        return {
+            "status": "identical" if head_commit == base_commit else "ahead",
+            "url": (
+                f"https://api.github.com/repos/{self.repository}/compare/"
+                f"{base_commit}...{head_commit}"
+            ),
+            "base_commit": {"sha": base_commit},
+            "merge_base_commit": {"sha": base_commit},
+        }
+
+    def get_file_contents(
+        self,
+        repository: str,
+        path: str,
+        ref: str,
+    ) -> dict[str, object]:
+        if path == "research/APPROVERS.json":
+            content = self.approvers_content
+            blob_sha = "c" * 40
+        elif path == "research/REGISTRY.jsonl":
+            content = self.registry_content
+            blob_sha = "d" * 40
+        else:
+            raise AssertionError(f"unexpected GitHub fixture path: {path}")
+        return {
+            "type": "file",
+            "path": path,
+            "encoding": "base64",
+            "sha": blob_sha,
+            "content": base64.b64encode(content).decode("ascii"),
+        }
+
+    def get_issue_comment(self, repository: str, comment_id: int) -> dict[str, object]:
+        raise AssertionError("comment lookup is not expected")
+
+    def merge_registry(self, content: bytes) -> None:
+        self.registry_content = content
+        self.current_main = hashlib.sha256(content).hexdigest()[:40]
 
 
 def strict_json_loads(raw: str) -> object:
@@ -191,6 +275,21 @@ class RegistryJsonlTests(unittest.TestCase):
     def assert_registry_event_schema(self, event: object, *, location: str) -> None:
         self.assertIsInstance(event, dict, f"{location} must contain an object")
         assert isinstance(event, dict)
+        schema_version = event.get("schema_version")
+        if schema_version == 3:
+            policy, _ = infrastructure_safety_contract.load_gate_policy(
+                ROOT / "research" / "INFRASTRUCTURE_GATE.json"
+            )
+            normalized = infrastructure_safety_contract.normalize_infrastructure_event(
+                event,
+                policy=policy,
+            )
+            self.assertEqual(normalized, event, location)
+            self.assertEqual(event.get("gate_kind"), "infrastructure_safety_v1")
+            self.assertNotIn("score_total", event)
+            return
+        self.assertEqual(schema_version, 2, location)
+        self.assertEqual(set(event), V2_EVENT_FIELDS, location)
         for field, expected_type in REQUIRED_EVENT_TYPES.items():
             self.assertIn(field, event, f"{location} missing {field}")
             self.assertIs(type(event[field]), expected_type, f"{location}.{field}")
@@ -204,7 +303,6 @@ class RegistryJsonlTests(unittest.TestCase):
             "run_scope_file",
         ):
             self.assertIn(field, event)
-        self.assertEqual(event["schema_version"], 2)
         self.assertIn(event["status"], update_registry.ALLOWED_STATUSES)
         self.assertRegex(event["proposal_scope_digest"], r"^[0-9a-f]{64}$")
         self.assertEqual(event["score_total"], sum(event["score_components"].values()))
@@ -249,6 +347,24 @@ class RegistryJsonlTests(unittest.TestCase):
         )
         for raw, message in cases:
             with self.subTest(raw=raw), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory) / "registry.jsonl"
+                path.write_text(raw, encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, message):
+                    update_registry.load_events(path)
+
+    def test_load_events_rejects_duplicate_keys_and_nonfinite_numbers(self) -> None:
+        cases = (
+            (
+                '{"experiment_id":"EXP-001","experiment_id":"EXP-002","status":"proposed"}\n',
+                "duplicate JSON object key",
+            ),
+            (
+                '{"experiment_id":"EXP-001","status":"proposed","score_total":NaN}\n',
+                "non-standard JSON constant",
+            ),
+        )
+        for raw, message in cases:
+            with self.subTest(message=message), tempfile.TemporaryDirectory() as directory:
                 path = Path(directory) / "registry.jsonl"
                 path.write_text(raw, encoding="utf-8")
                 with self.assertRaisesRegex(ValueError, message):
@@ -336,12 +452,44 @@ class RegistryJsonlTests(unittest.TestCase):
         consumed = update_registry.validate_approval_grant_history(events)
         self.assertEqual(set(consumed), {101})
 
+    def test_registry_event_chain_rejects_duplicate_ids_and_broken_predecessors(self) -> None:
+        first = {
+            "event_id": "event-1",
+            "sequence": 1,
+            "experiment_id": "EXP-001",
+            "status": "proposed",
+            "previous_event_id": None,
+            "previous_status": None,
+        }
+        second = {
+            "event_id": "event-2",
+            "sequence": 2,
+            "experiment_id": "EXP-001",
+            "status": "invalid",
+            "previous_event_id": "event-1",
+            "previous_status": "proposed",
+        }
+        update_registry.validate_registry_event_chains([first, second])
+
+        duplicate = dict(second, event_id="event-1")
+        with self.assertRaisesRegex(ValueError, "duplicate event_id"):
+            update_registry.validate_registry_event_chains([first, duplicate])
+
+        broken = dict(second, previous_event_id="wrong")
+        with self.assertRaisesRegex(ValueError, "previous_event_id chain"):
+            update_registry.validate_registry_event_chains([first, broken])
+
+        invalid_transition = dict(second, status="running")
+        with self.assertRaisesRegex(ValueError, "invalid historical transition"):
+            update_registry.validate_registry_event_chains([first, invalid_transition])
+
     def test_multiple_appends_remain_complete_line_delimited_events(self) -> None:
         experiment_id = "EXP-APPEND-001"
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             queue_path = make_queue(root, experiment_id)
             registry_path = root / "research" / "REGISTRY.jsonl"
+            provider = RegistryMainProvider()
             statuses = ("PROPOSED", "INVALID")
             for status in statuses:
                 stdout = io.StringIO()
@@ -358,10 +506,12 @@ class RegistryJsonlTests(unittest.TestCase):
                             str(registry_path),
                             "--actor",
                             "registry-test",
-                        ]
+                        ],
+                        approval_provider=provider,
                     )
                 self.assertEqual(exit_code, 0)
                 self.assertTrue(json.loads(stdout.getvalue())["appended"])
+                provider.merge_registry(registry_path.read_bytes())
 
             raw_lines = registry_path.read_text(encoding="utf-8").splitlines(keepends=True)
             self.assertEqual(len(raw_lines), 2)
@@ -373,6 +523,23 @@ class RegistryJsonlTests(unittest.TestCase):
         self.assertEqual(events[1]["previous_event_id"], events[0]["event_id"])
         for index, event in enumerate(events, start=1):
             self.assert_registry_event_schema(event, location=f"event {index}")
+
+    def test_alternate_registry_ledger_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr), self.assertRaises(SystemExit):
+                update_registry.main(
+                    [
+                        "EXP-ALT-LEDGER",
+                        "PROPOSED",
+                        "--root",
+                        str(root),
+                        "--registry",
+                        str(root / "research/alternate.jsonl"),
+                    ]
+                )
+            self.assertIn("code-owned research/REGISTRY.jsonl", stderr.getvalue())
 
 
 if __name__ == "__main__":

@@ -65,6 +65,13 @@ COMMENT_EVIDENCE_FIELDS = (
     "updated_at",
 )
 
+REMOTE_FILE_EVIDENCE_FIELDS = (
+    "path",
+    "ref",
+    "blob_sha",
+    "content_sha256",
+)
+
 
 class GitHubApprovalProvider(Protocol):
     """Injectable, read-only GitHub data source used by approval verification."""
@@ -125,9 +132,16 @@ class GitHubRestApprovalProvider:
                 raw = response.read()
         except (OSError, urllib.error.URLError, urllib.error.HTTPError) as exc:
             raise RuntimeError(f"GitHub {label} GET failed: {exc}") from exc
+        def reject_constant(value: str) -> None:
+            raise ValueError(f"non-standard JSON constant is forbidden: {value}")
+
         try:
-            payload = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            payload = json.loads(
+                raw.decode("utf-8"),
+                parse_constant=reject_constant,
+                object_pairs_hook=_strict_json_object,
+            )
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
             raise RuntimeError(f"GitHub {label} response is not valid UTF-8 JSON") from exc
         if not isinstance(payload, dict):
             raise RuntimeError(f"GitHub {label} response is not an object")
@@ -392,6 +406,126 @@ def verify_github_trust(
     return allowlist, evidence
 
 
+def verify_github_main_head_unchanged(
+    *,
+    provider: GitHubApprovalProvider,
+    repository: str,
+    base_branch: str,
+    expected_sha: str,
+) -> None:
+    """Re-read the code-owned main ref and fail if it moved after verification."""
+
+    if not isinstance(repository, str) or repository.lower() != DEFAULT_REPOSITORY.lower():
+        raise ValueError(
+            f"GitHub repository mismatch; expected {DEFAULT_REPOSITORY!r}; fail-close"
+        )
+    if base_branch != DEFAULT_BASE_BRANCH:
+        raise ValueError(
+            f"GitHub base branch mismatch; expected {DEFAULT_BASE_BRANCH!r}; fail-close"
+        )
+    verified_expected = _require_git_sha(expected_sha, "expected GitHub main SHA")
+    ref_payload = _provider_call(
+        "main ref recheck",
+        lambda: provider.get_branch_ref(repository, base_branch),
+    )
+    if ref_payload.get("ref") != f"refs/heads/{DEFAULT_BASE_BRANCH}":
+        raise ValueError("GitHub main ref mismatch during append recheck; fail-close")
+    ref_object = _require_object(
+        ref_payload.get("object"),
+        "GitHub main ref recheck object",
+    )
+    if ref_object.get("type") != "commit":
+        raise ValueError("GitHub main ref recheck does not point to a commit; fail-close")
+    observed_sha = _require_git_sha(
+        ref_object.get("sha"),
+        "GitHub current main SHA recheck",
+    )
+    if observed_sha != verified_expected:
+        raise ValueError(
+            "GitHub current main moved during registry verification; fail-close and retry"
+        )
+
+
+def fetch_github_file_at_commit(
+    *,
+    provider: GitHubApprovalProvider,
+    repository: str,
+    path: str,
+    ref: str,
+) -> tuple[bytes, dict[str, str]]:
+    """Fetch one immutable commit file and return its raw hash evidence."""
+
+    if not isinstance(repository, str) or repository.lower() != DEFAULT_REPOSITORY.lower():
+        raise ValueError(
+            f"GitHub repository mismatch; expected {DEFAULT_REPOSITORY!r}; fail-close"
+        )
+    normalized_path = PurePosixPath(path)
+    if (
+        not isinstance(path, str)
+        or normalized_path.is_absolute()
+        or any(part in {"", ".", ".."} for part in normalized_path.parts)
+        or normalized_path.as_posix() != path
+    ):
+        raise ValueError("GitHub policy path must be normalized and repository-relative")
+    verified_ref = _require_git_sha(ref, "GitHub file ref")
+
+    payload = _provider_call(
+        path,
+        lambda: provider.get_file_contents(repository, path, verified_ref),
+    )
+    if payload.get("type") != "file" or payload.get("path") != path:
+        raise ValueError("GitHub file path or type mismatch; fail-close")
+    if payload.get("encoding") != "base64":
+        raise ValueError("GitHub file must use base64 content encoding; fail-close")
+    blob_sha = _require_git_sha(payload.get("sha"), "GitHub file blob SHA")
+    encoded_content = payload.get("content")
+    if not isinstance(encoded_content, str):
+        raise ValueError("GitHub file content is missing; fail-close")
+    try:
+        content = base64.b64decode("".join(encoded_content.split()), validate=True)
+    except (ValueError, binascii.Error) as exc:
+        raise ValueError("GitHub file content is invalid base64; fail-close") from exc
+    observed_sha256 = hashlib.sha256(content).hexdigest()
+    evidence = {
+        "path": path,
+        "ref": verified_ref,
+        "blob_sha": blob_sha,
+        "content_sha256": observed_sha256,
+    }
+    if tuple(evidence) != REMOTE_FILE_EVIDENCE_FIELDS:
+        raise AssertionError("internal GitHub remote-file evidence schema mismatch")
+    return content, evidence
+
+
+def verify_github_file_at_commit(
+    *,
+    provider: GitHubApprovalProvider,
+    repository: str,
+    path: str,
+    ref: str,
+    expected_content_sha256: str,
+) -> tuple[bytes, dict[str, str]]:
+    """Fetch one immutable commit file and require its raw content hash."""
+
+    if not isinstance(expected_content_sha256, str) or not FULL_SHA256.fullmatch(
+        expected_content_sha256
+    ):
+        raise ValueError("expected GitHub file content SHA-256 is invalid; fail-close")
+    content, evidence = fetch_github_file_at_commit(
+        provider=provider,
+        repository=repository,
+        path=path,
+        ref=ref,
+    )
+    observed_sha256 = evidence["content_sha256"]
+    if observed_sha256 != expected_content_sha256:
+        raise ValueError(
+            "GitHub base-commit file content hash mismatch; fail-close: "
+            f"expected {expected_content_sha256}, observed {observed_sha256}"
+        )
+    return content, evidence
+
+
 def _comment_issue_number(comment: dict[str, Any], repository: str) -> int:
     issue_url = comment.get("issue_url")
     if not isinstance(issue_url, str):
@@ -566,10 +700,14 @@ __all__ = [
     "DEFAULT_REPOSITORY",
     "GITHUB_API_URL",
     "GITHUB_TRUST_EVIDENCE_FIELDS",
+    "REMOTE_FILE_EVIDENCE_FIELDS",
     "GitHubApprovalProvider",
     "GitHubRestApprovalProvider",
+    "fetch_github_file_at_commit",
     "reverify_same_approval",
     "utc_now",
     "verify_approval_comment",
+    "verify_github_file_at_commit",
+    "verify_github_main_head_unchanged",
     "verify_github_trust",
 ]

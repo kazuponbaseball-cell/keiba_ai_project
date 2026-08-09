@@ -9,6 +9,13 @@ from pathlib import Path
 from typing import Any
 
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from scope_contract import strict_json_loads  # noqa: E402
+
+
 def default_root() -> Path:
     return Path(__file__).resolve().parents[2]
 
@@ -30,9 +37,9 @@ def load_events(path: Path) -> list[dict[str, Any]]:
             if not raw.strip():
                 continue
             try:
-                event = json.loads(raw)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"invalid JSONL at {path}:{line_number}: {exc.msg}") from exc
+                event = strict_json_loads(raw, source=f"{path}:{line_number}")
+            except ValueError as exc:
+                raise ValueError(f"invalid JSONL at {path}:{line_number}: {exc}") from exc
             if not isinstance(event, dict):
                 raise ValueError(f"registry event at {path}:{line_number} is not an object")
             if not isinstance(event.get("experiment_id"), str) or not isinstance(event.get("status"), str):
@@ -60,6 +67,14 @@ def artifact_text(event: dict[str, Any]) -> str:
     return "<br>".join(md(item) for item in artifacts)
 
 
+def gate_result_text(event: dict[str, Any]) -> str:
+    if event.get("gate_kind") == "infrastructure_safety_v1":
+        evaluation = event.get("gate_evaluation")
+        passed = evaluation.get("passed") if isinstance(evaluation, dict) else False
+        return f"infrastructure_safety_v1:{'pass' if passed is True else 'fail'}"
+    return md(event.get("score_total"))
+
+
 def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment_id: str | None) -> str:
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in events:
@@ -73,7 +88,8 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
         f"- Registry: `{registry_path}`",
         f"- Filter: `{experiment_id}`" if experiment_id else "- Filter: all experiments",
         "- GitHub trust: repository `kazuponbaseball-cell/keiba_ai_project`, branch `main`; current-main ancestry and base-commit APPROVERS are verified remotely",
-        "- Real-data execution: prohibited until prepare approval is revalidated before run grant and prepare/run approvals are revalidated immediately before `RUNNING`",
+        "- Legacy ROI real-data execution: fail-closed until a separately merged, versioned ROI run contract binds execution kind",
+        "- Infrastructure execution: synthetic-only; real data and shadow transition are always prohibited",
         "- Preparation: only `APPROVED_TO_PREPARE` / `PREPARING`; synthetic fixtures only",
         "- Approval comments: prepare/run/shadow grant IDs are registry-wide single-use; edit, deletion, or reuse fails closed",
         "- Production / merge / BUY approval: always false and outside this registry's authority",
@@ -87,7 +103,7 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
         [
             "## Latest state",
             "",
-            "| Experiment | Status | Score | Prepare approval | Run approval | Shadow approval | Real data allowed | Updated (UTC) | Events |",
+            "| Experiment | Status | Score / gate | Prepare approval | Run approval | Shadow approval | Real data allowed | Updated (UTC) | Events |",
             "|---|---|---:|---|---|---|---|---|---:|",
         ]
     )
@@ -100,7 +116,7 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
                 [
                     f"`{md(key)}`",
                     f"`{md(latest.get('status'))}`",
-                    md(latest.get("score_total")),
+                    md(gate_result_text(latest)),
                     md(latest.get("human_prepare_approval_recorded", False)),
                     md(latest.get("human_run_approval_recorded", False)),
                     md(latest.get("human_shadow_approval_recorded", False)),
@@ -115,14 +131,33 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
     for key in sorted(grouped):
         history = grouped[key]
         latest = history[-1]
-        lines.extend(
-            [
+        detail_lines = [
                 "",
                 f"## {md(key)}",
                 "",
                 f"- Latest status: `{md(latest.get('status'))}`",
-                f"- Score: **{md(latest.get('score_total'))}/{md(latest.get('score_threshold', 75))}**",
-                f"- Score threshold met: `{md(latest.get('score_threshold_met', False))}`",
+        ]
+        if latest.get("gate_kind") == "infrastructure_safety_v1":
+            evaluation = latest.get("gate_evaluation")
+            checks = evaluation.get("checks", {}) if isinstance(evaluation, dict) else {}
+            passed_count = sum(value is True for value in checks.values()) if isinstance(checks, dict) else 0
+            detail_lines.extend(
+                [
+                    "- Gate kind: `infrastructure_safety_v1`",
+                    f"- Non-compensating gate passed: `{md(evaluation.get('passed', False) if isinstance(evaluation, dict) else False)}`",
+                    f"- Hard checks passed: `{passed_count}/{len(checks) if isinstance(checks, dict) else 0}`",
+                    "- Execution profile: `synthetic-only`; shadow transition unsupported",
+                ]
+            )
+        else:
+            detail_lines.extend(
+                [
+                    f"- Score: **{md(latest.get('score_total'))}/{md(latest.get('score_threshold', 75))}**",
+                    f"- Score threshold met: `{md(latest.get('score_threshold_met', False))}`",
+                ]
+            )
+        detail_lines.extend(
+            [
                 f"- Proposal scope digest: `{md(latest.get('proposal_scope_digest'))}`",
                 f"- Run scope digest: `{md(latest.get('run_scope_digest'))}`",
                 f"- Review digest: `{md(latest.get('review_digest'))}`",
@@ -143,10 +178,11 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
                 "",
                 "### Event history",
                 "",
-                "| Seq | UTC | Status | Previous | Caller | Score | Approval comment | Proposal digest | Run/review digest | Artifacts | Notes |",
+                "| Seq | UTC | Status | Previous | Caller | Score / gate | Approval comment | Proposal digest | Run/review digest | Artifacts | Notes |",
                 "|---:|---|---|---|---|---:|---|---|---|---|---|",
             ]
         )
+        lines.extend(detail_lines)
         for event in history:
             lines.append(
                 "| "
@@ -157,7 +193,7 @@ def render_summary(events: list[dict[str, Any]], registry_path: Path, experiment
                         f"`{md(event.get('status'))}`",
                         f"`{md(event.get('previous_status'))}`" if event.get("previous_status") else "",
                         md(event.get("actor")),
-                        md(event.get("score_total")),
+                        md(gate_result_text(event)),
                         md(
                             event.get("approval_evidence", {}).get("url")
                             if isinstance(event.get("approval_evidence"), dict)

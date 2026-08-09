@@ -275,3 +275,79 @@ snapshotへ分離する。これらをResearch OS本体のlive stateとして扱
 このreconciliationはstateとgovernance/template文言だけを更新する。実験、ROI
 仮説、production、予測モデル、候補選択、value、BUY、stake、注文、通知、
 credentialを変更せず、merge判断はDraft PR上の人間に残す。
+
+## D-023 — 競馬仮説とインフラ／安全性変更のgateを分離する
+
+- Decision: `LOCKED_GATE_ON_MAIN_MERGE`
+- Evidence: governance design + synthetic fixture tests
+
+`HYPOTHESIS_SCORECARD`は競馬上の独立情報、作用機序、outer OOS失敗根拠を評価する
+ROI仮説専用gateとして凍結する。Research OS control-plane、contract、schema、
+synthetic adapterへ架空の競馬根拠を割り当てず、明示的な
+`infrastructure_safety_v1` contractを並立させる。
+
+infra gateは数値scoreを合算しない。machine-readable policyの全hard check、
+path/capability firewall、synthetic-only run、canonical proposal/run digest、
+base-to-execution commit diff、構造化command、GitHub-backed prepare/run承認をすべて
+満たした場合だけ既存lifecycleの`PROPOSED`から`REVIEW_REQUIRED`までを使える。
+real-dataと`APPROVED_FOR_SHADOW`は常に拒否する。
+
+既存ROI proposal/run、queue/event schema v2、canonical digestはmigrationも再serializeも
+しない。infra queue/eventはschema v3とし、approval comment IDの単一用途namespaceと
+先行承認再検証はschemaをまたいで共有する。profile名だけの偽装、ROI/model/data/pathの
+混入、自由形式shell、credential/network/production/BUY/order/notification capability、
+root-of-trustの自己変更はhard failureであり、scoreや人間run commentで救済できない。
+
+この決定を含む初回gate導入はgate自身によるbootstrapを行わない。Draft PR上の人間reviewと
+人間mergeを唯一のactivation境界とし、mainへmergeされるまで後続infra proposalの承認根拠に
+使わない。本決定はproduction、merge、正式BUY、注文、通知の承認を追加しない。
+
+## D-024 — legacy ROI runの実行種別をfail-closeする
+
+- Decision: `LOCKED_SECURITY`
+- Evidence: canonical run scope inspection + legacy digest golden tests
+
+既存のunversioned ROI run scopeは`execution_kind`をcanonical JSONへ含めず、registry CLIの
+呼出時引数だけで`synthetic`と`real-data`を選べる。このため、synthetic想定で承認された
+scopeを同じdigestのままreal dataへ切り替えられる境界不備として扱う。
+
+legacy proposal/runのbyte列とdigestを変更せず、現行contractではreal-data `RUNNING`を
+fail-closeする。synthetic lifecycleと既存artifactのread/監査互換性は維持する。
+real-dataを再び許可するには、execution kindとcapability matrixをproposal/run scopeへ
+hash-bindするversioned ROI contract、migration境界、negative testを別のDraft governance
+PRで導入し、人間がreview・mergeしなければならない。
+
+## D-025 — infra ledger・material・commandを非迂回境界へ固定する
+
+- Decision: `LOCKED_SECURITY_ON_MAIN_MERGE`
+- Evidence: adversarial registry/path/source/fixture tests
+
+infra approvalの単一用途namespaceはsymlink/junctionでないexact `research/REGISTRY.jsonl`だけとし、alternate
+ledgerを拒否する。base→execution commitとexecution commit→worktreeでregistryの
+append-only prefixを検証し、append時はprocess lock、snapshot CAS、flush、fsyncを行う。
+全transition前にはverified current mainのregistry blobをGitHubから取得し、local snapshotとの
+byte-for-byte完全一致を要求する。append直前にmain headを再取得して不変を確認する。1回のappendは
+pending candidateだけを作り、人間mergeとbranch refresh前には次transitionも権限も許可しない。
+同時writer、stale main、過去eventのrewrite/deleteを検知した場合はeventを書かずfail-closeする。
+
+run materialはASCII canonical path、`.example.json` config、`research/synthetic/`の
+1 MiB以下のprovenance envelopeへ限定する。symlink/junction、秘密らしい値、row-level
+real-data shapeを拒否し、全materialをexecution commitのblobへ固定してdirty/untrackedを
+許可しない。execution commitはproposal baseの子孫だけを認める。current interpreterの
+path/hash/versionをenvironment manifestへ固定する。変更Pythonのexact Git blobはASTで検査し、
+pure allowlist外import、network、credential、subprocess、production系import、dynamic call、
+forbidden symbolを拒否する。command templateはそのinterpreterを`-B -I -S`で使い、repository-root
+cwd、継承environmentなし、空environment、proposal budget由来timeout、write path 0をscopeへ固定し、
+自由shell、PATH選択、site customizationを承認scopeへ入れない。
+
+このgateは自動executorではないため、infra eventの`automatic_execution_allowed`、
+`preparation_authorized`、`execution_authorized`は全状態でfalseとする。v1 policyはmain merge後に
+in-place変更せず、将来のpolicyは新gate kind/versionと
+別pathで追加して既存v3 scopeのread/`INVALID`互換性を維持する。
+
+通常PR CIは`tests/research/test_*.py`を自動実行するため、このdirectoryをinfra gateの
+変更対象にすると`APPROVED_TO_RUN`前の実行になる。よって`tests/research/`とworkflowを
+root-of-trustとして固定し、後続infra testはCI自動探索外の`research/infra_tests/`だけに置く。
+そのtestはhash-bound run scopeとstructured commandへ固定するが、別の人間review済み
+executor/authority verifierが導入されるまで実行しない。初回bootstrapのgovernance testは
+gate activation前の人間依頼に基づく別境界である。
