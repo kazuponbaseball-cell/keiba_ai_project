@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_reference_catalog_entry_ref_v1.schema.json",
+  "title": "ROI reproduction reference catalog entry reference v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "catalog_release_id",
+    "catalog_release_digest",
+    "entry_id",
+    "entry_digest",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "catalog_release_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+    },
+    "catalog_release_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "entry_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+    },
+    "entry_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    }
+  }
+}

@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_catalog_publication_receipt_v1.schema.json",
+  "title": "ROI reproduction catalog publication receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_kind",
+    "policy_digest",
+    "schema_digest",
+    "catalog_publication_scope_digest",
+    "catalog_publication_approval_evidence_digest",
+    "provider_lease_id",
+    "provider_lease_digest",
+    "provider_identity_digest",
+    "provider_code_digest",
+    "provider_environment_digest",
+    "command_digest",
+    "input_logical_source_set_digest",
+    "output_catalog_entry_set_digest",
+    "snapshot_set_digest",
+    "started_at",
+    "completed_at",
+    "catalog_provider_lease_consumption_receipt_digest",
+    "signer_or_attestation_digest",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "receipt_kind": {
+      "const": "CATALOG_PUBLICATION_COMPLETED"
+    },
+    "policy_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "schema_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "catalog_publication_scope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "catalog_publication_approval_evidence_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_lease_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider_lease_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_identity_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_code_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_environment_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "command_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "input_logical_source_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "output_catalog_entry_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "snapshot_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "started_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "completed_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalog_provider_lease_consumption_receipt_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "signer_or_attestation_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    }
+  }
+}

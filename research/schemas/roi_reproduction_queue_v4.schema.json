@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_queue_v4.schema.json",
+  "title": "ROI reproduction G1 queue candidate v4",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate_kind",
+    "gate_contract_version",
+    "execution_kind",
+    "policy_ref",
+    "schema_ref",
+    "proposal_scope_path",
+    "proposal_scope_digest",
+    "status",
+    "capabilities",
+    "capability_digest",
+    "created_at",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 4
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+    },
+    "gate_kind": {
+      "const": "roi_reproduction_audit_v2"
+    },
+    "gate_contract_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "execution_kind": {
+      "const": "historical_reproduction_v2"
+    },
+    "policy_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "schema_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "proposal_scope_path": {
+      "type": "string",
+      "pattern": "^research/synthetic/roi_reproduction/(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "proposal_scope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "status": {
+      "const": "BLOCKED_CATALOG"
+    },
+    "capabilities": {
+      "$ref": "#/$defs/g1_capabilities"
+    },
+    "capability_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    }
+  },
+  "$defs": {
+    "g1_capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_codex_dispatch",
+        "automatic_execution",
+        "automatic_github_approval",
+        "synthetic_fixture_tests",
+        "real_data_execution",
+        "supervised_manifest_hash_read",
+        "raw_row_output",
+        "model_real_data_access",
+        "historical_result_label_access",
+        "historical_training",
+        "historical_replay",
+        "prospective_outer_oos",
+        "backtest_interpretation",
+        "price_access",
+        "payoff_access",
+        "roi_calculation",
+        "offline_unit_notional_evaluation",
+        "research_candidate_policy_change",
+        "production_candidate_policy_change",
+        "workload_network_access",
+        "workload_external_api_calls",
+        "credential_access",
+        "purchase_path_access",
+        "production_change",
+        "shadow_approval",
+        "merge",
+        "notification_side_effects",
+        "order_side_effects",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "actual_codex_dispatch": {
+          "const": false
+        },
+        "automatic_execution": {
+          "const": false
+        },
+        "automatic_github_approval": {
+          "const": false
+        },
+        "synthetic_fixture_tests": {
+          "const": false
+        },
+        "real_data_execution": {
+          "const": false
+        },
+        "supervised_manifest_hash_read": {
+          "const": false
+        },
+        "raw_row_output": {
+          "const": false
+        },
+        "model_real_data_access": {
+          "const": false
+        },
+        "historical_result_label_access": {
+          "const": false
+        },
+        "historical_training": {
+          "const": false
+        },
+        "historical_replay": {
+          "const": false
+        },
+        "prospective_outer_oos": {
+          "const": false
+        },
+        "backtest_interpretation": {
+          "const": false
+        },
+        "price_access": {
+          "const": false
+        },
+        "payoff_access": {
+          "const": false
+        },
+        "roi_calculation": {
+          "const": false
+        },
+        "offline_unit_notional_evaluation": {
+          "const": false
+        },
+        "research_candidate_policy_change": {
+          "const": false
+        },
+        "production_candidate_policy_change": {
+          "const": false
+        },
+        "workload_network_access": {
+          "const": false
+        },
+        "workload_external_api_calls": {
+          "const": false
+        },
+        "credential_access": {
+          "const": false
+        },
+        "purchase_path_access": {
+          "const": false
+        },
+        "production_change": {
+          "const": false
+        },
+        "shadow_approval": {
+          "const": false
+        },
+        "merge": {
+          "const": false
+        },
+        "notification_side_effects": {
+          "const": false
+        },
+        "order_side_effects": {
+          "const": false
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    }
+  }
+}

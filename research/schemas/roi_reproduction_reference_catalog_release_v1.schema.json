@@ -1,0 +1,509 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_reference_catalog_release_v1.schema.json",
+  "title": "ROI reproduction catalog release v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "catalog_kind",
+    "catalog_contract_version",
+    "release_id",
+    "gate_kind",
+    "gate_contract_version",
+    "schema_ref",
+    "policy_ref",
+    "catalog_publication_scope_digest",
+    "catalog_publication_approval_evidence_digest",
+    "repository_contract",
+    "github_trust_evidence",
+    "provider_contract",
+    "provider_identity",
+    "provider_execution_commit",
+    "provider_code_sha256",
+    "provider_environment_sha256",
+    "publication_receipt_digest",
+    "catalog_entry_set_digest",
+    "logical_entries",
+    "lineage_edges",
+    "created_at",
+    "capabilities",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "catalog_kind": {
+      "const": "roi_reproduction_reference_catalog_v1"
+    },
+    "catalog_contract_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "release_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+    },
+    "gate_kind": {
+      "const": "roi_reproduction_audit_v2"
+    },
+    "gate_contract_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "schema_ref": {
+      "$ref": "#/$defs/reference"
+    },
+    "policy_ref": {
+      "$ref": "#/$defs/reference"
+    },
+    "catalog_publication_scope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "catalog_publication_approval_evidence_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "repository_contract": {
+      "$ref": "#/$defs/repository_contract"
+    },
+    "github_trust_evidence": {
+      "$ref": "#/$defs/digest_evidence"
+    },
+    "provider_contract": {
+      "$ref": "#/$defs/provider_contract"
+    },
+    "provider_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "provider_execution_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "provider_code_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_environment_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "publication_receipt_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "catalog_entry_set_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "logical_entries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/entry_record"
+      }
+    },
+    "lineage_edges": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/lineage_edge"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "capabilities": {
+      "$ref": "#/$defs/g1_capabilities"
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "repository_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "base_branch",
+        "base_commit"
+      ],
+      "properties": {
+        "repository": {
+          "const": "kazuponbaseball-cell/keiba_ai_project"
+        },
+        "base_branch": {
+          "const": "main"
+        },
+        "base_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "digest_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_kind",
+        "digest"
+      ],
+      "properties": {
+        "evidence_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "provider_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider_kind",
+        "provider_version",
+        "execution_commit",
+        "code_sha256",
+        "environment_sha256",
+        "command_template_id",
+        "network_required",
+        "raw_rows_returned"
+      ],
+      "properties": {
+        "provider_kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "execution_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "code_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "environment_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "command_template_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "network_required": {
+          "const": false
+        },
+        "raw_rows_returned": {
+          "const": false
+        }
+      }
+    },
+    "catalog_entry": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "title": "ROI reproduction reference catalog entry v1",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_id",
+        "logical_object_id",
+        "content_sha256",
+        "byte_size",
+        "schema_sha256",
+        "row_count",
+        "source_time",
+        "event_time",
+        "received_time",
+        "data_as_of",
+        "upstream_lineage_sha256",
+        "resolved_model_identity",
+        "resolved_input_universe_identity",
+        "snapshot_id",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "entry_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "logical_object_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "byte_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "schema_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_time": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event_time": {
+          "type": "string",
+          "minLength": 1
+        },
+        "received_time": {
+          "type": "string",
+          "minLength": 1
+        },
+        "data_as_of": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upstream_lineage_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "resolved_model_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "resolved_input_universe_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "snapshot_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    "entry_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry",
+        "entry_digest"
+      ],
+      "properties": {
+        "entry": {
+          "$ref": "#/$defs/catalog_entry"
+        },
+        "entry_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "lineage_edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "upstream_entry_id",
+        "downstream_entry_id",
+        "relation"
+      ],
+      "properties": {
+        "upstream_entry_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "downstream_entry_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "relation": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "g1_capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_codex_dispatch",
+        "automatic_execution",
+        "automatic_github_approval",
+        "synthetic_fixture_tests",
+        "real_data_execution",
+        "supervised_manifest_hash_read",
+        "raw_row_output",
+        "model_real_data_access",
+        "historical_result_label_access",
+        "historical_training",
+        "historical_replay",
+        "prospective_outer_oos",
+        "backtest_interpretation",
+        "price_access",
+        "payoff_access",
+        "roi_calculation",
+        "offline_unit_notional_evaluation",
+        "research_candidate_policy_change",
+        "production_candidate_policy_change",
+        "workload_network_access",
+        "workload_external_api_calls",
+        "credential_access",
+        "purchase_path_access",
+        "production_change",
+        "shadow_approval",
+        "merge",
+        "notification_side_effects",
+        "order_side_effects",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "actual_codex_dispatch": {
+          "const": false
+        },
+        "automatic_execution": {
+          "const": false
+        },
+        "automatic_github_approval": {
+          "const": false
+        },
+        "synthetic_fixture_tests": {
+          "const": false
+        },
+        "real_data_execution": {
+          "const": false
+        },
+        "supervised_manifest_hash_read": {
+          "const": false
+        },
+        "raw_row_output": {
+          "const": false
+        },
+        "model_real_data_access": {
+          "const": false
+        },
+        "historical_result_label_access": {
+          "const": false
+        },
+        "historical_training": {
+          "const": false
+        },
+        "historical_replay": {
+          "const": false
+        },
+        "prospective_outer_oos": {
+          "const": false
+        },
+        "backtest_interpretation": {
+          "const": false
+        },
+        "price_access": {
+          "const": false
+        },
+        "payoff_access": {
+          "const": false
+        },
+        "roi_calculation": {
+          "const": false
+        },
+        "offline_unit_notional_evaluation": {
+          "const": false
+        },
+        "research_candidate_policy_change": {
+          "const": false
+        },
+        "production_candidate_policy_change": {
+          "const": false
+        },
+        "workload_network_access": {
+          "const": false
+        },
+        "workload_external_api_calls": {
+          "const": false
+        },
+        "credential_access": {
+          "const": false
+        },
+        "purchase_path_access": {
+          "const": false
+        },
+        "production_change": {
+          "const": false
+        },
+        "shadow_approval": {
+          "const": false
+        },
+        "merge": {
+          "const": false
+        },
+        "notification_side_effects": {
+          "const": false
+        },
+        "order_side_effects": {
+          "const": false
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    }
+  }
+}

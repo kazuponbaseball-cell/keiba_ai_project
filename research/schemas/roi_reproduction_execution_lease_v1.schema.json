@@ -1,0 +1,310 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_execution_lease_v1.schema.json",
+  "title": "ROI reproduction execution lease v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lease_id",
+        "experiment_id",
+        "gate_kind",
+        "gate_contract_version",
+        "execution_kind",
+        "phase",
+        "capability_digest",
+        "command_digest",
+        "execution_commit",
+        "verified_current_main_sha",
+        "durable_ledger_backend_identity_digest",
+        "durable_ledger_head_sequence",
+        "durable_ledger_head_digest",
+        "grant_reservation_receipt_digest",
+        "verifier_code_digest",
+        "executor_code_digest",
+        "policy_digest",
+        "schema_digest",
+        "github_evidence_digest",
+        "issued_at",
+        "expires_at",
+        "human_supervisor_identity",
+        "retry_budget",
+        "formal_buy",
+        "send_order",
+        "stake",
+        "proposal_scope_digest",
+        "reference_catalog_entry_digest"
+      ],
+      "properties": {
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "experiment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "gate_kind": {
+          "const": "roi_reproduction_audit_v2"
+        },
+        "gate_contract_version": {
+          "type": "integer",
+          "const": 2
+        },
+        "execution_kind": {
+          "const": "historical_reproduction_v2"
+        },
+        "phase": {
+          "const": "PREPARATION"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "72d8cb5dba0242dd6749cfd2b7882a10d4cca6810602e61ac5492506c42bf4be"
+        },
+        "command_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "execution_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "verified_current_main_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "durable_ledger_backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "durable_ledger_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "durable_ledger_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "grant_reservation_receipt_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "verifier_code_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "executor_code_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "github_evidence_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "issued_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expires_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "human_supervisor_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retry_budget": {
+          "type": "integer",
+          "const": 0
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        },
+        "proposal_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reference_catalog_entry_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lease_id",
+        "experiment_id",
+        "gate_kind",
+        "gate_contract_version",
+        "execution_kind",
+        "phase",
+        "capability_digest",
+        "command_digest",
+        "execution_commit",
+        "verified_current_main_sha",
+        "durable_ledger_backend_identity_digest",
+        "durable_ledger_head_sequence",
+        "durable_ledger_head_digest",
+        "grant_reservation_receipt_digest",
+        "verifier_code_digest",
+        "executor_code_digest",
+        "policy_digest",
+        "schema_digest",
+        "github_evidence_digest",
+        "issued_at",
+        "expires_at",
+        "human_supervisor_identity",
+        "retry_budget",
+        "formal_buy",
+        "send_order",
+        "stake",
+        "proposal_scope_digest",
+        "reference_catalog_release_digest",
+        "reference_catalog_entry_digest",
+        "run_scope_digest",
+        "replica_id"
+      ],
+      "properties": {
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "experiment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "gate_kind": {
+          "const": "roi_reproduction_audit_v2"
+        },
+        "gate_contract_version": {
+          "type": "integer",
+          "const": 2
+        },
+        "execution_kind": {
+          "const": "historical_reproduction_v2"
+        },
+        "phase": {
+          "const": "HISTORICAL_RUN_REPLICA"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "faaadb7827ae3005d27eb1d6bc57fbe8a83e7ff04e785f7c100402a41ee7bec7"
+        },
+        "command_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "execution_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "verified_current_main_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "durable_ledger_backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "durable_ledger_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "durable_ledger_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "grant_reservation_receipt_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "verifier_code_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "executor_code_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "github_evidence_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "issued_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expires_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "human_supervisor_identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retry_budget": {
+          "type": "integer",
+          "const": 0
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        },
+        "proposal_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reference_catalog_release_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "reference_catalog_entry_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "run_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "replica_id": {
+          "enum": [
+            "clean_a",
+            "clean_b"
+          ]
+        }
+      }
+    }
+  ]
+}

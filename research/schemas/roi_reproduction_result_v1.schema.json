@@ -1,0 +1,654 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_result_v1.schema.json",
+  "title": "ROI reproduction result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "result_kind",
+    "experiment_id",
+    "gate_kind",
+    "gate_contract_version",
+    "execution_kind",
+    "policy_ref",
+    "schema_ref",
+    "proposal_scope_digest",
+    "run_scope_digest",
+    "execution_commit_sha",
+    "computed_outcome",
+    "replicas",
+    "determinism_check",
+    "runner_label_contract_check",
+    "probability_contract_check",
+    "numeric_equivalence",
+    "artifact_refs",
+    "safety",
+    "limitations",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "result_kind": {
+      "const": "roi_reproduction_result_v1"
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+    },
+    "gate_kind": {
+      "const": "roi_reproduction_audit_v2"
+    },
+    "gate_contract_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "execution_kind": {
+      "const": "historical_reproduction_v2"
+    },
+    "policy_ref": {
+      "$ref": "#/$defs/reference"
+    },
+    "schema_ref": {
+      "$ref": "#/$defs/reference"
+    },
+    "proposal_scope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "run_scope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "execution_commit_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "computed_outcome": {
+      "enum": [
+        "REPRODUCED",
+        "RECONSTRUCTED_NOT_REPRODUCED",
+        "REPRODUCTION_FAILED",
+        "INVALID"
+      ]
+    },
+    "replicas": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/replica_result"
+      }
+    },
+    "determinism_check": {
+      "$ref": "#/$defs/determinism_check"
+    },
+    "runner_label_contract_check": {
+      "$ref": "#/$defs/check"
+    },
+    "probability_contract_check": {
+      "$ref": "#/$defs/check"
+    },
+    "numeric_equivalence": {
+      "$ref": "#/$defs/numeric_equivalence"
+    },
+    "artifact_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/reference"
+      }
+    },
+    "safety": {
+      "$ref": "#/$defs/g1_capabilities"
+    },
+    "limitations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "computed_outcome": {
+            "enum": [
+              "REPRODUCED",
+              "RECONSTRUCTED_NOT_REPRODUCED"
+            ]
+          }
+        },
+        "required": [
+          "computed_outcome"
+        ]
+      },
+      "then": {
+        "properties": {
+          "determinism_check": {
+            "properties": {
+              "all_equal": {
+                "const": true
+              }
+            }
+          },
+          "runner_label_contract_check": {
+            "properties": {
+              "passed": {
+                "const": true
+              }
+            }
+          },
+          "probability_contract_check": {
+            "properties": {
+              "passed": {
+                "const": true
+              }
+            }
+          },
+          "numeric_equivalence": {
+            "properties": {
+              "all_within_tolerance": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "computed_outcome": {
+            "const": "REPRODUCED"
+          }
+        },
+        "required": [
+          "computed_outcome"
+        ]
+      },
+      "then": {
+        "properties": {
+          "numeric_equivalence": {
+            "properties": {
+              "reference_available": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "computed_outcome": {
+            "const": "RECONSTRUCTED_NOT_REPRODUCED"
+          }
+        },
+        "required": [
+          "computed_outcome"
+        ]
+      },
+      "then": {
+        "properties": {
+          "numeric_equivalence": {
+            "properties": {
+              "reference_available": {
+                "const": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "computed_outcome": {
+            "const": "REPRODUCTION_FAILED"
+          }
+        },
+        "required": [
+          "computed_outcome"
+        ]
+      },
+      "then": {
+        "properties": {
+          "runner_label_contract_check": {
+            "properties": {
+              "passed": {
+                "const": true
+              }
+            }
+          },
+          "probability_contract_check": {
+            "properties": {
+              "passed": {
+                "const": true
+              }
+            }
+          }
+        },
+        "anyOf": [
+          {
+            "properties": {
+              "determinism_check": {
+                "properties": {
+                  "all_equal": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "numeric_equivalence": {
+                "properties": {
+                  "all_within_tolerance": {
+                    "const": false
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "replica_result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "replica_id",
+        "commit_sha",
+        "worktree_clean",
+        "environment_manifest_ref",
+        "command_digest",
+        "input_digest_set",
+        "artifact_digests"
+      ],
+      "properties": {
+        "replica_id": {
+          "enum": [
+            "clean_a",
+            "clean_b"
+          ]
+        },
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "worktree_clean": {
+          "const": true
+        },
+        "environment_manifest_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "command_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "input_digest_set": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "artifact_digests": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "patternProperties": {
+            "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "determinism_check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "all_equal",
+        "mismatch_count",
+        "artifact_digest_pairs"
+      ],
+      "properties": {
+        "all_equal": {
+          "type": "boolean"
+        },
+        "mismatch_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "artifact_digest_pairs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "artifact_id",
+              "clean_a_digest",
+              "clean_b_digest"
+            ],
+            "properties": {
+              "artifact_id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+              },
+              "clean_a_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "clean_b_digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "passed",
+        "evidence_ref"
+      ],
+      "properties": {
+        "passed": {
+          "type": "boolean"
+        },
+        "evidence_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "numeric_equivalence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reference_available",
+        "all_within_tolerance",
+        "rows"
+      ],
+      "properties": {
+        "reference_available": {
+          "type": "boolean"
+        },
+        "all_within_tolerance": {
+          "type": "boolean"
+        },
+        "rows": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "metric_id",
+              "fold_id",
+              "model_name",
+              "probability_stage",
+              "unit",
+              "reference_value_hex",
+              "observed_value_hex",
+              "absolute_tolerance_hex",
+              "pass"
+            ],
+            "properties": {
+              "metric_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "fold_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "model_name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "probability_stage": {
+                "type": "string",
+                "minLength": 1
+              },
+              "unit": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reference_value_hex": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{16}$"
+              },
+              "observed_value_hex": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{16}$"
+              },
+              "absolute_tolerance_hex": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{16}$"
+              },
+              "pass": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "g1_capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_codex_dispatch",
+        "automatic_execution",
+        "automatic_github_approval",
+        "synthetic_fixture_tests",
+        "real_data_execution",
+        "supervised_manifest_hash_read",
+        "raw_row_output",
+        "model_real_data_access",
+        "historical_result_label_access",
+        "historical_training",
+        "historical_replay",
+        "prospective_outer_oos",
+        "backtest_interpretation",
+        "price_access",
+        "payoff_access",
+        "roi_calculation",
+        "offline_unit_notional_evaluation",
+        "research_candidate_policy_change",
+        "production_candidate_policy_change",
+        "workload_network_access",
+        "workload_external_api_calls",
+        "credential_access",
+        "purchase_path_access",
+        "production_change",
+        "shadow_approval",
+        "merge",
+        "notification_side_effects",
+        "order_side_effects",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "actual_codex_dispatch": {
+          "const": false
+        },
+        "automatic_execution": {
+          "const": false
+        },
+        "automatic_github_approval": {
+          "const": false
+        },
+        "synthetic_fixture_tests": {
+          "const": false
+        },
+        "real_data_execution": {
+          "const": false
+        },
+        "supervised_manifest_hash_read": {
+          "const": false
+        },
+        "raw_row_output": {
+          "const": false
+        },
+        "model_real_data_access": {
+          "const": false
+        },
+        "historical_result_label_access": {
+          "const": false
+        },
+        "historical_training": {
+          "const": false
+        },
+        "historical_replay": {
+          "const": false
+        },
+        "prospective_outer_oos": {
+          "const": false
+        },
+        "backtest_interpretation": {
+          "const": false
+        },
+        "price_access": {
+          "const": false
+        },
+        "payoff_access": {
+          "const": false
+        },
+        "roi_calculation": {
+          "const": false
+        },
+        "offline_unit_notional_evaluation": {
+          "const": false
+        },
+        "research_candidate_policy_change": {
+          "const": false
+        },
+        "production_candidate_policy_change": {
+          "const": false
+        },
+        "workload_network_access": {
+          "const": false
+        },
+        "workload_external_api_calls": {
+          "const": false
+        },
+        "credential_access": {
+          "const": false
+        },
+        "purchase_path_access": {
+          "const": false
+        },
+        "production_change": {
+          "const": false
+        },
+        "shadow_approval": {
+          "const": false
+        },
+        "merge": {
+          "const": false
+        },
+        "notification_side_effects": {
+          "const": false
+        },
+        "order_side_effects": {
+          "const": false
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    }
+  }
+}

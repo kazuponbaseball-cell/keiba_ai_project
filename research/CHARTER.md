@@ -145,6 +145,31 @@ kind/versionと別pathを追加し、既存v3 scopeを旧policyのまま監査�
 許可する。real-dataを再開するには、execution kindとcapabilityをproposal/run digestへ
 固定し、legacy digestを変更しないversioned ROI contractを別のgovernance PRで導入する。
 
+### 5.2 ROI reproduction v2 G1 declaration
+
+`roi_reproduction_audit_v2`の現行G1境界は
+`CONTRACT_COMPILER_ONLY_NO_AUTHORITY`である。これはreproduction専用gateの実行承認ではなく、
+G1 implementationをschema、別version policy、canonical serialization、state validation、
+非権限object compilation、synthetic-only governance testに限定する契約である。この変更は
+それらのpure compiler、policy、schemaを実装するが、provider、writer、authority verifier、
+executorを実装せず、repository/ledgerへproposal、queue、run scope、eventを生成・追記しない。
+
+G1はcatalog/source provider、attester、authority verifier、durable ledger、lease、executor、
+subprocess、network、real data、model、training、historical replay、outer OOS、ROIを扱わない。
+artifact contractは`execution_kind=historical_reproduction_v2`をdigestへbindする一方、現在の
+有効runtime execution kindはnone、全authorityはfalse/0、`EXECUTION_FORBIDDEN`とする。
+G2は未実装であり、別のhuman-owned governance Draftとhuman mergeなしに権限を追加できない。
+
+現行legacy ROI schema v2とinfra schema v3のwriter、digest、transition、approval semanticsは
+不変とする。現行writerはschema v4をdispatchしない。
+`research/schemas/roi_reproduction_registry_event_v4.schema.json`とcanonical line compilerは
+validation用であり、現時点のlive writerまたはauthority sourceではない。prepare/run/resultの3 action flowも
+未activationであり、既存comment、design、score、branch artifactは開始・再開・実行tokenにならない。
+G1 schema単独またはtrusted policy/schema digest contextなしのnormalizer結果はfixture検証に限り、
+proposal、queue、event、grant、lease、execution authorityとして永続化・利用しない。G2はcatalog
+source/providerの有限allowlist、全manifest contract conformance、execution context、expected outputと
+numeric referenceをcurrent-mainのpolicy/schema bytesへhash-bindしてからでなければactivationできない。
+
 ## 6. Lifecycle
 
 ```text

@@ -1,0 +1,784 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_lease_operation_record_v1.schema.json",
+  "title": "ROI reproduction immutable lease operation record v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "operation_id",
+        "subject_kind",
+        "subject_id",
+        "operation_kind",
+        "operation_sequence",
+        "previous_operation_digest",
+        "lifecycle_authorizer_event_digest",
+        "lease_id",
+        "lease_digest",
+        "capability_digest",
+        "operation_binding",
+        "occurred_at",
+        "writer_identity_digest",
+        "policy_digest",
+        "schema_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "record_kind": {
+          "const": "roi_reproduction_lease_operation_v1"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "subject_kind": {
+          "const": "EXPERIMENT"
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_kind": {
+          "const": "EXPERIMENT_LEASE_ISSUED"
+        },
+        "operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lifecycle_authorizer_event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "72d8cb5dba0242dd6749cfd2b7882a10d4cca6810602e61ac5492506c42bf4be"
+        },
+        "operation_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "experiment_id",
+            "phase",
+            "proposal_scope_digest",
+            "grant_reservation_digest"
+          ],
+          "properties": {
+            "experiment_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "phase": {
+              "const": "PREPARATION"
+            },
+            "proposal_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "grant_reservation_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "occurred_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "operation_id",
+        "subject_kind",
+        "subject_id",
+        "operation_kind",
+        "operation_sequence",
+        "previous_operation_digest",
+        "lifecycle_authorizer_event_digest",
+        "lease_id",
+        "lease_digest",
+        "capability_digest",
+        "operation_binding",
+        "occurred_at",
+        "writer_identity_digest",
+        "policy_digest",
+        "schema_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "record_kind": {
+          "const": "roi_reproduction_lease_operation_v1"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "subject_kind": {
+          "const": "EXPERIMENT"
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_kind": {
+          "const": "EXPERIMENT_RUN_REPLICA_LEASE_ISSUED"
+        },
+        "operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lifecycle_authorizer_event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "faaadb7827ae3005d27eb1d6bc57fbe8a83e7ff04e785f7c100402a41ee7bec7"
+        },
+        "operation_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "experiment_id",
+            "phase",
+            "proposal_scope_digest",
+            "run_scope_digest",
+            "replica_id",
+            "grant_reservation_digest"
+          ],
+          "properties": {
+            "experiment_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "phase": {
+              "const": "HISTORICAL_RUN_REPLICA"
+            },
+            "proposal_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "run_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "replica_id": {
+              "enum": [
+                "clean_a",
+                "clean_b"
+              ]
+            },
+            "grant_reservation_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "occurred_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "operation_id",
+        "subject_kind",
+        "subject_id",
+        "operation_kind",
+        "operation_sequence",
+        "previous_operation_digest",
+        "lifecycle_authorizer_event_digest",
+        "lease_id",
+        "lease_digest",
+        "capability_digest",
+        "operation_binding",
+        "occurred_at",
+        "writer_identity_digest",
+        "policy_digest",
+        "schema_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "record_kind": {
+          "const": "roi_reproduction_lease_operation_v1"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "subject_kind": {
+          "const": "EXPERIMENT"
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_kind": {
+          "const": "EXPERIMENT_PREPARATION_LEASE_CONSUMED"
+        },
+        "operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lifecycle_authorizer_event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "72d8cb5dba0242dd6749cfd2b7882a10d4cca6810602e61ac5492506c42bf4be"
+        },
+        "operation_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "experiment_id",
+            "phase",
+            "proposal_scope_digest",
+            "dispatch_reservation_digest"
+          ],
+          "properties": {
+            "experiment_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "phase": {
+              "const": "PREPARATION"
+            },
+            "proposal_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "dispatch_reservation_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "occurred_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "operation_id",
+        "subject_kind",
+        "subject_id",
+        "operation_kind",
+        "operation_sequence",
+        "previous_operation_digest",
+        "lifecycle_authorizer_event_digest",
+        "lease_id",
+        "lease_digest",
+        "capability_digest",
+        "operation_binding",
+        "occurred_at",
+        "writer_identity_digest",
+        "policy_digest",
+        "schema_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "record_kind": {
+          "const": "roi_reproduction_lease_operation_v1"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "subject_kind": {
+          "const": "EXPERIMENT"
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_kind": {
+          "const": "EXPERIMENT_RUN_REPLICA_LEASE_CONSUMED"
+        },
+        "operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lifecycle_authorizer_event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "faaadb7827ae3005d27eb1d6bc57fbe8a83e7ff04e785f7c100402a41ee7bec7"
+        },
+        "operation_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "experiment_id",
+            "phase",
+            "run_scope_digest",
+            "replica_id",
+            "dispatch_reservation_digest"
+          ],
+          "properties": {
+            "experiment_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "phase": {
+              "const": "HISTORICAL_RUN_REPLICA"
+            },
+            "run_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "replica_id": {
+              "enum": [
+                "clean_a",
+                "clean_b"
+              ]
+            },
+            "dispatch_reservation_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "occurred_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "operation_id",
+        "subject_kind",
+        "subject_id",
+        "operation_kind",
+        "operation_sequence",
+        "previous_operation_digest",
+        "lifecycle_authorizer_event_digest",
+        "lease_id",
+        "lease_digest",
+        "capability_digest",
+        "operation_binding",
+        "occurred_at",
+        "writer_identity_digest",
+        "policy_digest",
+        "schema_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "record_kind": {
+          "const": "roi_reproduction_lease_operation_v1"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "subject_kind": {
+          "const": "CATALOG_PUBLICATION_SCOPE"
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_kind": {
+          "const": "CATALOG_PROVIDER_LEASE_ISSUED"
+        },
+        "operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lifecycle_authorizer_event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "d65100977a8a202894eb5efb334ee8a6242a32900406b3dfb890622b06c161fd"
+        },
+        "operation_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "catalog_publication_scope_id",
+            "catalog_publication_scope_digest",
+            "provider_identity_digest",
+            "grant_reservation_digest"
+          ],
+          "properties": {
+            "catalog_publication_scope_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "catalog_publication_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "provider_identity_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "grant_reservation_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "occurred_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "record_kind",
+        "operation_id",
+        "subject_kind",
+        "subject_id",
+        "operation_kind",
+        "operation_sequence",
+        "previous_operation_digest",
+        "lifecycle_authorizer_event_digest",
+        "lease_id",
+        "lease_digest",
+        "capability_digest",
+        "operation_binding",
+        "occurred_at",
+        "writer_identity_digest",
+        "policy_digest",
+        "schema_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "record_kind": {
+          "const": "roi_reproduction_lease_operation_v1"
+        },
+        "operation_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "subject_kind": {
+          "const": "CATALOG_PUBLICATION_SCOPE"
+        },
+        "subject_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation_kind": {
+          "const": "CATALOG_PROVIDER_LEASE_CONSUMED"
+        },
+        "operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lifecycle_authorizer_event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "capability_digest": {
+          "type": "string",
+          "const": "d65100977a8a202894eb5efb334ee8a6242a32900406b3dfb890622b06c161fd"
+        },
+        "operation_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "catalog_publication_scope_id",
+            "catalog_publication_scope_digest",
+            "provider_identity_digest",
+            "dispatch_reservation_digest"
+          ],
+          "properties": {
+            "catalog_publication_scope_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "catalog_publication_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "provider_identity_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "dispatch_reservation_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "occurred_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    }
+  ]
+}

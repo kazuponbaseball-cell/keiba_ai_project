@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_reference_catalog_entry_v1.schema.json",
+  "title": "ROI reproduction reference catalog entry v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "entry_id",
+    "logical_object_id",
+    "content_sha256",
+    "byte_size",
+    "schema_sha256",
+    "row_count",
+    "source_time",
+    "event_time",
+    "received_time",
+    "data_as_of",
+    "upstream_lineage_sha256",
+    "resolved_model_identity",
+    "resolved_input_universe_identity",
+    "snapshot_id",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "entry_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+    },
+    "logical_object_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "byte_size": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "schema_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "row_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "source_time": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_time": {
+      "type": "string",
+      "minLength": 1
+    },
+    "received_time": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data_as_of": {
+      "type": "string",
+      "minLength": 1
+    },
+    "upstream_lineage_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "resolved_model_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resolved_input_universe_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    }
+  }
+}
