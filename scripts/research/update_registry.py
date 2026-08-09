@@ -629,6 +629,9 @@ def main(
         except ValueError as exc:
             parser.error(str(exc))
 
+    if status == "running" and args.execution_kind == "none":
+        parser.error("RUNNING requires --execution-kind synthetic or real-data")
+
     prior_prepare = any(event["status"] == "approved_to_prepare" for event in history)
     prior_run = any(event["status"] == "approved_to_run" for event in history)
     prior_shadow = any(event["status"] == "approved_for_shadow" for event in history)
@@ -641,6 +644,8 @@ def main(
         "run_approval_required",
     }
     running = status == "running"
+    synthetic_running = running and args.execution_kind == "synthetic"
+    real_data_running = running and args.execution_kind == "real-data"
     event: dict[str, Any] = {
         "schema_version": 2,
         "event_id": str(uuid.uuid4()),
@@ -666,8 +671,8 @@ def main(
         "human_run_approval_recorded": run_recorded,
         "human_shadow_approval_recorded": shadow_recorded,
         "preparation_authorized": preparing_allowed,
-        "synthetic_fixture_tests_allowed": preparing_allowed or running,
-        "real_data_execution_allowed": running,
+        "synthetic_fixture_tests_allowed": preparing_allowed or synthetic_running,
+        "real_data_execution_allowed": real_data_running,
         "automatic_execution_allowed": running,
         "execution_authorized": running,
         "production_approved": False,
