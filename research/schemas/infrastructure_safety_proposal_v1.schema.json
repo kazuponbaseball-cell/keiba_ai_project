@@ -1,0 +1,218 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kazuponbaseball-cell/keiba_ai_project/research/schemas/infrastructure_safety_proposal_v1.schema.json",
+  "title": "Research OS Infrastructure Safety Proposal v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "gate_kind",
+    "experiment_id",
+    "title",
+    "change_hypothesis",
+    "null_hypothesis",
+    "safety_objective",
+    "failure_modes",
+    "in_scope",
+    "out_of_scope",
+    "expected_changed_paths",
+    "input_classes",
+    "source_as_of",
+    "lineage_hash_requirements",
+    "test_matrix",
+    "primary_metric",
+    "required_effect",
+    "rejection_gate",
+    "stop_conditions",
+    "compute_budget",
+    "allowed_variant_count",
+    "allowed_threshold_search_count",
+    "base_commit",
+    "gate_policy",
+    "compatibility_contract",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "infrastructure_safety_proposal"},
+        "version": {"const": 1}
+      }
+    },
+    "gate_kind": {"const": "infrastructure_safety_v1"},
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$"
+    },
+    "title": {"$ref": "#/$defs/nonEmptyString"},
+    "change_hypothesis": {"$ref": "#/$defs/nonEmptyString"},
+    "null_hypothesis": {"$ref": "#/$defs/nonEmptyString"},
+    "safety_objective": {"$ref": "#/$defs/nonEmptyString"},
+    "failure_modes": {"$ref": "#/$defs/nonEmptyUniqueStrings"},
+    "in_scope": {"$ref": "#/$defs/nonEmptyUniqueStrings"},
+    "out_of_scope": {"$ref": "#/$defs/nonEmptyUniqueStrings"},
+    "expected_changed_paths": {"$ref": "#/$defs/nonEmptyUniquePaths"},
+    "input_classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "contains": {"const": "synthetic_fixture"},
+      "items": {
+        "enum": ["git_tracked_contract", "synthetic_fixture"]
+      }
+    },
+    "source_as_of": {"$ref": "#/$defs/nonEmptyString"},
+    "lineage_hash_requirements": {"$ref": "#/$defs/nonEmptyUniqueStrings"},
+    "test_matrix": {
+      "type": "array",
+      "minItems": 3,
+      "allOf": [
+        {"contains": {"type": "object", "properties": {"kind": {"const": "positive"}}, "required": ["kind"]}},
+        {"contains": {"type": "object", "properties": {"kind": {"const": "negative"}}, "required": ["kind"]}},
+        {"contains": {"type": "object", "properties": {"kind": {"const": "backward_compatibility"}}, "required": ["kind"]}}
+      ],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["test_id", "kind", "assertion"],
+        "properties": {
+          "test_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$"
+          },
+          "kind": {
+            "enum": ["positive", "negative", "backward_compatibility"]
+          },
+          "assertion": {"$ref": "#/$defs/nonEmptyString"}
+        }
+      }
+    },
+    "primary_metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "direction", "required_value"],
+      "properties": {
+        "name": {"const": "pre_registered_infrastructure_contract_pass_fraction"},
+        "direction": {"const": "higher_is_better"},
+        "required_value": {"const": 1.0}
+      }
+    },
+    "required_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "all_pre_registered_tests_pass",
+        "external_api_calls",
+        "network_calls",
+        "real_data_rows",
+        "roi_calculations",
+        "production_changes",
+        "buy_order_notification_side_effects"
+      ],
+      "properties": {
+        "all_pre_registered_tests_pass": {"const": true},
+        "external_api_calls": {"const": 0},
+        "network_calls": {"const": 0},
+        "real_data_rows": {"const": 0},
+        "roi_calculations": {"const": 0},
+        "production_changes": {"const": 0},
+        "buy_order_notification_side_effects": {"const": 0}
+      }
+    },
+    "rejection_gate": {"$ref": "#/$defs/nonEmptyUniqueStrings"},
+    "stop_conditions": {"$ref": "#/$defs/nonEmptyUniqueStrings"},
+    "compute_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximum_runtime_minutes",
+        "network_calls",
+        "external_api_calls",
+        "real_data_rows",
+        "random_seed"
+      ],
+      "properties": {
+        "maximum_runtime_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60
+        },
+        "network_calls": {"const": 0},
+        "external_api_calls": {"const": 0},
+        "real_data_rows": {"const": 0},
+        "random_seed": {"type": "integer"}
+      }
+    },
+    "allowed_variant_count": {"const": 1},
+    "allowed_threshold_search_count": {"const": 0},
+    "base_commit": {"$ref": "#/$defs/gitSha"},
+    "gate_policy": {
+      "allOf": [
+        {"$ref": "#/$defs/manifestRef"},
+        {"type": "object", "properties": {"path": {"const": "research/INFRASTRUCTURE_GATE.json"}}}
+      ]
+    },
+    "compatibility_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "legacy_roi_proposal_digest_unchanged",
+        "legacy_queue_schema_v2_readable",
+        "legacy_event_schema_v2_readable"
+      ],
+      "properties": {
+        "legacy_roi_proposal_digest_unchanged": {"const": true},
+        "legacy_queue_schema_v2_readable": {"const": true},
+        "legacy_event_schema_v2_readable": {"const": true}
+      }
+    },
+    "formal_buy": {"const": false},
+    "send_order": {"const": false},
+    "stake": {"const": 0}
+  },
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nonEmptyUniqueStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/nonEmptyString"}
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*[. ](?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "nonEmptyUniquePaths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/repositoryPath"}
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "manifestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repositoryPath"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    }
+  }
+}

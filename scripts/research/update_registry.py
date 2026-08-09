@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Callable
 
@@ -26,7 +27,23 @@ from scope_contract import (  # noqa: E402
     load_frozen_run_scope,
     proposal_score_total,
     strict_json_load,
+    strict_json_loads,
     verify_run_materials,
+)
+from infrastructure_safety_contract import (  # noqa: E402
+    EVENT_SCHEMA_VERSION as INFRASTRUCTURE_EVENT_SCHEMA_VERSION,
+    GATE_KIND as INFRASTRUCTURE_GATE_KIND,
+    load_gate_policy,
+    normalize_gate_policy,
+    normalize_infrastructure_event,
+    normalize_infrastructure_proposal,
+    normalize_infrastructure_queue,
+    normalize_infrastructure_run_scope,
+    reject_linked_repository_path,
+    strict_json_load as strict_infrastructure_json_load,
+    strict_json_loads as strict_infrastructure_json_loads,
+    verify_infrastructure_commit_diff,
+    verify_infrastructure_run_materials,
 )
 from github_approval import (  # noqa: E402
     COMMENT_EVIDENCE_FIELDS,
@@ -34,9 +51,12 @@ from github_approval import (  # noqa: E402
     DEFAULT_REPOSITORY,
     GitHubApprovalProvider,
     GitHubRestApprovalProvider,
+    fetch_github_file_at_commit,
     reverify_same_approval as reverify_github_approval,
     utc_now,
     verify_approval_comment,
+    verify_github_file_at_commit,
+    verify_github_main_head_unchanged,
     verify_github_trust,
 )
 
@@ -83,6 +103,7 @@ PRIOR_APPROVAL_GRANTS_BY_STATUS = {
 GITHUB_APPROVAL_CHECK_STATUSES = APPROVAL_GRANT_STATUSES | frozenset(
     PRIOR_APPROVAL_GRANTS_BY_STATUS
 )
+MAIN_REGISTRY_CHECK_STATUSES = frozenset(ALLOWED_STATUSES)
 PROHIBITED_STATUS_HINT = "production/merge/BUY approval is outside this registry's authority"
 
 
@@ -96,6 +117,42 @@ def normalize_status(value: str) -> str:
 
 def resolve_from_root(root: Path, value: Path) -> Path:
     return value if value.is_absolute() else root / value
+
+
+@contextmanager
+def exclusive_registry_handle(path: Path):
+    """Hold an exclusive process lock for a compare-and-append operation."""
+
+    handle = path.open("a+b")
+    lock_length = max(1, os.fstat(handle.fileno()).st_size)
+    try:
+        if os.name == "nt":
+            import msvcrt
+
+            handle.seek(0)
+            msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, lock_length)
+        else:
+            import fcntl
+
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError as exc:
+        handle.close()
+        raise ValueError("research registry is locked by another writer; retry") from exc
+    try:
+        yield handle
+    finally:
+        try:
+            if os.name == "nt":
+                import msvcrt
+
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, lock_length)
+            else:
+                import fcntl
+
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        finally:
+            handle.close()
 
 
 def current_commit(root: Path) -> str:
@@ -186,6 +243,78 @@ def load_queue(
     return payload, proposal_scope, proposal_digest, components, total
 
 
+def load_queue_context(path: Path, root: Path, experiment_id: str) -> dict[str, Any]:
+    """Load legacy ROI queue v2 or explicit infrastructure queue v3."""
+
+    if not path.is_file():
+        raise ValueError(f"queue record not found: {path}")
+    payload = strict_json_load(path)
+    if not isinstance(payload, dict):
+        raise ValueError(f"queue record must be a JSON object: {path}")
+    schema_version = payload.get("schema_version")
+    if schema_version == 2:
+        queue, proposal, digest, components, total = load_queue(
+            path, root, experiment_id
+        )
+        return {
+            "gate_kind": "roi_research_v1",
+            "queue": queue,
+            "proposal_scope": proposal,
+            "proposal_scope_digest": digest,
+            "score_components": components,
+            "score_total": total,
+            "score_threshold": RUN_SCORE_THRESHOLD,
+            "policy": None,
+            "policy_sha256": None,
+        }
+    if schema_version != 3:
+        raise ValueError("queue schema_version must be 2 or 3")
+    if payload.get("gate_kind") != INFRASTRUCTURE_GATE_KIND:
+        raise ValueError("queue schema v3 is reserved for infrastructure_safety_v1")
+    expected_queue_path = root / "research" / "queue" / f"{experiment_id}.json"
+    if path.resolve() != expected_queue_path.resolve():
+        raise ValueError(
+            "infrastructure queue must use its code-owned lifecycle path: "
+            f"{expected_queue_path.relative_to(root).as_posix()}"
+        )
+
+    policy_path = root / "research" / "INFRASTRUCTURE_GATE.json"
+    policy, policy_sha256 = load_gate_policy(policy_path)
+    queue = normalize_infrastructure_queue(
+        payload,
+        policy=policy,
+        policy_sha256=policy_sha256,
+    )
+    if queue["experiment_id"] != experiment_id:
+        raise ValueError(
+            f"queue experiment_id mismatch: expected {experiment_id!r}, "
+            f"found {queue['experiment_id']!r}"
+        )
+    proposal_path = resolve_from_root(root, Path(queue["proposal_scope_file"]))
+    proposal = normalize_infrastructure_proposal(
+        strict_infrastructure_json_load(proposal_path),
+        policy=policy,
+        policy_sha256=policy_sha256,
+        expected_experiment_id=experiment_id,
+    )
+    if proposal != queue["proposal_scope"]:
+        raise ValueError("queue proposal_scope differs from canonical infrastructure scope")
+    digest = canonical_digest(proposal)
+    if digest != queue["proposal_scope_digest"]:
+        raise ValueError("infrastructure proposal scope changed after queue creation")
+    return {
+        "gate_kind": INFRASTRUCTURE_GATE_KIND,
+        "queue": queue,
+        "proposal_scope": proposal,
+        "proposal_scope_digest": digest,
+        "score_components": None,
+        "score_total": None,
+        "score_threshold": None,
+        "policy": policy,
+        "policy_sha256": policy_sha256,
+    }
+
+
 def load_events(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
@@ -195,9 +324,9 @@ def load_events(path: Path) -> list[dict[str, Any]]:
             if not raw.strip():
                 continue
             try:
-                event = json.loads(raw)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"invalid JSONL at {path}:{line_number}: {exc.msg}") from exc
+                event = strict_json_loads(raw, source=f"{path}:{line_number}")
+            except ValueError as exc:
+                raise ValueError(f"invalid JSONL at {path}:{line_number}: {exc}") from exc
             if not isinstance(event, dict):
                 raise ValueError(f"registry event at {path}:{line_number} is not an object")
             if not isinstance(event.get("experiment_id"), str) or not isinstance(
@@ -208,6 +337,94 @@ def load_events(path: Path) -> list[dict[str, Any]]:
                 )
             events.append(event)
     return events
+
+
+def _canonical_registry_bytes(content: bytes, *, label: str) -> bytes:
+    normalized = content.replace(b"\r\n", b"\n")
+    if b"\r" in normalized:
+        raise ValueError(f"{label} contains a bare carriage return; fail-close")
+    if normalized and not normalized.endswith(b"\n"):
+        raise ValueError(f"{label} is not newline-terminated JSONL; fail-close")
+    return normalized
+
+
+def verify_current_main_registry_exact(
+    *,
+    remote_content: bytes,
+    local_snapshot: bytes,
+) -> None:
+    remote = _canonical_registry_bytes(
+        remote_content,
+        label="GitHub current-main registry",
+    )
+    local = _canonical_registry_bytes(
+        local_snapshot,
+        label="local research registry",
+    )
+    if local != remote:
+        raise ValueError(
+            "local research registry must exactly equal the GitHub current-main "
+            "registry before creating one pending transition; refresh main and retry"
+        )
+
+
+def validate_registry_event_chains(events: list[dict[str, Any]]) -> None:
+    """Reject duplicate identities and broken per-experiment append-only chains."""
+
+    seen_event_ids: set[str] = set()
+    latest_by_experiment: dict[str, dict[str, Any]] = {}
+    for index, event in enumerate(events, start=1):
+        event_id = event.get("event_id")
+        if not isinstance(event_id, str) or not event_id.strip():
+            raise ValueError(f"registry event {index} has an invalid event_id")
+        if event_id in seen_event_ids:
+            raise ValueError(f"registry contains duplicate event_id {event_id!r}")
+        seen_event_ids.add(event_id)
+
+        experiment_id = event["experiment_id"]
+        sequence = event.get("sequence")
+        if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence <= 0:
+            raise ValueError(f"registry event {event_id} has an invalid sequence")
+        previous = latest_by_experiment.get(experiment_id)
+        status = normalize_status(str(event.get("status", "")))
+        if status not in ALLOWED_STATUSES:
+            raise ValueError(f"registry event {event_id} has an unknown status")
+        if previous is None:
+            if sequence != 1:
+                raise ValueError(f"registry history for {experiment_id} must start at sequence 1")
+            if event.get("previous_event_id") is not None or event.get("previous_status") is not None:
+                raise ValueError(f"first registry event for {experiment_id} must not have a predecessor")
+            if status not in TRANSITIONS[None]:
+                raise ValueError(
+                    f"registry history for {experiment_id} starts with an invalid status"
+                )
+        else:
+            if sequence != previous["sequence"] + 1:
+                raise ValueError(f"registry sequence is not contiguous for {experiment_id}")
+            if event.get("previous_event_id") != previous["event_id"]:
+                raise ValueError(f"registry previous_event_id chain is broken for {experiment_id}")
+            if normalize_status(str(event.get("previous_status", ""))) != normalize_status(
+                str(previous["status"])
+            ):
+                raise ValueError(f"registry previous_status chain is broken for {experiment_id}")
+            previous_status = normalize_status(str(previous["status"]))
+            if previous_status not in TRANSITIONS or status not in TRANSITIONS[previous_status]:
+                raise ValueError(
+                    f"registry contains an invalid historical transition for {experiment_id}: "
+                    f"{previous_status} -> {status}"
+                )
+        latest_by_experiment[experiment_id] = event
+
+
+def contains_unbound_legacy_real_data_running(events: list[dict[str, Any]]) -> bool:
+    """Detect v2 real-data RUNNING history that predates execution-kind binding."""
+
+    return any(
+        event.get("schema_version") == 2
+        and normalize_status(str(event.get("status", ""))) == "running"
+        and event.get("execution_kind") == "real-data"
+        for event in events
+    )
 
 
 def validate_approval_grant_history(events: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
@@ -351,7 +568,8 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Append one fail-closed Research OS lifecycle event. Human approval "
             "comes only from a verified GitHub Issue comment; caller flags and "
-            "actor strings cannot grant approval."
+            "actor strings cannot grant approval. Infrastructure schema-v3 output "
+            "is pending evidence only and never grants preparation or execution authority."
         )
     )
     parser.add_argument("experiment_id", help="Existing experiment queue identifier.")
@@ -406,6 +624,9 @@ def main(
     approval_provider: GitHubApprovalProvider | None = None,
     execution_commit_provider: Callable[[Path], str] = current_commit,
     execution_worktree_verifier: Callable[[Path, set[str]], None] = verify_execution_worktree,
+    infrastructure_diff_verifier: Callable[[Path, dict[str, Any]], Any] = (
+        verify_infrastructure_commit_diff
+    ),
 ) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
@@ -434,21 +655,94 @@ def main(
 
     root = args.root.resolve()
     registry_path = resolve_from_root(root, args.registry)
+    expected_registry_path = root / "research" / "REGISTRY.jsonl"
+    try:
+        reject_linked_repository_path(root, registry_path, "research registry")
+    except ValueError as exc:
+        parser.error(str(exc))
+    if registry_path.absolute() != expected_registry_path.absolute():
+        parser.error("--registry must be the code-owned research/REGISTRY.jsonl ledger")
+    try:
+        registry_snapshot = registry_path.read_bytes() if registry_path.exists() else b""
+    except OSError as exc:
+        parser.error(f"cannot snapshot research registry: {exc}")
     queue_path = (
         resolve_from_root(root, args.queue_file)
         if args.queue_file is not None
         else root / "research" / "queue" / f"{experiment_id}.json"
     )
     try:
-        queue, proposal_scope, proposal_digest, components, total = load_queue(
-            queue_path, root, experiment_id
-        )
+        queue_context = load_queue_context(queue_path, root, experiment_id)
+        queue = queue_context["queue"]
+        proposal_scope = queue_context["proposal_scope"]
+        proposal_digest = queue_context["proposal_scope_digest"]
+        components = queue_context["score_components"]
+        total = queue_context["score_total"]
+        gate_kind = queue_context["gate_kind"]
+        infrastructure_policy = queue_context["policy"]
+        infrastructure_policy_sha256 = queue_context["policy_sha256"]
         events = load_events(registry_path)
+        validate_registry_event_chains(events)
         validate_approval_grant_history(events)
     except ValueError as exc:
         parser.error(str(exc))
 
     history = [event for event in events if event["experiment_id"] == experiment_id]
+    infrastructure_gate = gate_kind == INFRASTRUCTURE_GATE_KIND
+    if infrastructure_gate:
+        assert infrastructure_policy is not None
+        try:
+            history = [
+                normalize_infrastructure_event(event, policy=infrastructure_policy)
+                for event in history
+            ]
+        except ValueError as exc:
+            parser.error(str(exc))
+        historical_policy_evidence = [
+            event["gate_policy_evidence"]
+            for event in history
+            if event["gate_policy_evidence"] is not None
+        ]
+        if any(
+            evidence["ref"] != proposal_scope["base_commit"]
+            or evidence["content_sha256"]
+            != proposal_scope["gate_policy"]["sha256"]
+            for evidence in historical_policy_evidence
+        ):
+            parser.error(
+                "infrastructure gate policy evidence is not bound to the proposal base/hash"
+            )
+        if historical_policy_evidence and any(
+            evidence != historical_policy_evidence[0]
+            for evidence in historical_policy_evidence[1:]
+        ):
+            parser.error(
+                "infrastructure gate policy evidence changed within the registry chain"
+            )
+        inherited_gate_policy_evidence = (
+            historical_policy_evidence[-1] if historical_policy_evidence else None
+        )
+    elif any(event.get("gate_kind") == INFRASTRUCTURE_GATE_KIND for event in history):
+        parser.error("registry gate profile differs from the queue profile")
+    else:
+        inherited_gate_policy_evidence = None
+    inherited_main_registry_evidence = next(
+        (
+            event.get("main_registry_evidence")
+            for event in reversed(history)
+            if isinstance(event.get("main_registry_evidence"), dict)
+        ),
+        None,
+    )
+    if (
+        not infrastructure_gate
+        and contains_unbound_legacy_real_data_running(history)
+        and status != "invalid"
+    ):
+        parser.error(
+            "legacy ROI history contains unbound real-data RUNNING; "
+            "only INVALID is permitted"
+        )
     previous = history[-1] if history else None
     previous_status = normalize_status(str(previous["status"])) if previous else None
     if previous_status not in TRANSITIONS:
@@ -458,13 +752,32 @@ def main(
             f"invalid transition for {experiment_id}: {previous_status or '<none>'} -> {status}"
         )
 
-    threshold_met = total >= RUN_SCORE_THRESHOLD
-    if status == "blocked_score" and threshold_met:
-        parser.error("BLOCKED_SCORE is invalid because score meets the threshold")
-    if status == "proposed" and not threshold_met:
-        parser.error("PROPOSED is invalid because score is below the threshold")
-    if status not in {"blocked_score", "invalid"} and not threshold_met:
-        parser.error(f"{status.upper()} requires score >= {RUN_SCORE_THRESHOLD}")
+    if infrastructure_gate:
+        if status == "blocked_score":
+            parser.error("infrastructure safety proposals use hard gates, not BLOCKED_SCORE")
+        if status == "approved_for_shadow":
+            parser.error("infrastructure safety lifecycle does not support shadow approval")
+        if args.execution_kind == "real-data":
+            parser.error("infrastructure safety lifecycle is synthetic-only")
+        if status != "running" and args.execution_kind != "none":
+            parser.error(
+                "infrastructure execution kind is none outside the synthetic RUNNING state"
+            )
+        threshold_met = True
+    else:
+        assert isinstance(total, int)
+        if status == "running" and args.execution_kind == "real-data":
+            parser.error(
+                "legacy ROI run scope does not bind execution_kind; real-data "
+                "execution is fail-closed until a versioned run contract binds it"
+            )
+        threshold_met = total >= RUN_SCORE_THRESHOLD
+        if status == "blocked_score" and threshold_met:
+            parser.error("BLOCKED_SCORE is invalid because score meets the threshold")
+        if status == "proposed" and not threshold_met:
+            parser.error("PROPOSED is invalid because score is below the threshold")
+        if status not in {"blocked_score", "invalid"} and not threshold_met:
+            parser.error(f"{status.upper()} requires score >= {RUN_SCORE_THRESHOLD}")
 
     prior_scope_digests = {
         event.get("proposal_scope_digest")
@@ -474,11 +787,30 @@ def main(
     if status != "invalid" and prior_scope_digests and prior_scope_digests != {proposal_digest}:
         parser.error("proposal scope changed after approval; use a new experiment ID or reapproval")
 
+    if status in APPROVAL_GRANT_STATUSES:
+        missing_evidence_messages = {
+            "approved_to_prepare": "APPROVED_TO_PREPARE requires GitHub Issue comment evidence",
+            "approved_to_run": "APPROVED_TO_RUN requires GitHub Issue comment evidence",
+            "approved_for_shadow": (
+                "APPROVED_FOR_SHADOW requires separate GitHub Issue comment evidence"
+            ),
+        }
+        if args.issue_number is None or args.approval_comment_id is None:
+            parser.error(missing_evidence_messages[status])
+        try:
+            ensure_approval_comment_id_unused(events, args.approval_comment_id)
+        except ValueError as exc:
+            parser.error(str(exc))
+
     provider = approval_provider or GitHubRestApprovalProvider()
     base_commit = proposal_scope["base_commit"]
     allowlist: dict[str, Any] | None = None
     github_trust_evidence: dict[str, Any] | None = None
-    if status in GITHUB_APPROVAL_CHECK_STATUSES:
+    gate_policy_evidence: dict[str, Any] | None = inherited_gate_policy_evidence
+    main_registry_evidence: dict[str, Any] | None = (
+        inherited_main_registry_evidence
+    )
+    if status in MAIN_REGISTRY_CHECK_STATUSES:
         try:
             allowlist, github_trust_evidence = verify_github_trust(
                 provider=provider,
@@ -486,6 +818,52 @@ def main(
                 base_branch=args.github_base_branch,
                 base_commit=base_commit,
             )
+            remote_registry, main_registry_evidence = fetch_github_file_at_commit(
+                provider=provider,
+                repository=args.github_repository,
+                path="research/REGISTRY.jsonl",
+                ref=github_trust_evidence["verified_current_main_sha"],
+            )
+            verify_current_main_registry_exact(
+                remote_content=remote_registry,
+                local_snapshot=registry_snapshot,
+            )
+            if infrastructure_gate and status in GITHUB_APPROVAL_CHECK_STATUSES:
+                assert infrastructure_policy is not None
+                policy_content, refreshed_gate_policy_evidence = (
+                    verify_github_file_at_commit(
+                        provider=provider,
+                        repository=args.github_repository,
+                        path="research/INFRASTRUCTURE_GATE.json",
+                        ref=base_commit,
+                        expected_content_sha256=proposal_scope["gate_policy"]["sha256"],
+                    )
+                )
+                if (
+                    gate_policy_evidence is not None
+                    and refreshed_gate_policy_evidence != gate_policy_evidence
+                ):
+                    raise ValueError(
+                        "GitHub base-commit infrastructure gate policy evidence changed; "
+                        "fail-close"
+                    )
+                gate_policy_evidence = refreshed_gate_policy_evidence
+                try:
+                    remote_policy = normalize_gate_policy(
+                        strict_infrastructure_json_loads(
+                            policy_content.decode("utf-8"),
+                            label="GitHub base-commit infrastructure gate policy",
+                        )
+                    )
+                except (UnicodeDecodeError, ValueError) as exc:
+                    raise ValueError(
+                        "GitHub base-commit infrastructure gate policy is invalid; fail-close"
+                    ) from exc
+                if remote_policy != infrastructure_policy:
+                    raise ValueError(
+                        "GitHub base-commit infrastructure gate policy differs from local "
+                        "hash-bound policy; fail-close"
+                    )
         except ValueError as exc:
             parser.error(str(exc))
     approval_evidence: dict[str, Any] | None = None
@@ -495,7 +873,14 @@ def main(
     run_scope_path: Path | None = None
     review_digest: str | None = None
 
-    if status in {"run_approval_required", "approved_to_run", "running"}:
+    run_scope_required = status in {
+        "run_approval_required",
+        "approved_to_run",
+        "running",
+    } or (
+        infrastructure_gate and status in {"review_required", "rejected"}
+    )
+    if run_scope_required:
         path_from_history = next(
             (
                 event.get("run_scope_file")
@@ -513,10 +898,29 @@ def main(
                 else root / "research" / "scopes" / f"{experiment_id}.run.json"
             )
         )
-        try:
-            run_scope, run_scope_digest = load_frozen_run_scope(
-                root, run_scope_path, proposal_scope
+        if infrastructure_gate:
+            expected_run_scope_path = (
+                root / "research" / "scopes" / f"{experiment_id}.run.json"
             )
+            if run_scope_path.resolve() != expected_run_scope_path.resolve():
+                parser.error(
+                    "infrastructure run scope must use its code-owned lifecycle path: "
+                    f"research/scopes/{experiment_id}.run.json"
+                )
+        try:
+            if infrastructure_gate:
+                assert infrastructure_policy is not None
+                run_scope = normalize_infrastructure_run_scope(
+                    strict_infrastructure_json_load(run_scope_path),
+                    proposal_scope=proposal_scope,
+                    policy=infrastructure_policy,
+                    policy_sha256=infrastructure_policy_sha256,
+                )
+                run_scope_digest = canonical_digest(run_scope)
+            else:
+                run_scope, run_scope_digest = load_frozen_run_scope(
+                    root, run_scope_path, proposal_scope
+                )
             prior_run_digests = {
                 event.get("run_scope_digest")
                 for event in history
@@ -532,7 +936,11 @@ def main(
                     "execution commit SHA changed after run scope freeze: "
                     f"{run_scope['execution_commit_sha']} != {observed_commit}"
                 )
-            verify_run_materials(root, run_scope)
+            if infrastructure_gate:
+                verify_infrastructure_run_materials(root, run_scope)
+                infrastructure_diff_verifier(root, run_scope)
+            else:
+                verify_run_materials(root, run_scope)
             allowed_dirty_paths = {
                 "research/REGISTRY.jsonl",
                 queue.get("proposal_scope_file", ""),
@@ -540,14 +948,15 @@ def main(
                 str(queue_path.relative_to(root).as_posix()),
                 str(run_scope_path.relative_to(root).as_posix()),
             }
-            for field in ("config_hashes", "data_input_manifest_hashes"):
-                allowed_dirty_paths.update(item["path"] for item in run_scope[field])
-            for field in (
-                "fold_manifest_hash",
-                "runner_universe_manifest_hash",
-                "dependency_environment_manifest",
-            ):
-                allowed_dirty_paths.add(run_scope[field]["path"])
+            if not infrastructure_gate:
+                for field in ("config_hashes", "data_input_manifest_hashes"):
+                    allowed_dirty_paths.update(item["path"] for item in run_scope[field])
+                for field in (
+                    "fold_manifest_hash",
+                    "runner_universe_manifest_hash",
+                    "dependency_environment_manifest",
+                ):
+                    allowed_dirty_paths.add(run_scope[field]["path"])
             execution_worktree_verifier(root, allowed_dirty_paths)
         except ValueError as exc:
             parser.error(str(exc))
@@ -556,21 +965,6 @@ def main(
         review_digest = (args.review_digest or "").strip().lower()
         if not FULL_SHA256.fullmatch(review_digest):
             parser.error("APPROVED_FOR_SHADOW requires a full --review-digest")
-
-    if status in APPROVAL_GRANT_STATUSES:
-        missing_evidence_messages = {
-            "approved_to_prepare": "APPROVED_TO_PREPARE requires GitHub Issue comment evidence",
-            "approved_to_run": "APPROVED_TO_RUN requires GitHub Issue comment evidence",
-            "approved_for_shadow": (
-                "APPROVED_FOR_SHADOW requires separate GitHub Issue comment evidence"
-            ),
-        }
-        if args.issue_number is None or args.approval_comment_id is None:
-            parser.error(missing_evidence_messages[status])
-        try:
-            ensure_approval_comment_id_unused(events, args.approval_comment_id)
-        except ValueError as exc:
-            parser.error(str(exc))
 
     if status in PRIOR_APPROVAL_GRANTS_BY_STATUS:
         if allowlist is None:
@@ -630,7 +1024,19 @@ def main(
             parser.error(str(exc))
 
     if status == "running" and args.execution_kind == "none":
-        parser.error("RUNNING requires --execution-kind synthetic or real-data")
+        parser.error("RUNNING requires --execution-kind synthetic")
+    if (
+        infrastructure_gate
+        and status == "running"
+        and (
+            run_scope is None
+            or args.execution_kind != run_scope.get("execution_kind")
+            or args.execution_kind != "synthetic"
+        )
+    ):
+        parser.error(
+            "infrastructure RUNNING execution kind must match the frozen synthetic run scope"
+        )
 
     prior_prepare = any(event["status"] == "approved_to_prepare" for event in history)
     prior_run = any(event["status"] == "approved_to_run" for event in history)
@@ -646,51 +1052,132 @@ def main(
     running = status == "running"
     synthetic_running = running and args.execution_kind == "synthetic"
     real_data_running = running and args.execution_kind == "real-data"
-    event: dict[str, Any] = {
-        "schema_version": 2,
-        "event_id": str(uuid.uuid4()),
-        "sequence": len(history) + 1,
-        "experiment_id": experiment_id,
-        "status": status,
-        "previous_status": previous_status,
-        "previous_event_id": previous.get("event_id") if previous else None,
-        "occurred_at": utc_now(),
-        "actor": actor,
-        "score_components": components,
-        "score_total": total,
-        "score_threshold": RUN_SCORE_THRESHOLD,
-        "score_threshold_met": threshold_met,
-        "proposal_scope_digest": proposal_digest,
-        "github_trust_evidence": github_trust_evidence,
-        "run_scope_digest": run_scope_digest,
-        "review_digest": review_digest,
-        "approval_evidence": approval_evidence,
-        "revalidated_approval_evidence": revalidated_approval_evidence,
-        "human_approved": approval_evidence is not None or bool(revalidated_approval_evidence),
-        "human_prepare_approval_recorded": prepare_recorded,
-        "human_run_approval_recorded": run_recorded,
-        "human_shadow_approval_recorded": shadow_recorded,
-        "preparation_authorized": preparing_allowed,
-        "synthetic_fixture_tests_allowed": preparing_allowed or synthetic_running,
-        "real_data_execution_allowed": real_data_running,
-        "automatic_execution_allowed": running,
-        "execution_authorized": running,
-        "production_approved": False,
-        "merge_approved": False,
-        "buy_approved": False,
-        "production_change_allowed": False,
-        "merge_allowed": False,
-        "buy_logic_change_allowed": False,
-        "formal_buy": False,
-        "send_order": False,
-        "stake": 0,
-        "execution_kind": args.execution_kind,
-        "artifacts": artifacts,
-        "notes": args.notes.strip(),
-        "queue_file": str(queue_path),
-        "run_scope_file": str(run_scope_path) if run_scope_path is not None else None,
-    }
+    if infrastructure_gate:
+        assert infrastructure_policy is not None
+        event = normalize_infrastructure_event(
+            {
+                "schema_version": INFRASTRUCTURE_EVENT_SCHEMA_VERSION,
+                "event_id": str(uuid.uuid4()),
+                "sequence": len(history) + 1,
+                "experiment_id": experiment_id,
+                "gate_kind": INFRASTRUCTURE_GATE_KIND,
+                "gate_contract_version": 1,
+                "status": status,
+                "previous_status": previous_status,
+                "previous_event_id": previous.get("event_id") if previous else None,
+                "occurred_at": utc_now(),
+                "actor": actor,
+                "gate_evaluation": queue["gate_evaluation"],
+                "proposal_scope_digest": proposal_digest,
+                "run_scope_digest": run_scope_digest,
+                "github_trust_evidence": github_trust_evidence,
+                "gate_policy_evidence": gate_policy_evidence,
+                "main_registry_evidence": (
+                    None if status == "proposed" else main_registry_evidence
+                ),
+                "approval_evidence": approval_evidence,
+                "revalidated_approval_evidence": revalidated_approval_evidence,
+                "human_approved": approval_evidence is not None
+                or bool(revalidated_approval_evidence),
+                "human_prepare_approval_recorded": prepare_recorded,
+                "human_run_approval_recorded": run_recorded,
+                # Schema-v3 events are local pending candidates until the exact
+                # bytes are human-merged into GitHub current main.  No worktree
+                # event grants preparation or execution authority by itself.
+                "preparation_authorized": False,
+                "synthetic_fixture_tests_allowed": False,
+                "real_data_execution_allowed": False,
+                "automatic_execution_allowed": False,
+                "execution_authorized": False,
+                "production_approved": False,
+                "merge_approved": False,
+                "buy_approved": False,
+                "production_change_allowed": False,
+                "merge_allowed": False,
+                "buy_logic_change_allowed": False,
+                "formal_buy": False,
+                "send_order": False,
+                "stake": 0,
+                "execution_kind": args.execution_kind,
+                "artifacts": artifacts,
+                "notes": args.notes.strip(),
+                "queue_file": queue_path.relative_to(root).as_posix(),
+                "run_scope_file": (
+                    run_scope_path.relative_to(root).as_posix()
+                    if run_scope_path is not None
+                    else None
+                ),
+            },
+            policy=infrastructure_policy,
+        )
+    else:
+        event = {
+            "schema_version": 2,
+            "event_id": str(uuid.uuid4()),
+            "sequence": len(history) + 1,
+            "experiment_id": experiment_id,
+            "status": status,
+            "previous_status": previous_status,
+            "previous_event_id": previous.get("event_id") if previous else None,
+            "occurred_at": utc_now(),
+            "actor": actor,
+            "score_components": components,
+            "score_total": total,
+            "score_threshold": RUN_SCORE_THRESHOLD,
+            "score_threshold_met": threshold_met,
+            "proposal_scope_digest": proposal_digest,
+            "github_trust_evidence": github_trust_evidence,
+            "run_scope_digest": run_scope_digest,
+            "review_digest": review_digest,
+            "approval_evidence": approval_evidence,
+            "revalidated_approval_evidence": revalidated_approval_evidence,
+            "human_approved": approval_evidence is not None
+            or bool(revalidated_approval_evidence),
+            "human_prepare_approval_recorded": prepare_recorded,
+            "human_run_approval_recorded": run_recorded,
+            "human_shadow_approval_recorded": shadow_recorded,
+            "preparation_authorized": preparing_allowed,
+            "synthetic_fixture_tests_allowed": preparing_allowed or synthetic_running,
+            "real_data_execution_allowed": real_data_running,
+            "automatic_execution_allowed": running,
+            "execution_authorized": running,
+            "production_approved": False,
+            "merge_approved": False,
+            "buy_approved": False,
+            "production_change_allowed": False,
+            "merge_allowed": False,
+            "buy_logic_change_allowed": False,
+            "formal_buy": False,
+            "send_order": False,
+            "stake": 0,
+            "execution_kind": args.execution_kind,
+            "artifacts": artifacts,
+            "notes": args.notes.strip(),
+            "queue_file": str(queue_path),
+            "run_scope_file": str(run_scope_path) if run_scope_path is not None else None,
+        }
+    line = (
+        json.dumps(
+            event,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+        + b"\n"
+    )
+    if github_trust_evidence is None:
+        parser.error("GitHub current-main evidence is required for every transition")
+    verified_current_main_sha = github_trust_evidence["verified_current_main_sha"]
     if args.dry_run:
+        try:
+            verify_github_main_head_unchanged(
+                provider=provider,
+                repository=args.github_repository,
+                base_branch=args.github_base_branch,
+                expected_sha=verified_current_main_sha,
+            )
+        except ValueError as exc:
+            parser.error(str(exc))
         print(
             json.dumps(
                 {"dry_run": True, "registry": str(registry_path), "event": event},
@@ -701,16 +1188,33 @@ def main(
         return 0
 
     registry_path.parent.mkdir(parents=True, exist_ok=True)
-    line = json.dumps(
-        event,
-        ensure_ascii=False,
-        separators=(",", ":"),
-        allow_nan=False,
-    ) + "\n"
-    with registry_path.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(line)
-        handle.flush()
-        os.fsync(handle.fileno())
+    try:
+        with exclusive_registry_handle(registry_path) as handle:
+            reject_linked_repository_path(root, registry_path, "research registry")
+            handle.seek(0)
+            if handle.read() != registry_snapshot:
+                raise ValueError(
+                    "research registry changed during verification; fail-close and retry"
+                )
+            verify_github_main_head_unchanged(
+                provider=provider,
+                repository=args.github_repository,
+                base_branch=args.github_base_branch,
+                expected_sha=verified_current_main_sha,
+            )
+            reject_linked_repository_path(root, registry_path, "research registry")
+            handle.seek(0)
+            if handle.read() != registry_snapshot:
+                raise ValueError(
+                    "research registry changed during GitHub head recheck; "
+                    "fail-close and retry"
+                )
+            handle.seek(0, os.SEEK_END)
+            handle.write(line)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except ValueError as exc:
+        parser.error(str(exc))
     print(
         json.dumps(
             {"appended": True, "registry": str(registry_path), "event": event},
