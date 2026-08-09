@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "mode": "research_preparation_only",
+  "strategy_schema": "research/schemas/gpt_strategy_proposal_v1.schema.json",
+  "registry": "research/REGISTRY.jsonl",
+  "proposal_directory": "research/scopes",
+  "dispatch_directory": "research/dispatch",
+  "feedback_directory": "research/feedback",
+  "allowed_variant_count": 1,
+  "allowed_threshold_search_count": 0,
+  "external_api_calls": false,
+  "actual_codex_dispatch": false,
+  "real_data_execution": false,
+  "production_change": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-030",
+  "execution_commit_sha": "4de0cd33e0d79bcb308865a488b895ab37353198",
+  "proposal_scope_digest": "890a242b6a14485e233473c96342cfbe66ff3f09178f546a50f2d37f93ab3610",
+  "run_scope_digest": "8ef37a63b165c7d1b41b65a3a331c311bfe5957b659921317ca1128d2322bd31",
+  "execution_kind": "synthetic",
+  "decision": "PASS_SYNTHETIC_CONTRACT",
+  "primary_metric": {
+    "name": "pre_registered_orchestration_contract_pass_fraction",
+    "passed": 14,
+    "total": 14,
+    "value": 1.0
+  },
+  "verification": {
+    "gpt_codex_contract_tests": {
+      "passed": 14,
+      "failed": 0
+    },
+    "research_os_test_suite": {
+      "passed": 84,
+      "failed": 0
+    },
+    "python_compile_ok": true,
+    "strategy_schema_json_ok": true,
+    "example_config_json_ok": true
+  },
+  "safety_observations": {
+    "actual_codex_dispatches": 0,
+    "external_api_calls": 0,
+    "formal_buy": false,
+    "notification_side_effects": 0,
+    "production_changes": 0,
+    "purchase_path_accesses": 0,
+    "real_data_rows": 0,
+    "roi_calculations": 0,
+    "send_order": false,
+    "stake": 0
+  },
+  "limitations": [
+    "No external GPT model was called.",
+    "No Codex task was dispatched automatically.",
+    "No horse, race, odds, payout, result, historical OOS, prospective, backtest, or ROI data was evaluated.",
+    "The result establishes the local orchestration contract only and does not establish model quality or profitability."
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-030",
+  "design": "synthetic_contract_cases_only",
+  "cases": [
+    "valid_single_hypothesis_compiles_deterministically",
+    "missing_null_hypothesis_is_rejected",
+    "missing_racing_mechanism_is_rejected",
+    "multiple_unbounded_variants_are_rejected",
+    "threshold_search_request_is_rejected",
+    "market_or_result_driven_candidate_request_is_rejected",
+    "production_or_purchase_path_request_is_rejected",
+    "credential_or_secret_request_is_rejected",
+    "free_form_shell_command_is_rejected",
+    "unapproved_prepare_dispatch_is_rejected",
+    "prepare_approval_emits_synthetic_only_dispatch_packet",
+    "run_approval_is_required_for_external_api_or_real_data",
+    "result_feedback_preserves_prompt_model_and_artifact_hashes",
+    "identical_input_produces_identical_canonical_digest"
+  ],
+  "real_data_rows": 0,
+  "external_api_calls": 0,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

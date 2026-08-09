@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260808-030",
+  "run_scope_digest": "8ef37a63b165c7d1b41b65a3a331c311bfe5957b659921317ca1128d2322bd31",
+  "artifacts": [
+    {
+      "path": "research/results/EXP-20260808-030.synthetic_result.json",
+      "sha256": "6cce5c5149a5075de5a58901ac1d47f517fa0dd49428e0ceae23b1848df970cc"
+    }
+  ]
+}
