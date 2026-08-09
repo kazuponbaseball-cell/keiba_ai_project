@@ -1,0 +1,278 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/kazuponbaseball-cell/keiba_ai_project/research/schemas/infrastructure_safety_run_v1.schema.json",
+  "title": "Research OS Infrastructure Safety Run v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "gate_kind",
+    "proposal_scope",
+    "proposal_scope_digest",
+    "execution_commit_sha",
+    "config_hashes",
+    "synthetic_input_hashes",
+    "changed_path_manifest",
+    "changed_path_manifest_digest",
+    "dependency_environment_manifest",
+    "seed",
+    "command_plan",
+    "exact_execution_argv",
+    "execution_context",
+    "execution_kind",
+    "external_api_calls",
+    "network_calls",
+    "actual_codex_dispatch",
+    "real_data_execution",
+    "roi_calculation",
+    "production_change",
+    "credential_access",
+    "notification_side_effects",
+    "order_side_effects",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version"],
+      "properties": {
+        "name": {"const": "infrastructure_safety_run"},
+        "version": {"const": 1}
+      }
+    },
+    "gate_kind": {"const": "infrastructure_safety_v1"},
+    "proposal_scope": {
+      "$ref": "infrastructure_safety_proposal_v1.schema.json"
+    },
+    "proposal_scope_digest": {"$ref": "#/$defs/sha256"},
+    "execution_commit_sha": {"$ref": "#/$defs/gitSha"},
+    "config_hashes": {
+      "type": "array",
+      "minItems": 1,
+      "contains": {
+        "type": "object",
+        "properties": {"path": {"const": "research/INFRASTRUCTURE_GATE.json"}},
+        "required": ["path"]
+      },
+      "items": {"$ref": "#/$defs/configManifestRef"}
+    },
+    "synthetic_input_hashes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/syntheticManifestRef"}
+    },
+    "changed_path_manifest": {
+      "description": "Exact proposal base-to-execution Git diff: expected implementation paths union the four code-owned lifecycle paths for the experiment.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "base_commit", "execution_commit", "entries"],
+      "properties": {
+        "schema_version": {"const": 1},
+        "base_commit": {"$ref": "#/$defs/gitSha"},
+        "execution_commit": {"$ref": "#/$defs/gitSha"},
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "change_type",
+              "base_blob_sha",
+              "execution_blob_sha"
+            ],
+            "properties": {
+              "path": {"$ref": "#/$defs/repositoryPath"},
+              "change_type": {"enum": ["added", "modified", "deleted"]},
+              "base_blob_sha": {
+                "oneOf": [{"$ref": "#/$defs/gitSha"}, {"type": "null"}]
+              },
+              "execution_blob_sha": {
+                "oneOf": [{"$ref": "#/$defs/gitSha"}, {"type": "null"}]
+              }
+            },
+            "allOf": [
+              {
+                "if": {"properties": {"change_type": {"const": "added"}}},
+                "then": {
+                  "properties": {
+                    "base_blob_sha": {"type": "null"},
+                    "execution_blob_sha": {"$ref": "#/$defs/gitSha"}
+                  }
+                }
+              },
+              {
+                "if": {"properties": {"change_type": {"const": "modified"}}},
+                "then": {
+                  "properties": {
+                    "base_blob_sha": {"$ref": "#/$defs/gitSha"},
+                    "execution_blob_sha": {"$ref": "#/$defs/gitSha"}
+                  }
+                }
+              },
+              {
+                "if": {"properties": {"change_type": {"const": "deleted"}}},
+                "then": {
+                  "properties": {
+                    "base_blob_sha": {"$ref": "#/$defs/gitSha"},
+                    "execution_blob_sha": {"type": "null"}
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "changed_path_manifest_digest": {"$ref": "#/$defs/sha256"},
+    "dependency_environment_manifest": {"$ref": "#/$defs/syntheticManifestRef"},
+    "seed": {"type": "integer"},
+    "command_plan": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["template_id", "parameters"],
+            "properties": {
+              "template_id": {"const": "python_unittest_module_v1"},
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["module"],
+                "properties": {
+                  "module": {
+                    "type": "string",
+                    "pattern": "^research\\.infra_tests\\.test_[A-Za-z0-9_]+$"
+                  }
+                }
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["template_id", "parameters"],
+            "properties": {
+              "template_id": {"const": "python_unittest_discover_infrastructure_v1"},
+              "parameters": {
+                "type": "object",
+                "additionalProperties": false,
+                "maxProperties": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "exact_execution_argv": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "items": {"type": "string", "minLength": 1}
+      }
+    },
+    "execution_context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "working_directory",
+        "inherit_environment",
+        "environment",
+        "timeout_seconds",
+        "network_access",
+        "credential_environment_access",
+        "filesystem_write_paths"
+      ],
+      "properties": {
+        "working_directory": {"const": "repository_root"},
+        "inherit_environment": {"const": false},
+        "environment": {"type": "object", "maxProperties": 0},
+        "timeout_seconds": {"type": "integer", "minimum": 60, "maximum": 3600},
+        "network_access": {"const": false},
+        "credential_environment_access": {"const": false},
+        "filesystem_write_paths": {"type": "array", "maxItems": 0}
+      }
+    },
+    "execution_kind": {"const": "synthetic"},
+    "external_api_calls": {"const": false},
+    "network_calls": {"const": 0},
+    "actual_codex_dispatch": {"const": false},
+    "real_data_execution": {"const": false},
+    "roi_calculation": {"const": false},
+    "production_change": {"const": false},
+    "credential_access": {"const": false},
+    "notification_side_effects": {"const": false},
+    "order_side_effects": {"const": false},
+    "formal_buy": {"const": false},
+    "send_order": {"const": false},
+    "stake": {"const": 0}
+  },
+  "$defs": {
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?(?:/|$))(?!.*[. ](?:/|$))[A-Za-z0-9._/-]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "manifestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repositoryPath"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "configManifestRef": {
+      "allOf": [
+        {"$ref": "#/$defs/manifestRef"},
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "anyOf": [
+                {"const": "research/INFRASTRUCTURE_GATE.json"},
+                {"type": "string", "pattern": "^config/[A-Za-z0-9._/-]+\\.example\\.json$"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "syntheticManifestRef": {
+      "allOf": [
+        {"$ref": "#/$defs/manifestRef"},
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^research/synthetic/[A-Za-z0-9._/-]+\\.json$"
+            }
+          }
+        }
+      ]
+    },
+    "nonEmptyManifestRefs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/manifestRef"}
+    }
+  }
+}

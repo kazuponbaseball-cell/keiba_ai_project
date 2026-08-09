@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import contextlib
 import copy
+import hashlib
 import importlib.util
 import io
 import json
@@ -73,6 +74,8 @@ class FakeApprovalProvider:
         self.error: Exception | None = None
         self.calls: list[tuple[str, int]] = []
         self.current_main = "c" * 40
+        self.registry_content = b""
+        self.branch_calls = 0
         self.approvers_content = json.dumps(
             {
                 "schema_version": 1,
@@ -86,6 +89,7 @@ class FakeApprovalProvider:
         return {"full_name": REPOSITORY, "default_branch": "main"}
 
     def get_branch_ref(self, repository: str, branch: str) -> dict[str, Any]:
+        self.branch_calls += 1
         return {
             "ref": "refs/heads/main",
             "object": {"type": "commit", "sha": self.current_main},
@@ -113,9 +117,19 @@ class FakeApprovalProvider:
         path: str,
         ref: str,
     ) -> dict[str, Any]:
+        if path == "research/REGISTRY.jsonl":
+            if ref != self.current_main:
+                raise AssertionError(f"unexpected registry ref: {ref}")
+            return {
+                "type": "file",
+                "path": path,
+                "encoding": "base64",
+                "sha": "e" * 40,
+                "content": base64.b64encode(self.registry_content).decode("ascii"),
+            }
         return {
             "type": "file",
-            "path": "research/APPROVERS.json",
+            "path": path,
             "encoding": "base64",
             "sha": "d" * 40,
             "content": base64.b64encode(self.approvers_content).decode("ascii"),
@@ -315,13 +329,20 @@ class ExperimentLifecycleTests(unittest.TestCase):
         argv = self._append_argv(experiment_id, status)
         if extra:
             argv.extend(extra)
-        return self._invoke(
+        active_provider = provider or self.provider
+        result = self._invoke(
             update_registry.main,
             argv,
-            approval_provider=provider or self.provider,
+            approval_provider=active_provider,
             execution_commit_provider=self._execution_commit_provider,
             execution_worktree_verifier=lambda _root, _allowed: None,
         )
+        registry_path = self.root / "research" / "REGISTRY.jsonl"
+        active_provider.registry_content = registry_path.read_bytes()
+        active_provider.current_main = hashlib.sha256(
+            active_provider.registry_content
+        ).hexdigest()[:40]
+        return result
 
     def _append_error(
         self,
@@ -457,7 +478,7 @@ class ExperimentLifecycleTests(unittest.TestCase):
 
     def _running(self, experiment_id: str) -> tuple[Path, str, int]:
         path, digest, comment_id = self._approved_run(experiment_id)
-        self._append(experiment_id, "RUNNING", extra=["--execution-kind", "real-data"])
+        self._append(experiment_id, "RUNNING", extra=["--execution-kind", "synthetic"])
         return path, digest, comment_id
 
     def _review_required(self, experiment_id: str) -> tuple[int, int]:
@@ -659,18 +680,42 @@ class ExperimentLifecycleTests(unittest.TestCase):
         self.assertTrue(event["automatic_execution_allowed"])
         self.assertTrue(event["execution_authorized"])
 
-    def test_real_data_running_does_not_claim_synthetic_capability(self) -> None:
-        experiment_id = "exp-running-real-data-capabilities"
+    def test_legacy_real_data_running_fails_closed_until_kind_is_scope_bound(self) -> None:
+        experiment_id = "exp-running-real-data-unbound"
         self._approved_run(experiment_id)
-        event = self._append(
+        self._append_error(
             experiment_id,
             "RUNNING",
+            "legacy ROI run scope does not bind execution_kind",
             extra=["--execution-kind", "real-data"],
-        )["event"]
-        self.assertFalse(event["synthetic_fixture_tests_allowed"])
-        self.assertTrue(event["real_data_execution_allowed"])
-        self.assertTrue(event["automatic_execution_allowed"])
-        self.assertTrue(event["execution_authorized"])
+        )
+
+    def test_historical_unbound_real_data_running_can_only_be_invalidated(self) -> None:
+        experiment_id = "exp-stored-real-data-unbound"
+        self._running(experiment_id)
+        registry_path = self.root / "research" / "REGISTRY.jsonl"
+        events = self._events()
+        events[-1]["execution_kind"] = "real-data"
+        events[-1]["real_data_execution_allowed"] = True
+        registry_path.write_text(
+            "".join(scope_contract.canonical_json_text(event) + "\n" for event in events),
+            encoding="utf-8",
+        )
+        # Model a historical bad event that was already merged to main.  The
+        # INVALID candidate must start from the exact durable ledger bytes.
+        self.provider.registry_content = registry_path.read_bytes()
+        self.provider.current_main = hashlib.sha256(
+            self.provider.registry_content
+        ).hexdigest()[:40]
+
+        self._append_error(
+            experiment_id,
+            "REVIEW_REQUIRED",
+            "legacy ROI history contains unbound real-data RUNNING; only INVALID",
+        )
+        event = self._append(experiment_id, "INVALID")["event"]
+        self.assertEqual(event["status"], "invalid")
+        self.assertFalse(event["execution_authorized"])
 
     def test_running_rejects_execution_kind_none(self) -> None:
         experiment_id = "exp-running-kind-none"
@@ -678,7 +723,7 @@ class ExperimentLifecycleTests(unittest.TestCase):
         self._append_error(
             experiment_id,
             "RUNNING",
-            "RUNNING requires --execution-kind synthetic or real-data",
+            "RUNNING requires --execution-kind synthetic",
         )
 
     def test_post_run_review_disables_all_execution_capabilities(self) -> None:
@@ -911,7 +956,7 @@ class ExperimentLifecycleTests(unittest.TestCase):
                     experiment_id,
                     "RUNNING",
                     "GitHub approval verification unavailable; fail-close",
-                    extra=["--execution-kind", "real-data"],
+                    extra=["--execution-kind", "synthetic"],
                 )
 
     def test_deleted_prepare_or_run_comment_blocks_shadow_approval(self) -> None:
@@ -1009,7 +1054,7 @@ class ExperimentLifecycleTests(unittest.TestCase):
                     running_experiment,
                     "RUNNING",
                     "changed after approval (updated_at)",
-                    extra=["--execution-kind", "real-data"],
+                    extra=["--execution-kind", "synthetic"],
                 )
 
         for index, grant_status in enumerate(
@@ -1228,6 +1273,36 @@ class ExperimentLifecycleTests(unittest.TestCase):
             ],
             "refusing to overwrite existing file",
         )
+
+
+class LegacyDigestCompatibilityTests(unittest.TestCase):
+    def test_committed_roi_scope_digests_remain_unchanged(self) -> None:
+        expected = {
+            "EXP-20260808-030": (
+                "890a242b6a14485e233473c96342cfbe66ff3f09178f546a50f2d37f93ab3610",
+                "8ef37a63b165c7d1b41b65a3a331c311bfe5957b659921317ca1128d2322bd31",
+            ),
+            "EXP-20260808-031": (
+                "3f97b3d9c57a79ebbcc91746d6e5f27a37253395095019658d49aa5389672410",
+                "5aac4066bd3839509990369998568bb8d30df77b2391e11cbf141f980c837804",
+            ),
+        }
+        for experiment_id, (proposal_digest, run_digest) in expected.items():
+            with self.subTest(experiment_id=experiment_id):
+                proposal = scope_contract.normalize_proposal_scope(
+                    scope_contract.strict_json_load(
+                        REPO_ROOT / "research" / "scopes" / f"{experiment_id}.proposal.json"
+                    ),
+                    expected_experiment_id=experiment_id,
+                )
+                self.assertEqual(scope_contract.canonical_digest(proposal), proposal_digest)
+                run_scope = scope_contract.normalize_run_scope(
+                    scope_contract.strict_json_load(
+                        REPO_ROOT / "research" / "scopes" / f"{experiment_id}.run.json"
+                    ),
+                    proposal_scope=proposal,
+                )
+                self.assertEqual(scope_contract.canonical_digest(run_scope), run_digest)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
-name: Research experiment
-description: Canonical scopeをGitHub-backed二段階承認へ送る
+name: ROI research experiment
+description: 競馬ROI仮説のcanonical scopeをGitHub-backed二段階承認へ送る
 title: "[EXP] "
 labels:
   - research
@@ -7,7 +7,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        このIssueのMarkdownは承認scopeの正本ではありません。tracked canonical JSONとdigestを確認してください。対象は `kazuponbaseball-cell/keiba_ai_project` の `main` に固定します。準備・実行・shadowは相互に異なる未使用comment IDによる別grantです。本番、merge、正式BUY、注文は承認できません。
+        このIssueは競馬ROI仮説専用です。Research OS control-planeやsynthetic adapterを架空の競馬scoreで提案せず、`Research infrastructure safety change` templateを使ってください。Markdownは承認scopeの正本ではありません。tracked canonical JSONとdigestを確認してください。対象は `kazuponbaseball-cell/keiba_ai_project` の `main` に固定します。準備・実行・shadowは相互に異なる未使用comment IDによる別grantです。本番、merge、正式BUY、注文は承認できません。
   - type: input
     id: experiment_id
     attributes:

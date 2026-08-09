@@ -1,0 +1,102 @@
+name: Research infrastructure safety change
+description: Non-racing Research OS infrastructureをsynthetic-only二段階承認へ送る
+title: "[INFRA] "
+labels:
+  - research
+body:
+  - type: markdown
+    attributes:
+      value: |
+        このIssueは `infrastructure_safety_v1` 専用です。ROI仮説、実データ、model、feature、candidate、value、production、BUY、order、notificationには使えません。Markdownは承認scopeの正本ではなく、tracked canonical JSONとdigestが正本です。
+  - type: input
+    id: experiment_id
+    attributes:
+      label: Infrastructure experiment ID
+      placeholder: INFRA-YYYYMMDD-NNN
+    validations:
+      required: true
+  - type: input
+    id: proposal_scope_path
+    attributes:
+      label: Canonical proposal scope path
+      placeholder: research/scopes/INFRA-YYYYMMDD-NNN.proposal.json
+    validations:
+      required: true
+  - type: input
+    id: proposal_scope_digest
+    attributes:
+      label: Proposal scope SHA-256
+      placeholder: 64 lowercase hex characters
+    validations:
+      required: true
+  - type: input
+    id: base_commit
+    attributes:
+      label: Proposal base commit
+      placeholder: 40 lowercase hex characters
+    validations:
+      required: true
+  - type: input
+    id: gate_policy_digest
+    attributes:
+      label: Base-commit infrastructure gate policy SHA-256
+      description: GitHub上のproposal base commitにあるresearch/INFRASTRUCTURE_GATE.jsonを使う
+      placeholder: 64 lowercase hex characters
+    validations:
+      required: true
+  - type: textarea
+    id: github_trust_evidence
+    attributes:
+      label: GitHub main, approver, and policy trust evidence
+      description: current main SHA、compare URL/status、merge-base、APPROVERSとgate policyのblob/content hash、verification time
+    validations:
+      required: true
+  - type: checkboxes
+    id: hard_locks
+    attributes:
+      label: Non-compensating hard locks
+      options:
+        - label: execution_kindはsynthetic固定で、real data、training、backtest、outer OOS、ROIを使わない
+          required: true
+        - label: external network/API、credential、actual Codex dispatchを使わない
+          required: true
+        - label: model、feature、candidate、value、production pathを変更しない
+          required: true
+        - label: formal_buy=false、send_order=false、stake=0で、BUY、order、notificationを行わない
+          required: true
+        - label: gate policy、approval verifier、APPROVERS、憲章、scorecardなどroot-of-trustを変更しない
+          required: true
+        - label: expected path、base-to-execution diff、structured command、fixture/environment manifestをcanonical scopeへ固定する
+          required: true
+        - label: execution commitはproposal baseの子孫で、全run materialはcommitted blob、dirty/untrackedは0
+          required: true
+        - label: verified current mainのREGISTRY.jsonlとlocal ledgerが完全一致し、append直前にmain headを再検証する
+          required: true
+        - label: infra testはresearch/infra_tests/だけに置き、tests/research/やworkflowを変更せず、run承認前に自動実行しない
+          required: true
+  - type: markdown
+    attributes:
+      value: |
+        準備を承認するallowlisted humanは、GitHub remote trustとcanonical scopeを確認後、次のexact commentを投稿してください。
+
+        `APPROVED_TO_PREPARE <proposal_scope_digest>`
+
+        このv3 gateが作るeventはmainへ人間mergeされるまでpendingで、preparation/execution authorityを持ちません。各eventのmergeとbranch refresh後にだけ次transitionを作れます。実装後のsynthetic run scopeには、別の未使用comment IDで次を投稿します。
+
+        `APPROVED_TO_RUN <run_scope_digest>`
+
+        prepare/run commentは必要transition直前に再取得・再検証されます。comment編集・削除・再利用はfail-closeします。v3はevidence compilerでありexecutorではありません。infra lifecycleには `APPROVED_FOR_SHADOW`、production、merge、BUY承認はありません。
+  - type: input
+    id: run_scope_path
+    attributes:
+      label: Canonical synthetic run scope path
+      placeholder: research/scopes/INFRA-YYYYMMDD-NNN.run.json or pending
+    validations:
+      required: true
+  - type: input
+    id: run_scope_digest
+    attributes:
+      label: Synthetic run scope SHA-256
+      placeholder: 64 lowercase hex characters or pending
+    validations:
+      required: true

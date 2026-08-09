@@ -44,6 +44,51 @@ PROPOSED
 
 `BLOCKED_SCORE`は75点未満の実行不可状態。`INVALID`はterminalである。
 
+## インフラ／安全性gate
+
+競馬仮説でないResearch OS control-plane、contract、schema、adapterの変更へ、
+競馬上の作用機序やouter OOS根拠を仮装して`HYPOTHESIS_SCORECARD`を適用しては
+ならない。明示的な`infrastructure_safety_v1` contractだけを別gateとして扱う。
+
+- ROI仮説の75点gate、scope、digest、既存queue/event schema v2を変更しない。
+- 数値scoreの相互補償を行わない。machine-readableな全hard checkを満たさない
+  scopeはartifactやregistry eventを作る前にfail-closeする。
+- GitHubのprepare/run二段階承認、base ancestry、base-commit allowlist、
+  registry-wide comment ID単一用途、承認再検証を同じ強度で要求する。
+- 実行種別はhash-boundな`synthetic`だけとし、real data、学習、backtest、
+  outer OOS、ROI計算、外部network/API、credential、実Codex dispatchを禁止する。
+- model、feature、candidate、value、production、BUY、order、notificationのpathや
+  capabilityを含むscopeはインフラ扱いできず、即時拒否する。
+- infra lifecycleから`APPROVED_FOR_SHADOW`へ遷移できない。merge、production、
+  正式BUY再開の承認状態も追加しない。
+- gate policy、approval verifier、approver allowlist、憲章、scorecardなど
+  root-of-trustの自己変更をinfra gate経由で行わない。
+- ledgerはsymlink/junctionでないexact `research/REGISTRY.jsonl`だけを使う。base→execution commitと
+  execution commit→worktreeの既存内容を改変・削除せず、process lockとCASの下で
+  1 eventずつ追記する。全transition前にGitHub current mainのledgerを取得し、local ledgerが
+  そのbytesと完全一致しない場合は停止する。append直前にmain headを再取得して不変を要求する。
+  追記eventは人間merge前のpending evidenceであり権限を持たない。次transitionにはそのeventの
+  main mergeとbranch refreshが必要である。alternate registryは承認namespaceにならない。
+- run materialはASCII path、`.example.json` config、bounded synthetic envelopeだけに
+  制限し、execution commit上のblobへ固定する。dirty/untracked material、symlink/junction、
+  credential-like value、row-level real-data shapeを拒否する。
+- execution commitはproposal baseの子孫でなければならない。変更Pythonはexact Git blobを
+  AST検査し、pure import allowlist外、network、credential、subprocess、production module、
+  dynamic call、forbidden capability symbolを拒否する。commandはhash-boundなcurrent
+  interpreterを`-B -I -S`で使い、repository-root cwd、空の継承environment、timeout、
+  write path 0をrun scopeへ固定する。infra eventの`automatic_execution_allowed`、
+  `preparation_authorized`、`execution_authorized`は常にfalseとする。
+- 後続infra gateのtest sourceは`research/infra_tests/`だけに置く。通常PR CIが自動探索する
+  `tests/research/`はroot-of-trustであり、infra diffから変更できない。専用testをPR作成時に
+  自動実行しない。v3はevidence compilerでありexecutorではないため、structured command実行には
+  別の人間review済みexecutor/authority verifierを必要とする。
+
+初回gate導入と将来のroot-of-trust変更は自己承認できないgovernance-core変更で
+あり、Draft PRの人間reviewと人間mergeを必要とする。mainへmergeされたpolicyだけを
+後続infra proposalの信頼根拠にする。
+`infrastructure_safety_v1`のpolicy fileはmain merge後にin-place変更しない。policy変更は
+新しいgate kind/versionと別pathで導入し、既存v3 scopeを引き続き読めるようにする。
+
 ### APPROVED_TO_PREPARE
 
 - GitHub Issue comment
@@ -62,6 +107,9 @@ PROPOSED
 - `RUNNING`直前にprepare承認commentとrun承認commentを再検証する。
 - GitHub確認不能、証拠欠落、unauthorized author、comment編集・削除・再利用、
   scope/hash/command変更はfail-closeする。
+- legacy ROI run scope v1は`execution_kind`をcanonical digestへ含めないため、
+  real-data `RUNNING`をfail-closeする。real-data再開にはkindとcapabilityをdigestへ
+  固定するversioned ROI run contractの別governance変更が必要である。
 
 ### APPROVED_FOR_SHADOW
 
@@ -88,6 +136,9 @@ PROPOSED
 - registryへrepository、base branch、verified current main SHA、verified base
   commit、compare URL/status、merge-base SHA、APPROVERS blob SHA、APPROVERS
   content SHA-256、verification timeを保存する。
+- 全transition時にverified current mainの`research/REGISTRY.jsonl`を取得し、path/ref、
+  blob SHA、content SHA-256を保存する。local snapshotがremote bytesと完全一致しない場合は
+  stale/pending ledgerとしてfail-closeする。append直前のmain ref再検証も必須とする。
 - registryへcomment ID、Issue番号、URL、author login/type、body、approval
   keyword/digest、body SHA-256、created_at、updated_atを保存する。
 - prepare/run/shadowの新規grantはそれぞれ異なるcomment IDを使う。

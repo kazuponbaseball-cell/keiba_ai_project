@@ -84,14 +84,34 @@ SET_LIKE_PROPOSAL_LISTS = {
 }
 
 
-def strict_json_load(path: Path) -> Any:
+def strict_json_loads(raw: str, *, source: str = "JSON input") -> Any:
     def reject_constant(value: str) -> None:
         raise ValueError(f"non-standard JSON constant is forbidden: {value}")
 
+    def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError(f"duplicate JSON object key is forbidden: {key!r}")
+            result[key] = value
+        return result
+
     try:
-        return json.loads(path.read_text(encoding="utf-8"), parse_constant=reject_constant)
-    except (OSError, json.JSONDecodeError, ValueError) as exc:
+        return json.loads(
+            raw,
+            parse_constant=reject_constant,
+            object_pairs_hook=reject_duplicate_keys,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise ValueError(f"cannot read strict JSON from {source}: {exc}") from exc
+
+
+def strict_json_load(path: Path) -> Any:
+    try:
+        raw = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
         raise ValueError(f"cannot read strict JSON from {path}: {exc}") from exc
+    return strict_json_loads(raw, source=str(path))
 
 
 def canonical_json_bytes(value: Any) -> bytes:

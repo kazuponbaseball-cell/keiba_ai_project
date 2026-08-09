@@ -93,6 +93,74 @@ hypothesis_gate:
   human_approval_required_at_or_above_threshold: true
   scorecard: research/HYPOTHESIS_SCORECARD.yaml
 
+infrastructure_safety_gate:
+  gate_kind: infrastructure_safety_v1
+  policy: research/INFRASTRUCTURE_GATE.json
+  scoring: non_compensating_all_hard_checks_required
+  activation: containing_commit_must_be_merged_to_main
+  bootstrap_authority: draft_pr_human_review_and_human_merge_only
+  self_bootstrap_allowed: false
+  github_prepare_and_run_approval_required: true
+  execution_kind: synthetic
+  real_data_allowed: false
+  training_allowed: false
+  backtest_allowed: false
+  outer_oos_allowed: false
+  roi_calculation_allowed: false
+  external_network_allowed: false
+  external_api_allowed: false
+  credential_access_allowed: false
+  actual_codex_dispatch_allowed: false
+  automatic_execution_allowed: false
+  preparation_authorized: false
+  execution_authorized: false
+  event_authority_mode: pending_non_authoritative_candidate
+  transition_requires_previous_event_merged_to_current_main: true
+  separate_executor_authority_verifier_required: true
+  infrastructure_test_path: research/infra_tests/
+  ordinary_pr_ci_auto_discovers_infrastructure_tests: false
+  governance_test_path: tests/research/
+  governance_tests_are_infrastructure_root_of_trust: true
+  command_interpreter_mode: hash_bound_current_python_isolated_B_I_S
+  command_working_directory: repository_root
+  command_inherits_environment: false
+  command_environment: {}
+  command_timeout_bound_to_proposal_budget: true
+  command_filesystem_write_paths: []
+  changed_python_static_capability_scan: true
+  changed_python_import_policy: pure_exact_allowlist_plus_changed_modules
+  run_materials_must_be_committed: true
+  execution_commit_must_descend_from_proposal_base: true
+  synthetic_fixture_envelope_required: true
+  synthetic_fixture_max_bytes: 1048576
+  registry_path: research/REGISTRY.jsonl
+  alternate_registry_allowed: false
+  registry_symlink_or_junction_allowed: false
+  registry_append_lock_and_compare_and_swap: true
+  registry_commit_and_worktree_prefix_verified: true
+  github_current_main_registry_exact_match_required_before_every_transition: true
+  github_current_main_head_rechecked_immediately_before_append: true
+  shadow_transition_supported: false
+  production_change_allowed: false
+  merge_approval_supported: false
+  formal_buy: false
+  send_order: false
+  stake: 0
+  legacy_roi_queue_event_schema: 2
+  infrastructure_queue_event_schema: 3
+  legacy_migration_required: false
+  v1_policy_in_place_updates_allowed: false
+  future_policy_change_requires_new_gate_kind_version_and_path: true
+
+legacy_roi_execution_contract:
+  scope_schema: unversioned_v1
+  execution_kind_digest_bound: false
+  synthetic_running_allowed: true
+  real_data_running_allowed: false
+  fail_closed_reason: execution_kind_not_in_canonical_run_scope_digest
+  reenable_requires: versioned_roi_contract_governance_change
+  existing_scope_bytes_and_digests_unchanged: true
+
 approval_system:
   schema_version: 3
   lifecycle:
@@ -170,6 +238,7 @@ approval_system:
     new_grant: approval_evidence
     prior_reverification: revalidated_approval_evidence
     github_trust: github_trust_evidence
+    github_current_main_registry: main_registry_evidence
   grant_comment_ids:
     scope: registry_wide
     prepare_run_shadow_distinct: true
@@ -504,6 +573,8 @@ next_research_priorities:
     approval_status: proposed
 
 unconfirmed_items:
+  - infrastructure synthetic provenance sentinels are review aids, not mathematical proof of data origin
+  - no sandboxed executor or merged-main authority verifier exists for schema-v3 commands
   - live processが現時点で注文を送らないこと
   - dirty worktreeの正式BUY停止変更が今後どのcommitで管理されるか
   - local-only Top3 artifactをclean checkoutから同一hashで再生成できること

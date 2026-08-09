@@ -20,7 +20,7 @@ Research OS本体のlive stateではない。
 
 ## 2. Level 3の意味
 
-Agentは、研究提案、read-only監査、score作成、experiment draftを自律的に行える。GitHub上でproposal scopeが`APPROVED_TO_PREPARE`された後はresearch branch上の実装とsynthetic fixture testを行える。実装後のexact run scopeが別の未使用comment IDで`APPROVED_TO_RUN`され、prepareとrunの両承認commentを`RUNNING`直前に再検証した場合だけ、承認scope内の実データ実験を行える。
+Agentは、研究提案、read-only監査、score作成、experiment draftを自律的に行える。GitHub上でproposal scopeが`APPROVED_TO_PREPARE`された後はresearch branch上の実装とsynthetic fixture testを行える。実装後のexact run scopeがexecution kindとcapabilityをcanonical digestへ拘束するversioned contractであり、別の未使用comment IDで`APPROVED_TO_RUN`され、prepareとrunの両承認commentを`RUNNING`直前に再検証した場合だけ、承認scope内の実データ実験を行える。現行legacy ROI contractはこの拘束を欠くためsynthetic-onlyである。
 
 Agentは次を行えない。
 
@@ -100,6 +100,51 @@ Research OSが作る全artifactは `formal_buy=false`、`send_order=false`、`st
 
 高得点は本番採用を意味しない。shadow移行と本番反映には別の人間承認が必要である。
 
+### 5.1 Infrastructure safety gate
+
+Research OSのcontrol-plane、contract、schema、synthetic adapterなど競馬仮説でない
+変更は、`research/INFRASTRUCTURE_GATE.json`の
+`infrastructure_safety_v1`を使う。これはHypothesis score 75点の代替得点ではなく、
+全項目必須の非補償型gateである。
+
+- 競馬仮説をinfraへ再分類して75点gateを迂回できない。
+- proposal/run digestはgate kind、policy hash、capability lock、synthetic fixture、
+  exact commit、変更path/blob、構造化command、environmentを固定する。
+- prepare/runのGitHub Issue承認と直前再検証はROI lifecycleと共通である。
+- `RUNNING`はsynthetic-onlyで、real data、training、backtest、outer OOS、ROI、
+  external API/network、credential、actual Codex dispatchを一切許可しない。
+- model、feature、candidate、value、production、BUY、order、notification、shadowは
+  gateの権限外である。
+- gate自身、approval verifier、allowlist、憲章、scorecardなどroot-of-trustは
+  infra gateで変更できない。
+- registryはsymlink/junctionでないexact code-owned ledgerだけをprocess lock/CASで追記し、base commit、
+  execution commit、worktree間で過去bytesのappend-only prefixを検証する。さらに権限遷移前に
+  GitHub current mainのledgerをremote取得し、localがそのbytesと完全一致しなければ拒否する。
+  append直前にmain headを再検証する。追記eventはmainへ人間mergeされるまでpendingであり、
+  次transitionはmerge後のexact ledgerへbranchをrefreshしなければ作成できない。
+- synthetic materialは専用prefix、bounded provenance envelope、hash、secret/row-shape
+  sentinelを要求し、execution commit blobへ固定してdirty/untrackedとsymlink/junctionを拒否する。
+  execution commitはproposal baseの子孫だけを認める。変更Python blobはpure import allowlist、
+  AST import/call/symbol firewallを通し、isolated `-B -I -S` interpreter、repository-root cwd、
+  空の継承environment、proposal budget由来timeoutだけをcommand scopeへ固定する。
+- このgateは自動executorを提供しない。infra eventの`automatic_execution_allowed`、
+  `preparation_authorized`、`execution_authorized`は常にfalseである。v3はevidence compilerであり、
+  exact synthetic commandの実行には別の人間review済みexecutor/authority verifierを必要とする。
+- 後続infra testは通常PR CIの`tests/research/test_*.py`探索対象へ置かず、専用の
+  `research/infra_tests/test_*.py`へ置く。`tests/research/`はroot-of-trustとして変更を拒否し、
+  専用testは別のexecutor/authority verifierが導入されるまで実行しない。
+
+このgateの初回bootstrapは既存gateで自己承認しない。Draft governance PRを人間が
+review・mergeしたmain commitからのみ有効となる。merge前のbranch copyを後続proposalの
+信頼根拠にしてはならない。
+v1 policyはmain merge後にin-place変更しない。将来のpolicy変更は新しいgate
+kind/versionと別pathを追加し、既存v3 scopeを旧policyのまま監査・無効化できるようにする。
+
+既存のunversioned ROI run scopeは`execution_kind`をcanonical digestへ含めていない。
+したがって現行contractからのreal-data `RUNNING`はfail-closeし、synthetic実行だけを
+許可する。real-dataを再開するには、execution kindとcapabilityをproposal/run digestへ
+固定し、legacy digestを変更しないversioned ROI contractを別のgovernance PRで導入する。
+
 ## 6. Lifecycle
 
 ```text
@@ -145,6 +190,10 @@ APPROVED_FOR_SHADOW <review_digest>
 - registryへrepository、base branch、verified current main SHA、verified base
   commit、compare URL/status、merge-base SHA、APPROVERS blob SHA、APPROVERS
   content SHA-256、verification timeを保存する。
+- 全transition前にverified current mainの`research/REGISTRY.jsonl`を取得し、local snapshotが
+  remote contentとbyte-for-byteで完全一致することを要求する。path/ref、blob SHA、content SHA-256を
+  eventへ保存し、append直前にmain headが不変であることも再検証する。1 eventを人間mergeしてbranchを
+  refreshするまで次eventを作れず、stale worktreeがterminal/consumed grantを無視できないようにする。
 - registryへcomment ID、Issue番号、URL、author login/type、body、approval
   keyword/digest、body SHA-256、created_at、updated_atを保存する。
 - prepare/run/shadowの新規grantは、同じregistry全体で未使用の異なるcomment
