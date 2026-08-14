@@ -5,7 +5,7 @@
 - Execution: `EXECUTION_FORBIDDEN`
 - Base repository: `kazuponbaseball-cell/keiba_ai_project`
 - Base branch: `main`
-- Design base commit: `f24e6a0e394dd376d100502d33872d47dad0ec9a`
+- Design base commit: `b103c68dc2418973fda79fddfc1e0f9aac19813a`
 - Date: `2026-08-14`
 
 > このDraftは設計レビューだけを求める。G2、catalog、ledger、schema、runner、test、
@@ -101,14 +101,15 @@ root-governance amendmentをmainへmergeしなければならない。そのamen
 
 このlaneは、mainにあるROI Reproduction Gate v2設計のG2 control planeを継承する。
 別ledger、別grant index、local fallbackを作らない。design dependencyはbase commit
-`f24e6a0e394dd376d100502d33872d47dad0ec9a`の次のbytesである。
+`b103c68dc2418973fda79fddfc1e0f9aac19813a`のGit blob bytesである。checkout時の
+CRLF変換後bytesはhash正本に使わない。
 
 - `docs/ROI_REPRODUCTION_GATE_V2_DESIGN_DRAFT.md`
-  SHA-256 `d4201884689f0244f8452e8208eb6c848b355f7ed9e67e2b9976d4892c85c22b`
+  SHA-256 `4ed7e54c87f638f37e23c866d2030b431f9115328d9ccd002befeefcd68c2039`
 - `research/drafts/ROI_REPRODUCTION_GATE_V2_CONTRACT_MAP.design.json`
-  SHA-256 `138d1d53954cd191590dd08889d3ad8298a1d2f6b1dd03ccfb08d233978ebedf`
+  SHA-256 `44b7a8921e3cbdcfcfdb1887b52292b00a025129d7791f828e03d06060919c7d`
 - `research/drafts/ROI_REPRODUCTION_GATE_V2_HUMAN_REVIEW_CHECKLIST.md`
-  SHA-256 `a32d9464dc77fbd669b17616ff40c81b4f63e1f12771889c9173915eebc0a153`
+  SHA-256 `e4aaadfac87168a9fe947caaec1302dfb0bf24bccabacdf01530de61822f4af9`
 
 継承するnormative boundaryは次である。
 
@@ -123,8 +124,17 @@ root-governance amendmentをmainへmergeしなければならない。そのamen
 - one-shot leaseをatomic consumeしてからだけsupervised executorを起動する
 - no local file/SQLite/worktree/branch fallback、no dual writer、no automatic retry
 
-本DraftはG2を実装・activateしない。PR #38のG1はcompiler-only/no-authorityであり、merge後も
-G2 implementationとhuman cutoverが完了するまで、このlaneは常に`EXECUTION_FORBIDDEN`である。
+本DraftはG2を実装・activateしない。PR #38のG1は
+`811ffd11bd80447f013c643b96c3eb8145916061`でmainへmerge済みだが、
+compiler-only/no-authorityである。PR #39も
+`b103c68dc2418973fda79fddfc1e0f9aac19813a`でmainへmerge済みだが、source designであって
+scope/grant/authorityではない。G2 implementationとhuman cutoverが完了するまで、このlaneは常に
+`EXECUTION_FORBIDDEN`である。
+
+なおcurrent-mainの`research/STATE.yaml`と一部G1 design/checklistには、PR #38 merge前の
+`PENDING_HUMAN_REVIEW_AND_MAIN_MERGE`または`NOT_IMPLEMENTED`表示が残る。本PRはroot文書を変更せず、
+G2またはlane activationより前に、別のhuman-reviewed root-governance changeでmerge事実と
+no-authority状態へreconcileする。reconciliation未完了時はfail-closeする。
 
 ## 5. Eligibility — all checks are non-compensating
 
@@ -379,9 +389,11 @@ proposalで、untouched prospective evidence、75点以上、別approvalを満�
 
 ## 11. D0/D1 example — non-authoritative binding
 
-PR #39 head `f30e9fcd7e07f7645da542998f1b343d05ae5b68`のsingle-source designを、
-初版classのsource exampleとする。ただしPR #39はcanonical scopeでもgrantでもなく、このDraftへ
-formulaを載せても実行権限にならない。
+PR #39 head `f30e9fcd7e07f7645da542998f1b343d05ae5b68`からmain merge commit
+`b103c68dc2418973fda79fddfc1e0f9aac19813a`へ入ったsingle-source designを、
+初版classのsource exampleとする。source JSONのGit blob bytes SHA-256は
+`2ef0acec15c34e959993d83eab590650f3be3bd00c6b72065c72085bca3c9672`である。
+ただしPR #39はcanonical scopeでもgrantでもなく、このDraftへformulaを載せても実行権限にならない。
 
 ```text
 p = top1_wide_prob
@@ -464,20 +476,21 @@ settlement phaseだけ`allowlisted_projected_research_rows=true`と
 
 このdesignが人間review・mergeされても実行は開始しない。順序は次で固定する。
 
-1. PR #38 G1を人間review・mergeする。G1はno-authorityのまま。
-2. G2 core/catalog/ledger/cutoverを別のhuman-reviewed implementation PRで作る。
-3. G2をhuman mergeし、complete legacy/grant migration後にhuman-owned cutoverを行う。
-4. AGENTS/CHARTER/DECISIONS/scorecardへ一件限定non-promotion routeを追加するroot-governance amendmentを別PRでhuman mergeする。
-5. projection-materialization maintenanceを別PRでreview・mergeし、別grantで2 snapshotをmaterialize/publishする。
-6. `historical_ai_duplicate_gate_impact_v1` policy/schema/compilerを別のhuman-reviewed implementation PRで作る。
-7. merge時点では`MERGED_NOT_ACTIVE`とし、allowlisted GitHub `User`が
+1. **完了済み**: PR #38 G1を`811ffd11bd80447f013c643b96c3eb8145916061`でhuman mergeした。G1はno-authorityのまま。
+2. current-mainに残るG1のpre-merge status表示を、別のhuman-reviewed root-governance changeでreconcileする。
+3. AGENTS/CHARTER/DECISIONS/scorecardへ一件限定non-promotion routeを追加するroot-governance amendmentを別PRでhuman mergeする。
+4. G2 core/catalog/ledger/cutoverを別のhuman-reviewed implementation PRで作る。
+5. G2をhuman mergeし、complete legacy/grant migration後にhuman-owned cutoverを行う。
+6. projection-materialization maintenanceを別PRでreview・mergeし、別grantで2 snapshotをmaterialize/publishする。
+7. `historical_ai_duplicate_gate_impact_v1` policy/schema/compilerを別のhuman-reviewed implementation PRで作る。
+8. merge時点では`MERGED_NOT_ACTIVE`とし、allowlisted GitHub `User`が
    `ACTIVATE_HISTORICAL_AI_DUPLICATE_GATE_IMPACT_V1 <activation_scope_digest>`を別に承認する。
    shared G2 durable ledger authority writerだけが、remote evidence再検証後にlane subject headを
    `MERGED_NOT_ACTIVE -> ACTIVE`へone-shot CASし、activation receiptを発行する。
-8. post-activation current mainから新experiment IDのcanonical D0/D1 proposalを作る。
-9. Issueでexact prepare grantを取得し、research-only implementation/synthetic testsを行う。
-10. run scopeをfreezeし、別comment IDのrun grantを取得して再検証する。
-11. supervised two-stage diagnosticを実行し、sealed reviewを人間がacknowledgeする。
+9. post-activation current mainから新experiment IDのcanonical D0/D1 proposalを作る。
+10. Issueでexact prepare grantを取得し、research-only implementation/synthetic testsを行う。
+11. run scopeをfreezeし、別comment IDのrun grantを取得して再検証する。
+12. supervised two-stage diagnosticを実行し、sealed reviewを人間がacknowledgeする。
 
 root-governance amendment、G2 core、lane implementation/activationを1つのself-activating PRへまとめない。
 lane implementation PRは自分をactivateできず、activation receiptはexperiment grantではない。production builder、existing model、

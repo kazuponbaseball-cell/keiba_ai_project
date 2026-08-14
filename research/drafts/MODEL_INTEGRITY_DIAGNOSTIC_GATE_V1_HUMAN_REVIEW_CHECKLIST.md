@@ -12,7 +12,7 @@ prepare/run/ack grant、実装、実データ、payoff/ROI計算、shadow、prod
 
 ## A. Design-only authority boundary
 
-- [ ] baseはGitHub `main` `f24e6a0e394dd376d100502d33872d47dad0ec9a`である。
+- [ ] baseはGitHub `main` `b103c68dc2418973fda79fddfc1e0f9aac19813a`である。
 - [ ] このPRは3つのdesign fileだけを追加し、policy/schema/compiler/runner/testを作らない。
 - [ ] `AGENTS.md`、CHARTER、STATE、DECISIONS、REGISTRY、scope、queue、eventを変更しない。
 - [ ] model、config、candidate、value、BUY、order、notification、production pathを変更しない。
@@ -53,8 +53,10 @@ prepare/run/ack grant、実装、実データ、payoff/ROI計算、shadow、prod
 ## D. Shared G2 authority and cutover
 
 - [ ] current-main ROI Reproduction Gate v2 design 3 fileのexact SHA-256をdependencyとしてbindする。
+- [ ] dependency hash domainはcurrent-mainのGit blob bytesであり、checkout後のCRLF bytesではない。
 - [ ] G2 core/catalog/ledger/cutoverはこのPRでは実装しない。
-- [ ] PR #38 G1はmerge後もcompiler-only/no-authorityである。
+- [x] PR #38 G1は`811ffd11bd80447f013c643b96c3eb8145916061`でmainへmerge済みで、compiler-only/no-authorityである。
+- [ ] current-mainに残るG1のpre-merge status表示を、G2/lane activation前に別root-governance changeでreconcileする。
 - [ ] separate local ledger、SQLite、worktree、branch、file fallbackを禁止する。
 - [ ] shared durable runtime ledgerをsole live authorityにする。
 - [ ] global head + subject head CAS、authenticated immutable receiptを要求する。
@@ -98,6 +100,7 @@ prepare/run/ack grant、実装、実データ、payoff/ROI計算、shadow、prod
 
 ## F. Exact one-change recipe
 
+- [x] PR #39 source designは`b103c68dc2418973fda79fddfc1e0f9aac19813a`でmainへmerge済みだが、non-canonical/non-authorityである。
 - [ ] `p=top1_wide_prob`、`a=p_action_C0_offset`を固定する。
 - [ ] lineage式`a=sigmoid(logit(p)+0.130654047367905)`を固定する。
 - [ ] decisionはhash-bound stored `a` bytesを使う。
@@ -259,10 +262,11 @@ prepare/run/ack grant、実装、実データ、payoff/ROI計算、shadow、prod
 
 ## M. Activation order
 
-- [ ] PR #38 G1を人間review・mergeする。ただしauthorityはfalseのままにする。
+- [x] PR #38 G1は`811ffd11bd80447f013c643b96c3eb8145916061`で人間merge済みで、authorityはfalseのままである。
+- [ ] current-mainに残るG1のpre-merge status表示を別のhuman-reviewed root-governance changeでreconcileする。
+- [ ] AGENTS/CHARTER/DECISIONS/scorecardのexact one-recipe root amendmentを別PRでreview・mergeする。
 - [ ] G2 core/catalog/ledger/executorをseparate Draft PRで実装・review・mergeする。
 - [ ] full legacy/grant migrationとold-writer fence後、human-owned cutover receiptを作る。
-- [ ] AGENTS/CHARTER/DECISIONS/scorecardのexact one-recipe root amendmentを別PRでreview・mergeする。
 - [ ] projection-materialization maintenanceを別PRでreview・mergeし、別grantで2 snapshotを作る。
 - [ ] exact one-recipe lane policy/schema/compilerをさらに別PRでreview・mergeする。
 - [ ] lane implementation merge時点は`MERGED_NOT_ACTIVE`で、自分をactivateできない。

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "document_kind": "MODEL_INTEGRITY_DIAGNOSTIC_GATE_V1_G2_DESIGN_MAP",
   "created_date": "2026-08-14",
-  "design_base_commit": "f24e6a0e394dd376d100502d33872d47dad0ec9a",
+  "design_base_commit": "b103c68dc2418973fda79fddfc1e0f9aac19813a",
   "status": {
     "artifact_status": "DESIGN_REVIEWABLE",
     "authority": false,
@@ -14,6 +14,16 @@
     "execution_status": "EXECUTION_FORBIDDEN",
     "comparison_executed": false,
     "roi_delta_measured": false
+  },
+  "upstream_merge_observation": {
+    "current_main_sha": "b103c68dc2418973fda79fddfc1e0f9aac19813a",
+    "github_merge_observed": true,
+    "merge_evidence_is_experiment_grant": false,
+    "pr38_g1_current_main_status_reconciled": false,
+    "pr38_g1_merge_commit": "811ffd11bd80447f013c643b96c3eb8145916061",
+    "pr38_g1_remains_compiler_only_no_authority": true,
+    "pr39_source_design_merge_commit": "b103c68dc2418973fda79fddfc1e0f9aac19813a",
+    "unreconciled_g1_status_action": "BLOCK_G2_AND_LANE_ACTIVATION_PENDING_SEPARATE_ROOT_RECONCILIATION"
   },
   "gate_identity": {
     "gate_kind": "historical_ai_duplicate_gate_impact_v1",
@@ -28,22 +38,32 @@
   },
   "design_dependencies": [
     {
+      "hash_domain": "git_blob_bytes",
       "path": "docs/ROI_REPRODUCTION_GATE_V2_DESIGN_DRAFT.md",
-      "sha256": "d4201884689f0244f8452e8208eb6c848b355f7ed9e67e2b9976d4892c85c22b"
+      "ref": "b103c68dc2418973fda79fddfc1e0f9aac19813a",
+      "sha256": "4ed7e54c87f638f37e23c866d2030b431f9115328d9ccd002befeefcd68c2039"
     },
     {
+      "hash_domain": "git_blob_bytes",
       "path": "research/drafts/ROI_REPRODUCTION_GATE_V2_CONTRACT_MAP.design.json",
-      "sha256": "138d1d53954cd191590dd08889d3ad8298a1d2f6b1dd03ccfb08d233978ebedf"
+      "ref": "b103c68dc2418973fda79fddfc1e0f9aac19813a",
+      "sha256": "44b7a8921e3cbdcfcfdb1887b52292b00a025129d7791f828e03d06060919c7d"
     },
     {
+      "hash_domain": "git_blob_bytes",
       "path": "research/drafts/ROI_REPRODUCTION_GATE_V2_HUMAN_REVIEW_CHECKLIST.md",
-      "sha256": "a32d9464dc77fbd669b17616ff40c81b4f63e1f12771889c9173915eebc0a153"
+      "ref": "b103c68dc2418973fda79fddfc1e0f9aac19813a",
+      "sha256": "e4aaadfac87168a9fe947caaec1302dfb0bf24bccabacdf01530de61822f4af9"
     }
   ],
   "source_design_reference_non_authoritative": {
     "pull_request": 39,
-    "commit": "f30e9fcd7e07f7645da542998f1b343d05ae5b68",
+    "commit": "b103c68dc2418973fda79fddfc1e0f9aac19813a",
+    "hash_domain": "git_blob_bytes",
+    "merged": true,
     "path": "research/drafts/AI_SCORE_SINGLE_SOURCE_COUNTERFACTUAL_SEED_20260814.json",
+    "sha256": "2ef0acec15c34e959993d83eab590650f3be3bd00c6b72065c72085bca3c9672",
+    "source_head_commit": "f30e9fcd7e07f7645da542998f1b343d05ae5b68",
     "authority": false,
     "is_canonical_scope": false,
     "is_grant": false
@@ -1329,11 +1349,12 @@
     "N35_REJECT_RESULT_SEALER_DIRECT_REPLICA_READ_SELF_ASSERTED_OUTCOME_OR_MISSING_MISMATCHED_RECEIPT_INPUT"
   ],
   "activation_prerequisites": [
-    "human_review_and_merge_pr38_g1_no_authority_compiler",
+    "verified_pr38_g1_no_authority_compiler_merged_at_811ffd11bd80447f013c643b96c3eb8145916061",
+    "separate_human_review_and_merge_current_main_g1_status_reconciliation",
+    "separate_human_review_and_merge_root_governance_amendment_for_exact_one_recipe_nonpromotion_lane",
     "separate_human_review_and_merge_g2_core_catalog_ledger_executor",
     "complete_legacy_event_and_global_grant_id_migration",
     "human_owned_g2_cutover_receipt_and_old_writer_fence",
-    "separate_human_review_and_merge_root_governance_amendment_for_exact_one_recipe_nonpromotion_lane",
     "separate_human_review_and_merge_projection_materialization_maintenance_kind",
     "separate_human_review_and_merge_exact_lane_policy_schema_compiler",
     "human_owned_post_merge_lane_activation_receipt",
