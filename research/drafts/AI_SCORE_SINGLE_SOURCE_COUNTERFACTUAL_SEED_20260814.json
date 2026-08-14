@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "AI_SCORE_SINGLE_SOURCE_COUNTERFACTUAL_SEED",
+  "artifact_status": "DESIGN_REVIEWABLE",
+  "authority": "NON_CANONICAL_DESIGN_ONLY",
+  "canonical_proposal_created": false,
+  "base_repository": "kazuponbaseball-cell/keiba_ai_project",
+  "base_branch": "main",
+  "base_commit": "f24e6a0e394dd376d100502d33872d47dad0ec9a",
+  "created_date": "2026-08-14",
+  "decision": {
+    "architectural_change_recommended_if_roi_neutral": true,
+    "roi_improvement_required_for_structural_adoption": false,
+    "predictive_noninferiority_required": true,
+    "economic_noninferiority_required_before_production": true,
+    "production_promotion_automatic": false
+  },
+  "problem": {
+    "canonical_signal_family": "ai_score_and_deterministic_descendants",
+    "observed_descendants": [
+      "ai_confidence_score",
+      "ai_prob",
+      "ai_rank",
+      "ai_score_gap_to_second",
+      "ai_top_score_vs_median"
+    ],
+    "risk": "The same AI information is reintroduced through nested runner, pair, hit, ROI, simulation, and gate composites and can be mistaken for independent evidence.",
+    "signal_objects_must_remain_distinct": [
+      "predictor_horse_raw_ai_score_and_deterministic_summaries",
+      "production_builder_horse_level_ai_prob_softmax",
+      "grade_r_top3_set_posterior_and_wide_marginal"
+    ]
+  },
+  "architecture_contract": {
+    "challenger_id": "SINGLE_SOURCE_AI_V1",
+    "implementation_shape": "ADDITIVE_POST_CANDIDATE_FREEZE_SIDECAR",
+    "canonical_ai_object": "unordered_top3_set_probability",
+    "canonical_ai_mass_per_race": 1.0,
+    "derived_wide_mass_per_race": 3.0,
+    "probability_tolerance": 1e-10,
+    "counted_terminal_boundary": "post_freeze_value_eligibility_utility",
+    "candidate_probability": "wide_marginal_from_canonical_top3_set_probability",
+    "candidate_market_free": true,
+    "candidate_key_is_frozen_input": true,
+    "candidate_key_is_routing_identity_not_numeric_ai_input": true,
+    "decision_bearing_ai_scalar": "p_action_calibrated",
+    "decision_bearing_ai_scalar_count": 1,
+    "decision_bearing_ai_scalar_definition": "one_dimensional_calibrator_of_frozen_candidate_p_wide_only",
+    "decision_numeric_ai_input_allowlist": [
+      "p_action_calibrated"
+    ],
+    "decision_identity_input_allowlist": [
+      "candidate_freeze_hash",
+      "candidate_key",
+      "race_id"
+    ],
+    "calibrator_forbidden_inputs": [
+      "ai_confidence_score",
+      "ai_prob_horse_level",
+      "ai_rank",
+      "ai_score_gap_to_second",
+      "ai_top_score_vs_median",
+      "margin",
+      "raw_ai_score"
+    ],
+    "calibrator_contract_must_bind": [
+      "code_sha256",
+      "fit_data_manifest_sha256",
+      "fit_cutoff",
+      "fit_partition",
+      "input_schema_sha256",
+      "label_manifest_sha256",
+      "method_and_parameters",
+      "output_schema_sha256"
+    ],
+    "raw_probability_margin_rank_gap_confidence_are_diagnostic_only": true,
+    "derived_observability_fields_may_be_persisted": true,
+    "derived_observability_fields_may_reenter_decision": false,
+    "context_residual_enabled_in_v1": false,
+    "market_join_phase": "after_candidate_freeze",
+    "result_join_phase": "after_candidate_and_quote_freeze"
+  },
+  "forbidden_reinjection_families": [
+    "ai_confidence_to_danger_to_pair_to_hit",
+    "ai_probability_and_ai_rank_as_separate_votes",
+    "ai_probability_to_overlay_to_pair_plus_direct_ai_probability",
+    "posterior_marginal_and_posterior_summary_as_independent_models",
+    "score_gap_and_confidence_as_separate_additive_votes"
+  ],
+  "comparison": {
+    "arms": [
+      {
+        "arm_id": "R0_REFERENCE",
+        "description": "Versioned frozen research candidate and decision reference with exact formula, threshold, calibrator, cutoff, lineage, and digests; no production builder import."
+      },
+      {
+        "arm_id": "R1_SINGLE_SOURCE",
+        "description": "Same frozen Top3 posterior, wide marginal, candidate key, p_action_calibrated bytes, and calibrator artifact; exact hash-bound value-eligibility formula removes only reinjected AI descendants."
+      }
+    ],
+    "allowed_variant_count": 2,
+    "allowed_threshold_search_count": 0,
+    "same_runner_universe": true,
+    "same_chronological_folds": true,
+    "same_fit_and_calibration_budget": true,
+    "phase_1_calibrator_artifact_equal": true,
+    "phase_1_calibrator_refit_allowed": false,
+    "phase_1_effective_threshold_contract_equal": true,
+    "phase_1_market_formula_equal": true,
+    "phase_1_non_ai_clauses_equal": true,
+    "phase_1_p_action_calibrated_bytes_equal": true,
+    "phase_1_recalibrated_arm_requires_new_scope_and_variant": true,
+    "phase_1_r1_value_eligibility_formula_and_effective_threshold_hash_bound": true,
+    "r0_required_bindings": [
+      "calibration_artifact_sha256",
+      "calibration_fit_data_manifest_sha256",
+      "calibration_label_manifest_sha256",
+      "calibration_training_cutoff",
+      "decision_formula_sha256",
+      "input_lineage_manifest_sha256",
+      "packet_schema_sha256",
+      "producer_commit_sha",
+      "threshold_contract_sha256"
+    ],
+    "r1_required_bindings": [
+      "calibration_artifact_sha256_equal_to_r0",
+      "calibration_fit_data_manifest_sha256_equal_to_r0",
+      "calibration_label_manifest_sha256_equal_to_r0",
+      "decision_formula_sha256",
+      "effective_threshold_contract_sha256_equal_to_r0",
+      "market_formula_sha256_equal_to_r0",
+      "p_action_calibrated_bytes_digest_equal_to_r0"
+    ]
+  },
+  "structural_gate": {
+    "all_checks_required": true,
+    "checks": [
+      "all_C_n_3_complete",
+      "candidate_freeze_precedes_market",
+      "derived_wide_mass_three",
+      "finite_range_unique",
+      "no_buy_order_notification_or_credential_path",
+      "no_market_price_payoff_or_result_in_candidate",
+      "single_numeric_ai_descendant_to_postfreeze_value_eligibility",
+      "top3_set_mass_one"
+    ],
+    "failure_decision": "INVALID"
+  },
+  "predictive_noninferiority": {
+    "phase_1_probability_candidate_p_action_and_calibrator_digest_rule": "EXACT_MATCH",
+    "phase_1_scope": "decision_layer_only",
+    "phase_1_primary_gate": "exact_probability_calibrator_parity_and_single_source_structure",
+    "phase_1_probability_metric_contrast": "NOT_APPLICABLE_SHARED_IDENTICAL_P_ACTION",
+    "phase_1_shared_diagnostics": [
+      "action_brier",
+      "action_calibration",
+      "action_log_loss"
+    ],
+    "phase_1_intervention_diagnostics": [
+      "value_eligibility_disagreement_count",
+      "value_eligibility_rate"
+    ],
+    "phase_1_recalibration_allowed": false,
+    "phase_1_top3_nll_is_not_a_decision_metric": true,
+    "phase_2_probability_core_cleanup_is_separate": true,
+    "phase_2_primary_metric": "race_paired_top3_set_nll_delta_single_minus_reference",
+    "proposed_margin": 0.005,
+    "confidence_rule": "one_sided_95_percent_date_venue_cluster_bootstrap_upper_bound_below_margin",
+    "secondary_metrics": [
+      "candidate_change_count",
+      "fold_direction",
+      "wide_brier",
+      "wide_calibration"
+    ],
+    "outer_retuning_allowed": false
+  },
+  "economic_noninferiority": {
+    "status": "BLOCKED_PENDING_STRICT_T3_AND_G2",
+    "primary_metric": "race_paired_net_return_delta_single_minus_reference",
+    "same_candidate_enrollment": true,
+    "same_quote_snapshot": true,
+    "same_unit_notional_rule": true,
+    "same_ticket_budget": true,
+    "value_eligibility_may_differ_by_arm": true,
+    "no_bet_row_rule": "stake_zero_return_zero_and_row_retained",
+    "arm_stake_denominators_must_be_reported": true,
+    "margin": "HUMAN_REVIEW_REQUIRED_BEFORE_OUTER_EXPOSURE",
+    "roi_is_primary": false,
+    "roi_improvement_required": false
+  },
+  "provisional_score": {
+    "independent_information": 0,
+    "racing_mechanism": 10,
+    "outer_oos_failure_evidence": 10,
+    "leakage_safety": 8,
+    "minimal_falsifiability": 10,
+    "acquisition_implementation_cost": 8,
+    "total": 46,
+    "threshold": 75,
+    "status": "BLOCKED_SCORE"
+  },
+  "prerequisites": [
+    "clean_hash_bound_oof_asof_ai_lineage",
+    "common_fold_manifest",
+    "frozen_runner_universe_manifest",
+    "human_reviewed_model_integrity_or_negative_control_governance_lane",
+    "post_G2_versioned_execution_contract",
+    "r0_reference_formula_threshold_calibrator_cutoff_lineage_and_digests",
+    "r1_one_dimensional_calibrator_code_method_parameters_cutoff_and_schema_hashes",
+    "tracked_candidate_packet_producer_commit_and_schema",
+    "strict_T3_prospective_quote_evidence"
+  ],
+  "current_blockers": [
+    "G1_is_execution_forbidden",
+    "G2_not_implemented",
+    "legacy_real_data_running_fail_closed",
+    "no_applicable_prepare_or_run_grant",
+    "production_replacement_outside_research_authority",
+    "score_below_75"
+  ],
+  "planned_change_boundaries": {
+    "design_only_paths_now": [
+      "docs/AI_SCORE_SINGLE_SOURCE_DESIGN_DRAFT.md",
+      "research/drafts/AI_SCORE_SINGLE_SOURCE_COUNTERFACTUAL_SEED_20260814.json",
+      "research/drafts/AI_SCORE_SINGLE_SOURCE_HUMAN_REVIEW_CHECKLIST.md"
+    ],
+    "forbidden_now": [
+      "config",
+      "data",
+      "models",
+      "outputs",
+      "production",
+      "scripts/build_current_strongest_tickets.py",
+      "src",
+      "tests"
+    ]
+  },
+  "safety": {
+    "automatic_execution": false,
+    "credential_access": false,
+    "formal_buy": false,
+    "merge_authorized": false,
+    "network_execution": false,
+    "notification_side_effects": false,
+    "production_change": false,
+    "real_data_execution": false,
+    "roi_calculation": false,
+    "send_order": false,
+    "stake": 0
+  }
+}
