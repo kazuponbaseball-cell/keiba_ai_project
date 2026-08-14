@@ -1,0 +1,455 @@
+{
+  "schema_version": 1,
+  "artifact_kind": "AI_SCORE_SINGLE_SOURCE_COUNTERFACTUAL_SEED",
+  "artifact_status": "DESIGN_REVIEWABLE",
+  "authority": "NON_CANONICAL_DESIGN_ONLY",
+  "canonical_proposal_created": false,
+  "base_repository": "kazuponbaseball-cell/keiba_ai_project",
+  "base_branch": "main",
+  "base_commit": "f24e6a0e394dd376d100502d33872d47dad0ec9a",
+  "created_date": "2026-08-14",
+  "decision": {
+    "architectural_change_recommended_if_roi_neutral": true,
+    "roi_improvement_required_for_structural_adoption": false,
+    "predictive_noninferiority_required": true,
+    "economic_noninferiority_required_before_production": true,
+    "production_promotion_automatic": false
+  },
+  "problem": {
+    "canonical_signal_family": "ai_score_and_deterministic_descendants",
+    "observed_descendants": [
+      "ai_confidence_score",
+      "ai_prob",
+      "ai_rank",
+      "ai_score_gap_to_second",
+      "ai_top_score_vs_median"
+    ],
+    "risk": "The same AI information is reintroduced through nested runner, pair, hit, ROI, simulation, and gate composites and can be mistaken for independent evidence.",
+    "signal_objects_must_remain_distinct": [
+      "predictor_horse_raw_ai_score_and_deterministic_summaries",
+      "production_builder_horse_level_ai_prob_softmax",
+      "grade_r_top3_set_posterior_and_wide_marginal"
+    ]
+  },
+  "architecture_contract": {
+    "challenger_id": "SINGLE_SOURCE_AI_V1",
+    "implementation_shape": "ADDITIVE_POST_CANDIDATE_FREEZE_SIDECAR",
+    "canonical_ai_object": "unordered_top3_set_probability",
+    "canonical_ai_mass_per_race": 1.0,
+    "derived_wide_mass_per_race": 3.0,
+    "probability_tolerance": 1e-10,
+    "counted_terminal_boundary": "post_freeze_value_eligibility_utility",
+    "candidate_probability": "wide_marginal_from_canonical_top3_set_probability",
+    "candidate_market_free": true,
+    "candidate_key_is_frozen_input": true,
+    "candidate_key_is_routing_identity_not_numeric_ai_input": true,
+    "decision_bearing_ai_scalar": "p_action_calibrated",
+    "decision_bearing_ai_scalar_count": 1,
+    "decision_bearing_ai_scalar_definition": "one_dimensional_calibrator_of_frozen_candidate_p_wide_only",
+    "decision_numeric_ai_input_allowlist": [
+      "p_action_calibrated"
+    ],
+    "decision_identity_input_allowlist": [
+      "candidate_freeze_hash",
+      "candidate_key",
+      "race_id"
+    ],
+    "calibrator_forbidden_inputs": [
+      "ai_confidence_score",
+      "ai_prob_horse_level",
+      "ai_rank",
+      "ai_score_gap_to_second",
+      "ai_top_score_vs_median",
+      "margin",
+      "raw_ai_score"
+    ],
+    "calibrator_contract_must_bind": [
+      "code_sha256",
+      "fit_data_manifest_sha256",
+      "fit_cutoff",
+      "fit_partition",
+      "input_schema_sha256",
+      "label_manifest_sha256",
+      "method_and_parameters",
+      "output_schema_sha256"
+    ],
+    "raw_probability_margin_rank_gap_confidence_are_diagnostic_only": true,
+    "derived_observability_fields_may_be_persisted": true,
+    "derived_observability_fields_may_reenter_decision": false,
+    "context_residual_enabled_in_v1": false,
+    "market_join_phase": "after_candidate_freeze",
+    "result_join_phase": "after_candidate_and_quote_freeze"
+  },
+  "forbidden_reinjection_families": [
+    "ai_confidence_to_danger_to_pair_to_hit",
+    "ai_probability_and_ai_rank_as_separate_votes",
+    "ai_probability_to_overlay_to_pair_plus_direct_ai_probability",
+    "posterior_marginal_and_posterior_summary_as_independent_models",
+    "score_gap_and_confidence_as_separate_additive_votes"
+  ],
+  "comparison": {
+    "arms": [
+      {
+        "arm_id": "R0_REFERENCE",
+        "description": "Versioned frozen research candidate and decision reference with exact formula, threshold, calibrator, cutoff, lineage, and digests; no production builder import."
+      },
+      {
+        "arm_id": "R1_SINGLE_SOURCE",
+        "description": "Same frozen Top3 posterior, wide marginal, candidate key, p_action_calibrated bytes, and calibrator artifact; exact hash-bound value-eligibility formula removes only reinjected AI descendants."
+      }
+    ],
+    "allowed_variant_count": 2,
+    "allowed_threshold_search_count": 0,
+    "same_runner_universe": true,
+    "same_chronological_folds": true,
+    "same_fit_and_calibration_budget": true,
+    "phase_1_calibrator_artifact_equal": true,
+    "phase_1_calibrator_refit_allowed": false,
+    "phase_1_effective_threshold_contract_equal": true,
+    "phase_1_market_formula_equal": true,
+    "phase_1_non_ai_clauses_equal": true,
+    "phase_1_p_action_calibrated_bytes_equal": true,
+    "phase_1_recalibrated_arm_requires_new_scope_and_variant": true,
+    "phase_1_r1_value_eligibility_formula_and_effective_threshold_hash_bound": true,
+    "r0_required_bindings": [
+      "calibration_artifact_sha256",
+      "calibration_fit_data_manifest_sha256",
+      "calibration_label_manifest_sha256",
+      "calibration_training_cutoff",
+      "decision_formula_sha256",
+      "input_lineage_manifest_sha256",
+      "packet_schema_sha256",
+      "producer_commit_sha",
+      "threshold_contract_sha256"
+    ],
+    "r1_required_bindings": [
+      "calibration_artifact_sha256_equal_to_r0",
+      "calibration_fit_data_manifest_sha256_equal_to_r0",
+      "calibration_label_manifest_sha256_equal_to_r0",
+      "decision_formula_sha256",
+      "effective_threshold_contract_sha256_equal_to_r0",
+      "market_formula_sha256_equal_to_r0",
+      "p_action_calibrated_bytes_digest_equal_to_r0"
+    ]
+  },
+  "structural_gate": {
+    "all_checks_required": true,
+    "checks": [
+      "all_C_n_3_complete",
+      "candidate_freeze_precedes_market",
+      "derived_wide_mass_three",
+      "finite_range_unique",
+      "no_buy_order_notification_or_credential_path",
+      "no_market_price_payoff_or_result_in_candidate",
+      "single_numeric_ai_descendant_to_postfreeze_value_eligibility",
+      "top3_set_mass_one"
+    ],
+    "failure_decision": "INVALID"
+  },
+  "predictive_noninferiority": {
+    "phase_1_probability_candidate_p_action_and_calibrator_digest_rule": "EXACT_MATCH",
+    "phase_1_scope": "decision_layer_only",
+    "phase_1_primary_gate": "exact_probability_calibrator_parity_and_single_source_structure",
+    "phase_1_probability_metric_contrast": "NOT_APPLICABLE_SHARED_IDENTICAL_P_ACTION",
+    "phase_1_shared_diagnostics": [
+      "action_brier",
+      "action_calibration",
+      "action_log_loss"
+    ],
+    "phase_1_parity_diagnostics": [
+      "value_eligibility_disagreement_count",
+      "value_eligibility_rate"
+    ],
+    "phase_1_value_eligibility_disagreement_count_required": 0,
+    "phase_1_recalibration_allowed": false,
+    "phase_1_top3_nll_is_not_a_decision_metric": true,
+    "phase_2_probability_core_cleanup_is_separate": true,
+    "phase_2_primary_metric": "race_paired_top3_set_nll_delta_single_minus_reference",
+    "proposed_margin": 0.005,
+    "confidence_rule": "one_sided_95_percent_date_venue_code_cluster_bootstrap_upper_bound_below_margin",
+    "secondary_metrics": [
+      "candidate_change_count",
+      "fold_direction",
+      "wide_brier",
+      "wide_calibration"
+    ],
+    "outer_retuning_allowed": false
+  },
+  "phase_1_parity_economics": {
+    "status": "DESIGN_ONLY_EXACT_PARITY_REQUIRED",
+    "value_eligibility_must_match": true,
+    "value_eligibility_mismatch_count_required": 0,
+    "stake_return_and_roi_must_match": true,
+    "primary_metric": "NOT_APPLICABLE_PARITY",
+    "margin": "NOT_APPLICABLE_PARITY",
+    "bootstrap": "NOT_APPLICABLE_PARITY"
+  },
+  "historical_impact_economics": {
+    "status": "FORBIDDEN_PENDING_NEW_GOVERNANCE_SCOPE_AND_APPROVALS",
+    "arms": "D1_REMOVE_RAW_GATES_MINUS_D0_REFERENCE",
+    "value_eligibility_may_differ_by_arm": true,
+    "same_candidate_enrollment": true,
+    "same_unit_notional_rule": true,
+    "no_bet_row_rule": "stake_zero_return_zero_and_row_retained",
+    "primary_metric": "mean_delta_profit_per_enrolled_race",
+    "arm_stake_denominators_must_be_reported": true,
+    "roi_is_primary": false,
+    "noninferiority_or_shadow_decision_allowed": false
+  },
+  "prospective_economic_noninferiority": {
+    "status": "BLOCKED_PENDING_STRICT_T3_AND_G2",
+    "applies_to": "SEPARATELY_SCOPED_NON_PARITY_CHALLENGER_ONLY",
+    "primary_metric": "race_paired_net_return_delta_challenger_minus_reference",
+    "same_candidate_enrollment": true,
+    "same_quote_snapshot": true,
+    "same_unit_notional_rule": true,
+    "same_ticket_budget": true,
+    "no_bet_row_rule": "stake_zero_return_zero_and_row_retained",
+    "arm_stake_denominators_must_be_reported": true,
+    "margin": "HUMAN_REVIEW_REQUIRED_BEFORE_OUTER_EXPOSURE",
+    "roi_is_primary": false,
+    "roi_improvement_required": false
+  },
+  "read_only_historical_roi_inventory": {
+    "authority": false,
+    "comparison_executed": false,
+    "evidence_class": "B_LOCAL_HASHED",
+    "final_official_payoff_only": true,
+    "github_approval_evidence": false,
+    "inventory_date": "2026-08-14",
+    "roi_delta_measured": false,
+    "strict_t3": false,
+    "decision_base": "eligible_race AND candidate_generated",
+    "observed_audit_base": "decision_base AND official_outcome_joined",
+    "observed_audit_settlement_availability_is_not_a_decision_input": true,
+    "observed_r0_audit_mask_formula": "observed_audit_base AND 0.225<=p<0.325 AND 0.25<=a<0.4 AND p>=0.21275851149504352",
+    "cited_cohort_settlement_completeness_required_after_decision_freeze": true,
+    "settlement_join_phase": "after_decision_mask_freeze",
+    "missing_or_invalid_settlement_action": "INVALID_RUN_NO_ROW_DROP",
+    "parity_refactor": {
+      "calibrator": "sigmoid(logit(top1_wide_prob)+0.130654047367905)",
+      "expected_roi_delta": 0.0,
+      "expected_selection_mismatch_count": 0,
+      "interpretation": "Algebraic parity requirement, not a measured performance result",
+      "r0_decision_formula": "decision_base AND 0.225<=p<0.325 AND 0.25<=a<0.4 AND p>=0.21275851149504352",
+      "r0_effective_raw_interval": "0.22630985987893942<=p<0.325",
+      "r1_formula": "decision_base AND 0.25<=a<0.35429028335310075",
+      "zero_mismatch_required": true
+    },
+    "separate_impact_diagnostic": {
+      "canonical_scope_created": false,
+      "d0_formula": "decision_base AND 0.225<=p<0.325 AND 0.25<=a<0.4 AND p>=0.21275851149504352",
+      "d1_formula": "decision_base AND 0.25<=a<0.4",
+      "execution_status": "FORBIDDEN_PENDING_NEW_GOVERNANCE_SCOPE_AND_APPROVALS",
+      "interpretation": "Value-policy counterfactual, not parity refactor",
+      "new_experiment_id_required": true,
+      "raw_probability_gate_is_only_removed_decision_input": true,
+      "recalibration_allowed": false,
+      "threshold_search_allowed": false
+    },
+    "diagnostic_cohorts": [
+      {
+        "cohort_id": "FULL_DEVELOPMENT_OOS",
+        "dates": "2024-07-06..2026-02-15",
+        "race_count": 5336,
+        "status": "REUSED_DEVELOPMENT_OOS"
+      },
+      {
+        "cohort_id": "CITED_FOLDS_2_TO_4",
+        "dates": "2025-01-05..2026-02-15",
+        "folds": [
+          "fold2",
+          "fold3",
+          "fold4"
+        ],
+        "race_count": 3746,
+        "status": "PRIMARY_MECHANISTIC_DIAGNOSTIC_CANDIDATE"
+      },
+      {
+        "cohort_id": "GRADE_R_POSTFREEZE_HOLDOUT",
+        "dates": "2026-07-18,2026-07-19,2026-07-25,2026-07-26",
+        "race_count": 144,
+        "status": "SMALL_REBUILT_FINAL_PAYOFF_HOLDOUT_SOURCE_TIME_UNPROVEN"
+      }
+    ],
+    "paired_row_contract": {
+      "candidate_enrollment_denominator": 3746,
+      "decision_columns_must_exclude_outcome_and_payoff": true,
+      "official_outcome_and_candidate_hit_required_for_every_race": true,
+      "hit_true_payoff_rule": "one_unique_finite_positive_official_wide_pay_required",
+      "hit_false_payoff_rule": "payoff_may_be_null_and_return_is_zero",
+      "invalid_if_required_outcome_or_conditional_payoff_missing": true,
+      "no_bet_rule": "stake_zero_return_zero_profit_zero_row_retained",
+      "primary_metric": "mean_delta_profit_per_enrolled_race",
+      "profit_formula": "return_arm_minus_stake_arm",
+      "return_formula": "official_wide_pay_if_eligible_and_hit_else_zero",
+      "roi_is_primary": false,
+      "stake_formula": "100_if_eligible_else_zero"
+    },
+    "high_payout_sensitivity": {
+      "arm_specific_exclusion_forbidden": true,
+      "common_race_exclusion_sets": [
+        "top1_settled_candidate_return",
+        "top3_settled_candidate_return"
+      ],
+      "common_winsorized_return_yen": 2000,
+      "excluded_rows_retained_with_stake_unchanged": true,
+      "settled_candidate_return_formula": "official_wide_pay_if_candidate_hit_else_zero",
+      "ranking_universe": "all_3746_enrolled_candidate_rows_after_decision_freeze",
+      "ranking_sort": [
+        "settled_candidate_return_yen_DESC",
+        "race_date_ASC",
+        "race_id_ASC"
+      ],
+      "application_rule": "set_return_zero_for_both_arms_keep_rows_and_stakes",
+      "common_race_id_set_sha256_required": true,
+      "race_id_set_digest_serialization": "unique_race_ids_unicode_codepoint_sorted_json_array_utf8_no_bom_compact_no_trailing_newline",
+      "winsorized_candidate_return_formula": "min(settled_candidate_return_yen,2000)",
+      "winsorized_return_arm_formula": "winsorized_candidate_return_yen_if_eligible_arm_else_zero_keep_rows_and_stakes"
+    },
+    "uncertainty_contract": {
+      "cluster_key": [
+        "race_date",
+        "venue_code"
+      ],
+      "bootstrap_replicates": 100000,
+      "seed": 20260814,
+      "rng": "numpy.random.Generator(PCG64)",
+      "cluster_value_contract": "race_date_YYYY-MM-DD_and_venue_code_two_digit_strings",
+      "cluster_ordering": "unique_race_date_venue_code_tuples_lexicographic_ascending",
+      "within_cluster_row_ordering": "race_id_ascending",
+      "draw_call_per_replicate": "rng.integers(0,n_clusters,size=n_clusters,dtype=np.int64,endpoint=False)_exactly_once",
+      "sampling_rule": "append_all_rows_for_sampled_cluster_indices_in_returned_index_order_with_multiplicity",
+      "statistic": "sum_delta_profit_divided_by_resampled_race_row_count_including_cluster_multiplicity",
+      "one_sided_95_lower_bound": "numpy.quantile(statistics,0.05,method=linear)",
+      "runner_and_environment_hash_required": true
+    },
+    "source_candidates": [
+      {
+        "path": "outputs/analysis/umaren_wide_rebuild_v1/wide_diagnostic_master_v1/wide_diagnostic_master_v1.csv",
+        "race_count": 5336,
+        "role": "diagnostic_master",
+        "sha256": "697142b64e8052b212731dc0319ccafb7f61ac29dbc46f67385f9ae050129de9"
+      },
+      {
+        "path": "config/wide_abc_shadow_policy_v1.json",
+        "role": "r0_policy",
+        "sha256": "74a2175a0490c3b998fbd539d280671f6857508392d995dcb65d4666f4bad67f"
+      },
+      {
+        "path": "scripts/audit_wide_fixed_policy_reproducibility_stability_v1.py",
+        "role": "r0_reference_implementation",
+        "sha256": "06132d923f10587664fe4ed19ce9dc25c3b152d34a1461acd034f928e6e1e465"
+      },
+      {
+        "path": "config/wide_fixed_policy_stability_audit_v1.json",
+        "role": "r0_audit_config",
+        "sha256": "fae9c66c77574f09f0b5cede6c74e837cd6afb33e0b26f54809ef643e567837e"
+      },
+      {
+        "path": "outputs/analysis/umaren_wide_rebuild_v1/m1c_action_calibration_offset_v1/m1c_action_calibration_offset_oos_predictions.csv",
+        "race_count": 5336,
+        "role": "p_action_artifact",
+        "sha256": "34f56b5a61261bd9b6cfd38797b65bd88415d0778d98cef29eebfbe2f09e513c"
+      },
+      {
+        "path": "outputs/analysis/umaren_wide_rebuild_v1/m1c_candidate_calibration_v1/m1c_candidate_calibration_calibration_candidates.csv",
+        "race_count": 3282,
+        "role": "calibrator_fit_rows_with_labels",
+        "sha256": "a4dd2a5d82792b0a4f952797253286555ca2b39449f2d685596c188ef4270546"
+      },
+      {
+        "path": "outputs/analysis/umaren_wide_rebuild_v1/m1c_action_calibration_offset_v1/summary.json",
+        "role": "calibrator_summary",
+        "sha256": "fd53aca115ec7055e3fadc6aa2ef01566d9e4f91df35d2f4b82de9b89fbc38f6"
+      },
+      {
+        "path": "scripts/analyze_m1c_action_calibration_offset_v1.py",
+        "role": "calibrator_producer",
+        "sha256": "b36b77fe92b250ac8056a8743c6f3f73f87a04ace1de921d5527c7bb21a69f2c"
+      },
+      {
+        "path": "data/processed/target/wide_payoffs.csv",
+        "race_count": 90016,
+        "role": "current_official_payoff_source",
+        "sha256": "b94b0c0ea2ce4424d70432f7d070a9083d01850876a710432ec5b98538070d83"
+      },
+      {
+        "path": "outputs/analysis/umaren_wide_rebuild_v1/expected_m0_m1c_fixed_policy_replay_v1/evaluation/postfreeze_holdout_candidates_with_official_payoffs.csv",
+        "race_count": 144,
+        "role": "grade_r_joined_holdout",
+        "sha256": "076824fbd189ad0c5bf0884b614ead3a3ff159422aa58ef3eefd3792927300a5"
+      }
+    ],
+    "limitations": [
+      "all_source_candidates_are_untracked_or_ignored",
+      "candidate_and_result_columns_are_not_physically_separated_in_local_master",
+      "calibrator_fit_rows_include_future_periods_for_some_development_folds",
+      "historical_candidate_and_available_t3_odds_periods_have_zero_race_overlap",
+      "no_canonical_candidate_enrollment_fold_or_settlement_manifest",
+      "no_strict_t3_eligible_rows",
+      "not_confirmatory_outer_oos",
+      "production_builder_nested_signal_effect_is_out_of_scope"
+    ]
+  },
+  "provisional_score": {
+    "independent_information": 0,
+    "racing_mechanism": 10,
+    "outer_oos_failure_evidence": 10,
+    "leakage_safety": 8,
+    "minimal_falsifiability": 10,
+    "acquisition_implementation_cost": 8,
+    "total": 46,
+    "threshold": 75,
+    "status": "BLOCKED_SCORE"
+  },
+  "prerequisites": [
+    "clean_hash_bound_oof_asof_ai_lineage",
+    "common_fold_manifest",
+    "frozen_runner_universe_manifest",
+    "human_reviewed_model_integrity_or_negative_control_governance_lane",
+    "post_G2_versioned_execution_contract",
+    "r0_reference_formula_threshold_calibrator_cutoff_lineage_and_digests",
+    "r1_one_dimensional_calibrator_code_method_parameters_cutoff_and_schema_hashes",
+    "tracked_candidate_packet_producer_commit_and_schema",
+    "strict_T3_prospective_quote_evidence"
+  ],
+  "current_blockers": [
+    "G1_is_execution_forbidden",
+    "G2_not_implemented",
+    "legacy_real_data_running_fail_closed",
+    "no_applicable_prepare_or_run_grant",
+    "production_replacement_outside_research_authority",
+    "score_below_75"
+  ],
+  "planned_change_boundaries": {
+    "design_only_paths_now": [
+      "docs/AI_SCORE_SINGLE_SOURCE_DESIGN_DRAFT.md",
+      "research/drafts/AI_SCORE_SINGLE_SOURCE_COUNTERFACTUAL_SEED_20260814.json",
+      "research/drafts/AI_SCORE_SINGLE_SOURCE_HUMAN_REVIEW_CHECKLIST.md"
+    ],
+    "forbidden_now": [
+      "config",
+      "data",
+      "models",
+      "outputs",
+      "production",
+      "scripts/build_current_strongest_tickets.py",
+      "src",
+      "tests"
+    ]
+  },
+  "safety": {
+    "automatic_execution": false,
+    "credential_access": false,
+    "formal_buy": false,
+    "merge_authorized": false,
+    "network_execution": false,
+    "notification_side_effects": false,
+    "production_change": false,
+    "real_data_execution": false,
+    "roi_calculation": false,
+    "send_order": false,
+    "stake": 0
+  }
+}
