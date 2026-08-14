@@ -8,13 +8,15 @@
 machine-readable map:
 `research/drafts/ROI_REPRODUCTION_GATE_V2_CONTRACT_MAP.design.json`
 
-状態: `G1_IMPLEMENTED_PENDING_HUMAN_REVIEW / CONTRACT_COMPILER_ONLY_NO_AUTHORITY /
+状態: `G1_IMPLEMENTED_AND_HUMAN_MERGED / CONTRACT_COMPILER_ONLY_NO_AUTHORITY /
 G2_NOT_IMPLEMENTED / EXECUTION_FORBIDDEN`
 
 > このchecklistへの記入はGitHub approval、proposal scope、run scope、execution lease、
 > merge approvalではない。PR #36は`fbbebc804c7a2393aff26a6de9ad7c55caa5bc92`として
-> mainへmerge済みである。実装を進める場合は、その子孫から別human-owned Draftを作り、
-> G1とG2を順にreview・mergeする。G2 activation後の通常experiment transitionには
+> mainへmerge済みである。PR #38のG1 implementationも人間ユーザーにより
+> `811ffd11bd80447f013c643b96c3eb8145916061`としてmainへmerge済みだが、
+> compiler-only/no-authorityである。G2は別human-owned Draftでreview・mergeする。
+> G2 activation後の通常experiment transitionには
 > Ready、merge、rebase、branch refreshを要求しない。
 
 現行G1はpure compiler、policy、schema、synthetic-only governance testを実装するが、provider、
@@ -55,8 +57,9 @@ Reviewer decision:
 
 ## C. Bootstrap and self-approval — P0
 
-- [ ] G1はschema/policy/compiler/synthetic fixtureだけで、全authorityをfalseにする。
-- [ ] G2はG1がhuman mergeされた後の別Draftにし、attester、authority verifier、
+- [x] G1はPR #38として人間ユーザーによりmainへmerge済みで、schema/policy/compiler/
+  synthetic fixtureだけを含み、全authorityをfalseに維持している。
+- [ ] G2はG1と別のhuman-owned Draftにし、attester、authority verifier、
   reusable reference catalog、supervised executor、durable runtime/one-shot lease ledgerをreviewする。
 - [ ] G1/G2/Aは自身や`infrastructure_safety_v1`で自己承認しない。
 - [ ] PR #36の過去branchやPR #37 branchをroot of trustまたはapproval baseにしない。

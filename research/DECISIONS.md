@@ -381,3 +381,27 @@ G1/G2/Aの開始、再開、grant、実行tokenにならない。
 G1/G2のbootstrapは自身または`infrastructure_safety_v1`で承認できない。workflow、既存test、
 approval verifier、registry writer、approver allowlist、scorecard、infra v1 policyをG1 compilerの
 changed-path候補へ含めず、root-of-trust変更は人間reviewと人間mergeだけで有効にする。
+
+## D-027 — ROI reproduction v2 G1のhuman merge事実を非権限状態へ整合する
+
+- Decision: `G1_IMPLEMENTED_AND_HUMAN_MERGED_NO_AUTHORITY_RECONCILED`
+- Evidence: GitHub PR #38 merge metadata + current-main ancestry + merged G1 policy/contracts
+
+PR #38のG1 implementationは、GitHub actor typeが非botの人間ユーザー
+`kazuponbaseball-cell`により2026-08-14T12:21:27Zにmainへmergeされた。merge commitは
+`811ffd11bd80447f013c643b96c3eb8145916061`であり、観測時のcurrent main
+`69a95a25a618e04fa73620f21a9010e78143f1eb`はその子孫である。このdecisionはmerge済みという
+記述状態だけを整合し、PR #38のformal reviewDecisionが存在したとは主張しない。
+
+G1の境界は引き続き`CONTRACT_COMPILER_ONLY_NO_AUTHORITY`である。G2は未実装、effective runtime
+execution kindはnone、結論は`EXECUTION_FORBIDDEN`であり、provider、writer、authority verifier、
+durable ledger、lease、executor、real-data、model、training、historical replay、ROI、shadow、
+production、BUYのauthority/capabilityを追加しない。PR merge、CI成功、chat指示、このdecisionは
+proposal、prepare、run、result、activation、grant、execution tokenではない。
+
+`research/drafts/ROI_REPRODUCTION_GATE_V2_CONTRACT_MAP.design.json`はG1 testでself-amendment拒否対象と
+され、policyのbootstrap exact-path inventoryにも含まれるnon-authoritative historical design snapshot
+である。このdecisionは現行policyのsource-ref digestとの一致を主張せず、そのpre-merge status文字列を
+current live statusまたはauthorityとして扱わない。frozen policy/schema/compiler/test、legacy writer、
+registry、approver allowlist、scorecard、workflowは変更しない。G2と一件限定model-integrity laneの
+root amendment/activationは、それぞれ別のhuman-owned PR、scope、grant、durable receiptを必要とする。
