@@ -1,0 +1,855 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_durable_ledger_receipt_v1.schema.json",
+  "title": "ROI reproduction durable ledger immutable receipt v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "receipt_kind",
+        "ledger_contract_version",
+        "policy_digest",
+        "schema_digest",
+        "activation_epoch",
+        "backend_identity_digest",
+        "transaction_id",
+        "idempotency_key",
+        "source_main_sha",
+        "source_registry_blob_sha",
+        "source_registry_content_sha256",
+        "imported_event_chain_digest",
+        "imported_experiment_head_set_digest",
+        "imported_comment_id_set_digest",
+        "previous_active_backend_digest",
+        "new_active_backend_digest",
+        "new_global_head_sequence",
+        "new_global_head_digest",
+        "activated_at",
+        "writer_identity_digest",
+        "signer_or_attestation_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "receipt_kind": {
+          "const": "DURABLE_LEDGER_ACTIVATION"
+        },
+        "ledger_contract_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "activation_epoch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_main_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "source_registry_blob_sha": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_registry_content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imported_event_chain_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imported_experiment_head_set_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "imported_comment_id_set_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "previous_active_backend_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_active_backend_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "activated_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signer_or_attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "receipt_kind",
+        "ledger_contract_version",
+        "policy_digest",
+        "schema_digest",
+        "backend_identity_digest",
+        "transaction_id",
+        "idempotency_key",
+        "formal_buy",
+        "send_order",
+        "stake",
+        "previous_global_head_sequence",
+        "previous_global_head_digest",
+        "new_global_head_sequence",
+        "new_global_head_digest",
+        "previous_experiment_operation_sequence",
+        "previous_experiment_operation_digest",
+        "new_experiment_operation_sequence",
+        "new_experiment_operation_digest",
+        "event_digest",
+        "grant_reservation_digest",
+        "lease_id",
+        "lease_digest",
+        "issued_at",
+        "writer_identity_digest",
+        "signer_or_attestation_digest"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "receipt_kind": {
+          "const": "EXECUTION_LEASE_ISSUED"
+        },
+        "ledger_contract_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        },
+        "previous_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "previous_experiment_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_experiment_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_experiment_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_experiment_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "grant_reservation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "issued_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signer_or_attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "receipt_kind",
+        "ledger_contract_version",
+        "policy_digest",
+        "schema_digest",
+        "backend_identity_digest",
+        "transaction_id",
+        "idempotency_key",
+        "formal_buy",
+        "send_order",
+        "stake",
+        "previous_global_head_sequence",
+        "previous_global_head_digest",
+        "new_global_head_sequence",
+        "new_global_head_digest",
+        "previous_experiment_operation_sequence",
+        "previous_experiment_operation_digest",
+        "new_experiment_operation_sequence",
+        "new_experiment_operation_digest",
+        "lease_id",
+        "lease_digest",
+        "phase_binding",
+        "consumed_at",
+        "writer_identity_digest",
+        "signer_or_attestation_digest"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "receipt_kind": {
+          "const": "EXECUTION_LEASE_CONSUMED"
+        },
+        "ledger_contract_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        },
+        "previous_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "previous_experiment_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_experiment_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_experiment_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_experiment_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "phase_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "phase",
+            "proposal_scope_digest"
+          ],
+          "properties": {
+            "phase": {
+              "const": "PREPARATION"
+            },
+            "proposal_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "consumed_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signer_or_attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "receipt_kind",
+        "ledger_contract_version",
+        "policy_digest",
+        "schema_digest",
+        "backend_identity_digest",
+        "transaction_id",
+        "idempotency_key",
+        "formal_buy",
+        "send_order",
+        "stake",
+        "previous_global_head_sequence",
+        "previous_global_head_digest",
+        "new_global_head_sequence",
+        "new_global_head_digest",
+        "previous_experiment_operation_sequence",
+        "previous_experiment_operation_digest",
+        "new_experiment_operation_sequence",
+        "new_experiment_operation_digest",
+        "lease_id",
+        "lease_digest",
+        "phase_binding",
+        "consumed_at",
+        "writer_identity_digest",
+        "signer_or_attestation_digest"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "receipt_kind": {
+          "const": "EXECUTION_LEASE_CONSUMED"
+        },
+        "ledger_contract_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        },
+        "previous_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "previous_experiment_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_experiment_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_experiment_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_experiment_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "lease_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "phase_binding": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "phase",
+            "run_scope_digest",
+            "replica_id"
+          ],
+          "properties": {
+            "phase": {
+              "const": "HISTORICAL_RUN_REPLICA"
+            },
+            "run_scope_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "replica_id": {
+              "enum": [
+                "clean_a",
+                "clean_b"
+              ]
+            }
+          }
+        },
+        "consumed_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signer_or_attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "receipt_kind",
+        "ledger_contract_version",
+        "policy_digest",
+        "schema_digest",
+        "backend_identity_digest",
+        "transaction_id",
+        "idempotency_key",
+        "formal_buy",
+        "send_order",
+        "stake",
+        "previous_global_head_sequence",
+        "previous_global_head_digest",
+        "new_global_head_sequence",
+        "new_global_head_digest",
+        "previous_catalog_operation_sequence",
+        "previous_catalog_operation_digest",
+        "new_catalog_operation_sequence",
+        "new_catalog_operation_digest",
+        "event_digest",
+        "grant_reservation_digest",
+        "catalog_publication_scope_digest",
+        "provider_lease_id",
+        "provider_lease_digest",
+        "provider_identity_digest",
+        "issued_at",
+        "writer_identity_digest",
+        "signer_or_attestation_digest"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "receipt_kind": {
+          "const": "CATALOG_PROVIDER_LEASE_ISSUED"
+        },
+        "ledger_contract_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        },
+        "previous_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "previous_catalog_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_catalog_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_catalog_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_catalog_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "event_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "grant_reservation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "catalog_publication_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provider_lease_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider_lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provider_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "issued_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signer_or_attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "receipt_kind",
+        "ledger_contract_version",
+        "policy_digest",
+        "schema_digest",
+        "backend_identity_digest",
+        "transaction_id",
+        "idempotency_key",
+        "formal_buy",
+        "send_order",
+        "stake",
+        "previous_global_head_sequence",
+        "previous_global_head_digest",
+        "new_global_head_sequence",
+        "new_global_head_digest",
+        "previous_catalog_operation_sequence",
+        "previous_catalog_operation_digest",
+        "new_catalog_operation_sequence",
+        "new_catalog_operation_digest",
+        "catalog_publication_scope_digest",
+        "provider_lease_id",
+        "provider_lease_digest",
+        "provider_identity_digest",
+        "dispatch_reservation_id",
+        "dispatch_reservation_digest",
+        "consumed_at",
+        "writer_identity_digest",
+        "signer_or_attestation_digest"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "receipt_kind": {
+          "const": "CATALOG_PROVIDER_LEASE_CONSUMED"
+        },
+        "ledger_contract_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "schema_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "backend_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        },
+        "previous_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_global_head_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_global_head_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "previous_catalog_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "previous_catalog_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "new_catalog_operation_sequence": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "new_catalog_operation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "catalog_publication_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provider_lease_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider_lease_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "provider_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "dispatch_reservation_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "dispatch_reservation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "consumed_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "writer_identity_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "signer_or_attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  ]
+}

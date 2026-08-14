@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_catalog_release_status_event_v1.schema.json",
+  "title": "ROI reproduction catalog release status event v1",
+  "allOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_kind",
+        "event_id",
+        "global_sequence",
+        "release_status_sequence",
+        "reference_catalog_release_id",
+        "reference_catalog_release_digest",
+        "policy_ref",
+        "schema_ref",
+        "status",
+        "previous_status",
+        "previous_release_status_event_id",
+        "previous_release_status_event_digest",
+        "reason_code",
+        "status_change_evidence_digest",
+        "effective_at",
+        "observer_actor",
+        "durable_ledger_evidence",
+        "signer_or_attestation_digest",
+        "notes",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "event_kind": {
+          "const": "ROI_REPRODUCTION_CATALOG_RELEASE_STATUS_EVENT"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "global_sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "release_status_sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "reference_catalog_release_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "reference_catalog_release_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "schema_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "status": {
+          "enum": [
+            "ACTIVE",
+            "REVOKED"
+          ]
+        },
+        "previous_status": {
+          "enum": [
+            "INITIAL",
+            "ACTIVE"
+          ]
+        },
+        "previous_release_status_event_id": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous_release_status_event_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status_change_evidence_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "effective_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observer_actor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "actor_kind",
+            "actor_id"
+          ],
+          "properties": {
+            "actor_kind": {
+              "type": "string",
+              "minLength": 1
+            },
+            "actor_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "durable_ledger_evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "evidence_kind",
+            "digest"
+          ],
+          "properties": {
+            "evidence_kind": {
+              "type": "string",
+              "minLength": 1
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "signer_or_attestation_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "notes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "event_is_execution_authority",
+            "automatic_execution_allowed",
+            "production_approved",
+            "merge_approved",
+            "buy_approved",
+            "formal_buy",
+            "send_order",
+            "stake"
+          ],
+          "properties": {
+            "event_is_execution_authority": {
+              "const": false
+            },
+            "automatic_execution_allowed": {
+              "const": false
+            },
+            "production_approved": {
+              "const": false
+            },
+            "merge_approved": {
+              "const": false
+            },
+            "buy_approved": {
+              "const": false
+            },
+            "formal_buy": {
+              "const": false
+            },
+            "send_order": {
+              "const": false
+            },
+            "stake": {
+              "type": "integer",
+              "const": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "oneOf": [
+        {
+          "required": [
+            "previous_status",
+            "status",
+            "previous_release_status_event_id",
+            "previous_release_status_event_digest"
+          ],
+          "properties": {
+            "previous_status": {
+              "const": "INITIAL"
+            },
+            "status": {
+              "const": "ACTIVE"
+            },
+            "previous_release_status_event_id": {
+              "const": null
+            },
+            "previous_release_status_event_digest": {
+              "const": null
+            }
+          }
+        },
+        {
+          "required": [
+            "previous_status",
+            "status",
+            "previous_release_status_event_id",
+            "previous_release_status_event_digest"
+          ],
+          "properties": {
+            "previous_status": {
+              "const": "ACTIVE"
+            },
+            "status": {
+              "const": "REVOKED"
+            },
+            "previous_release_status_event_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "previous_release_status_event_digest": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

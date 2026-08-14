@@ -85,6 +85,30 @@ state validator、registry event compiler、synthetic fixturesだけを追加す
 - gateは自分自身を承認できない
 - human reviewとhuman mergeだけがroot of trustを変更できる
 
+現行G1 implementationのboundaryは`CONTRACT_COMPILER_ONLY_NO_AUTHORITY`である。G1は
+pure compiler、policy、schema、synthetic-only governance testを実装するが、provider、writer、
+authority verifier、executorを実装しない。artifact contractは
+`execution_kind=historical_reproduction_v2`をbindする一方、現在のruntime execution kindはnone、
+全authorityはfalse/0、`EXECUTION_FORBIDDEN`である。G2は未実装であり、現行legacy v2と
+infra v3 writer semantics、approval keyword、digestを変更しない。schema v4 dispatchと
+prepare/run/resultの3 action workflowも現在activationされていない。
+
+G1のJSON Schema単独、またはtrusted policy/schema digestを渡さないnormalizer呼出しは
+`NON_AUTHORITY_FIXTURE_VALIDATION`に限る。artifactを有効と判定するには、code-owned Python
+normalizerを必須とし、G2 verifierがcurrent-main上のpolicy/schema bytes、catalog release、全manifest
+contract、expected output/numeric reference、execution contextを再取得してhash照合しなければならない。
+Schemaだけのvalidation、caller提供のdigest/path/ACTIVE表明、G1の`structural`表示をgrant・lease・runへ
+変換してはならない。
+
+G2 activation前の未実装blockerは、有限catalog source/provider allowlist、9種のcatalog contractと
+run manifestのconformance検証、repository-root cwd・sanitized env・timeout・read-only snapshot・single
+output rootの実効強制、exact policy/schema digest context、publisher/attester、durable ledger、one-shot
+lease、supervised executorである。いずれかが未実装なら`EXECUTION_FORBIDDEN`を維持する。
+現G1の`catalog publication scope v1`はexpected object count、canonical output rule、有限provider/
+command/budget domainをまだ完全には表現しないため、そのままG2 authorityへ昇格できない。G2は
+code-owned finite semanticsを別versionのscope/schema/policyへfreezeし、人間review・main mergeする。
+`NEW_KIND_VERSION_AND_PATH_ONLY`のため、現v1 schemaをin-place拡張してactivationしてはならない。
+
 ### G2 — attester and supervised executor
 
 G1がmainへmergeされた後、別のhuman-owned governance PRで追加する。
@@ -139,7 +163,8 @@ schema、policy、executor、durable ledger、catalog publisherなどgovernance 
 再利用できる。catalogやdurable ledgerが利用不能なら、per-transition mergeへfallbackせず
 fail-closeする。
 
-この設計DraftではG1、G2、Aのどれも実装・実行しない。
+PR #37の設計Draft自体はG1、G2、Aを実装・実行しなかった。後続の現G1変更は
+contract compilerだけを実装し、G2とAは引き続き未実装・実行禁止である。
 
 ## 4. Lifecycle
 
@@ -349,7 +374,7 @@ Catalog entry payloadで許可するもの:
 - `formal_buy=false`、`send_order=false`、`stake=0`
 
 entry自身へself digestを入れない。release indexがentry IDとexternal canonical entry digest、
-entry-set digest、provider/attester/created-at、publication receipt ID/digestを持つ。entry refは
+entry-set digest、provider/attester/created-at、content-addressed publication receipt digestを持つ。entry refは
 release ID/external release digestとentry ID/external entry digestを持つ。release自身のdigestも
 release payloadへ埋めず、proposal/runのref側で固定する。
 
@@ -550,8 +575,9 @@ evidence compilerで全authorityをfalseにする。v2 designはPR #36を実行�
 - merged `research/INFRASTRUCTURE_GATE.json`はread-only compatibility inputであり、
   future changed-path候補に含めずin-place変更しない
 
-将来のG1 implementationはこのmerged mainの子孫から開始する。PR #37やfuture G1/G2の
-branch copyをapproval rootにせず、G1/G2のgovernance変更だけをhuman review/mergeする。
+G1 compiler implementationはPR #37を含むmerged mainの子孫で行い、containing commitがhuman
+mergeされた後だけcode-owned G1 rootとして扱う。branch copyをapproval rootにせず、G2の
+governance変更も別にhuman review/mergeする。
 G2 activation後の通常experiment transitionはPR mergeを要求しない。
 
 ## 17. Future root-of-trust implementation paths
@@ -584,7 +610,7 @@ research/schemas/roi_reproduction_durable_ledger_receipt_v1.schema.json
 research/schemas/roi_reproduction_catalog_publication_receipt_v1.schema.json
 research/schemas/roi_reproduction_catalog_publication_event_v1.schema.json
 research/schemas/roi_reproduction_catalog_release_status_event_v1.schema.json
-research/schemas/research_registry_event_v4.schema.json
+research/schemas/roi_reproduction_registry_event_v4.schema.json
 scripts/research/github_approval.py
 scripts/research/roi_reproduction_contract_v2.py
 scripts/research/roi_reproduction_authority_verifier.py
@@ -595,10 +621,10 @@ scripts/research/roi_reproduction_durable_ledger.py
 scripts/research/export_roi_reproduction_audit_checkpoint_v1.py
 scripts/research/roi_reproduction_supervised_executor_v2.py
 scripts/research/update_registry.py
-tests/research/test_roi_reproduction_contract_v2.py
-tests/research/test_roi_reproduction_lifecycle_v2.py
-tests/research/test_roi_reproduction_reference_catalog_v1.py
-tests/research/test_roi_reproduction_durable_ledger_v1.py
+research/infra_tests/test_roi_reproduction_contract_v2.py
+research/infra_tests/test_roi_reproduction_lifecycle_v2.py
+research/infra_tests/test_roi_reproduction_reference_catalog_v1.py
+research/infra_tests/test_roi_reproduction_durable_ledger_v1.py
 tests/research/test_registry_jsonl.py
 ```
 

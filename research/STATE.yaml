@@ -161,6 +161,60 @@ legacy_roi_execution_contract:
   reenable_requires: versioned_roi_contract_governance_change
   existing_scope_bytes_and_digests_unchanged: true
 
+roi_reproduction_gate_v2:
+  gate_kind: roi_reproduction_audit_v2
+  governance_layer: G1
+  boundary: CONTRACT_COMPILER_ONLY_NO_AUTHORITY
+  declaration_status: G1_IMPLEMENTED_PENDING_HUMAN_REVIEW_AND_MAIN_MERGE
+  design_commit: f24e6a0e394dd376d100502d33872d47dad0ec9a
+  activation_requires_containing_commit_merged_to_main: true
+  compiler_implemented_by_this_change: true
+  policy_implemented_by_this_change: true
+  schema_implemented_by_this_change: true
+  g2_implemented: false
+  execution_forbidden: true
+  artifact_execution_kind_contract: historical_reproduction_v2
+  effective_runtime_execution_kind: none
+  preparation_authorized: false
+  execution_authorized: false
+  automatic_execution_allowed: false
+  actual_codex_dispatch_allowed: false
+  catalog_provider_allowed: false
+  attester_allowed: false
+  durable_runtime_ledger_available: false
+  one_shot_execution_lease_available: false
+  supervised_executor_available: false
+  real_data_allowed: false
+  model_access_allowed: false
+  training_allowed: false
+  historical_replay_allowed: false
+  prospective_outer_oos_allowed: false
+  roi_calculation_allowed: false
+  production_change_allowed: false
+  candidate_or_value_change_allowed: false
+  formal_buy: false
+  send_order: false
+  stake: 0
+  validation_event_schema_version: 4
+  validation_event_schema_path: research/schemas/roi_reproduction_registry_event_v4.schema.json
+  event_schema_is_live_authority: false
+  event_schema_v4_dispatch_enabled: false
+  current_three_action_workflow_activated: false
+  current_approval_keywords_grant_v2_authority: false
+  legacy_roi_v2_writer_semantics_unchanged: true
+  infrastructure_v3_writer_semantics_unchanged: true
+  registry_or_approval_writer_changed_by_this_declaration: false
+  root_of_trust_bootstrap: separate_human_owned_draft_review_and_human_merge_only
+  g2_activation_blockers:
+    - code_owned_policy_and_schema_digest_context
+    - finite_catalog_source_and_provider_allowlist
+    - catalog_contract_to_run_manifest_conformance
+    - execution_context_and_expected_output_enforcement
+    - publisher_attester_durable_ledger_lease_and_supervised_executor
+    - new_versioned_catalog_publication_scope_with_count_canonical_output_and_finite_budget
+  current_catalog_publication_scope_v1_authority_eligible: false
+  current_catalog_publication_scope_v1_in_place_activation_forbidden: true
+
 approval_system:
   schema_version: 3
   lifecycle:

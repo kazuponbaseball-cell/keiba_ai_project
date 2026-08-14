@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_catalog_publication_provider_lease_v1.schema.json",
+  "title": "ROI reproduction catalog provider lease v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lease_id",
+    "subject_kind",
+    "catalog_publication_scope_id",
+    "catalog_publication_scope_digest",
+    "catalog_kind",
+    "catalog_contract_version",
+    "gate_kind",
+    "gate_contract_version",
+    "phase",
+    "capability_digest",
+    "command_digest",
+    "provider_identity_digest",
+    "provider_code_digest",
+    "provider_environment_digest",
+    "verified_current_main_sha",
+    "durable_ledger_backend_identity_digest",
+    "durable_ledger_head_sequence",
+    "durable_ledger_head_digest",
+    "grant_reservation_receipt_digest",
+    "policy_digest",
+    "schema_digest",
+    "github_evidence_digest",
+    "issued_at",
+    "expires_at",
+    "human_supervisor_identity",
+    "retry_budget",
+    "formal_buy",
+    "send_order",
+    "stake"
+  ],
+  "properties": {
+    "lease_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject_kind": {
+      "const": "CATALOG_PUBLICATION_SCOPE"
+    },
+    "catalog_publication_scope_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalog_publication_scope_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "catalog_kind": {
+      "const": "roi_reproduction_reference_catalog_v1"
+    },
+    "catalog_contract_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "gate_kind": {
+      "const": "roi_reproduction_audit_v2"
+    },
+    "gate_contract_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "phase": {
+      "const": "CATALOG_PUBLISHING"
+    },
+    "capability_digest": {
+      "type": "string",
+      "const": "d65100977a8a202894eb5efb334ee8a6242a32900406b3dfb890622b06c161fd"
+    },
+    "command_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_identity_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_code_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provider_environment_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "verified_current_main_sha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "durable_ledger_backend_identity_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "durable_ledger_head_sequence": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "durable_ledger_head_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "grant_reservation_receipt_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "policy_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "schema_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "github_evidence_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "issued_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expires_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "human_supervisor_identity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "retry_budget": {
+      "type": "integer",
+      "const": 0
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    }
+  }
+}

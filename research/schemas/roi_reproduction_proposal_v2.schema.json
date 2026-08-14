@@ -1,0 +1,1010 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_proposal_v2.schema.json",
+  "title": "ROI reproduction proposal v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate_kind",
+    "gate_contract_version",
+    "execution_kind",
+    "policy_ref",
+    "schema_ref",
+    "title",
+    "hypothesis",
+    "null_hypothesis",
+    "racing_mechanism",
+    "non_promotion_purpose",
+    "brain_provenance",
+    "repository_contract",
+    "target_population",
+    "in_scope",
+    "out_of_scope",
+    "expected_changed_paths",
+    "raw_data_sources",
+    "data_as_of",
+    "allowed_columns",
+    "forbidden_columns",
+    "lineage_hash_requirements",
+    "chronological_fold_design",
+    "fold_manifest_ref",
+    "purge_embargo",
+    "reference_catalog_contract_refs",
+    "reference_catalog_entry_ref",
+    "model_identity_contract",
+    "primary_metric",
+    "secondary_metrics",
+    "required_effect",
+    "rejection_gate",
+    "stop_conditions",
+    "compute_budget",
+    "allowed_variant_count",
+    "allowed_threshold_search_count",
+    "score_components",
+    "eligibility_contract",
+    "formal_buy",
+    "send_order",
+    "stake",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "experiment_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+    },
+    "gate_kind": {
+      "const": "roi_reproduction_audit_v2"
+    },
+    "gate_contract_version": {
+      "type": "integer",
+      "const": 2
+    },
+    "execution_kind": {
+      "const": "historical_reproduction_v2"
+    },
+    "policy_ref": {
+      "$ref": "#/$defs/reference"
+    },
+    "schema_ref": {
+      "$ref": "#/$defs/reference"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "null_hypothesis": {
+      "type": "string",
+      "minLength": 1
+    },
+    "racing_mechanism": {
+      "type": "string",
+      "minLength": 1
+    },
+    "non_promotion_purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "brain_provenance": {
+      "$ref": "#/$defs/brain_provenance"
+    },
+    "repository_contract": {
+      "$ref": "#/$defs/repository_contract"
+    },
+    "target_population": {
+      "type": "string",
+      "minLength": 1
+    },
+    "in_scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "out_of_scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "expected_changed_paths": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+      }
+    },
+    "raw_data_sources": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "data_as_of": {
+      "type": "string",
+      "minLength": 1
+    },
+    "allowed_columns": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "critical_missing_count",
+          "min_primary_strength",
+          "min_rank_strength",
+          "sum_primary_strength",
+          "sum_rank_strength"
+        ]
+      }
+    },
+    "forbidden_columns": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "lineage_hash_requirements": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "chronological_fold_design": {
+      "$ref": "#/$defs/fold_design"
+    },
+    "fold_manifest_ref": {
+      "$ref": "#/$defs/reference"
+    },
+    "purge_embargo": {
+      "$ref": "#/$defs/purge_embargo"
+    },
+    "reference_catalog_contract_refs": {
+      "$ref": "#/$defs/catalog_contract_refs"
+    },
+    "reference_catalog_entry_ref": {
+      "$ref": "#/$defs/catalog_entry_ref"
+    },
+    "model_identity_contract": {
+      "$ref": "#/$defs/model_identity"
+    },
+    "primary_metric": {
+      "$ref": "#/$defs/primary_metric"
+    },
+    "secondary_metrics": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "required_effect": {
+      "$ref": "#/$defs/required_effect"
+    },
+    "rejection_gate": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "stop_conditions": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "compute_budget": {
+      "$ref": "#/$defs/compute_budget"
+    },
+    "allowed_variant_count": {
+      "type": "integer",
+      "const": 1
+    },
+    "allowed_threshold_search_count": {
+      "type": "integer",
+      "const": 0
+    },
+    "score_components": {
+      "$ref": "#/$defs/score_components"
+    },
+    "eligibility_contract": {
+      "$ref": "#/$defs/eligibility_contract"
+    },
+    "formal_buy": {
+      "const": false
+    },
+    "send_order": {
+      "const": false
+    },
+    "stake": {
+      "type": "integer",
+      "const": 0
+    },
+    "safety": {
+      "$ref": "#/$defs/g1_capabilities"
+    }
+  },
+  "$defs": {
+    "reference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "brain_provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "provider",
+        "model_id",
+        "transfer_mode",
+        "prompt_sha256",
+        "sanitized_context_manifest_ref",
+        "response_sha256"
+      ],
+      "properties": {
+        "source_kind": {
+          "const": "external_ai"
+        },
+        "provider": {
+          "const": "OpenAI"
+        },
+        "model_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transfer_mode": {
+          "const": "manual"
+        },
+        "prompt_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "sanitized_context_manifest_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "response_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "repository_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "base_branch",
+        "base_commit"
+      ],
+      "properties": {
+        "repository": {
+          "const": "kazuponbaseball-cell/keiba_ai_project"
+        },
+        "base_branch": {
+          "const": "main"
+        },
+        "base_commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        }
+      }
+    },
+    "fold_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "partition_unit",
+        "ordered_partitions",
+        "reused_development_test",
+        "race_overlap_allowed",
+        "prospective_outer_oos"
+      ],
+      "properties": {
+        "partition_unit": {
+          "const": "race_id"
+        },
+        "ordered_partitions": {
+          "const": [
+            "train",
+            "validation",
+            "calibration",
+            "reused_historical_test"
+          ]
+        },
+        "reused_development_test": {
+          "const": true
+        },
+        "race_overlap_allowed": {
+          "const": false
+        },
+        "prospective_outer_oos": {
+          "const": false
+        }
+      }
+    },
+    "purge_embargo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "purge_days",
+        "embargo_days"
+      ],
+      "properties": {
+        "purge_days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "embargo_days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "catalog_contract_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "column_policy",
+        "feature_lineage",
+        "target_label",
+        "fold_design",
+        "runner_universe_policy",
+        "model_recipe",
+        "canonicalization",
+        "environment_template",
+        "reference_artifact_contract"
+      ],
+      "properties": {
+        "column_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "feature_lineage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "target_label": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "fold_design": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "runner_universe_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "model_recipe": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "canonicalization": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "environment_template": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "reference_artifact_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "catalog_entry_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "catalog_release_id",
+        "catalog_release_digest",
+        "entry_id",
+        "entry_digest",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "catalog_release_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "catalog_release_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "entry_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "entry_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    "model_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "legacy_reference_status",
+        "identity_domain_resolution_count",
+        "legacy_run_mode",
+        "canonical_model_name",
+        "canonical_probability_stage",
+        "comparison_artifact_ids",
+        "model_recipe_manifest_ref",
+        "post_reference_changes_allowed",
+        "challenger_present"
+      ],
+      "properties": {
+        "legacy_reference_status": {
+          "const": "CATALOG_RESOLVED_EXACTLY_ONE"
+        },
+        "identity_domain_resolution_count": {
+          "type": "integer",
+          "const": 1
+        },
+        "legacy_run_mode": {
+          "enum": [
+            "core",
+            "full"
+          ]
+        },
+        "canonical_model_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "canonical_probability_stage": {
+          "enum": [
+            "M0_raw",
+            "M0_temperature_scaled"
+          ]
+        },
+        "comparison_artifact_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "model_recipe_manifest_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "post_reference_changes_allowed": {
+          "const": false
+        },
+        "challenger_present": {
+          "const": false
+        }
+      }
+    },
+    "primary_metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "comparison",
+        "uses_roi",
+        "promotion_metric"
+      ],
+      "properties": {
+        "name": {
+          "const": "m0_reproduction_equivalence"
+        },
+        "comparison": {
+          "const": "canonical_digest_or_preregistered_numeric_tolerance"
+        },
+        "uses_roi": {
+          "const": false
+        },
+        "promotion_metric": {
+          "const": false
+        }
+      }
+    },
+    "required_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "two_clean_replicas_required",
+        "probability_contract_required",
+        "canonical_reference_required_for_reproduced",
+        "strategy_score_credit",
+        "promotion_authority",
+        "roi_calculations"
+      ],
+      "properties": {
+        "two_clean_replicas_required": {
+          "const": true
+        },
+        "probability_contract_required": {
+          "const": true
+        },
+        "canonical_reference_required_for_reproduced": {
+          "const": true
+        },
+        "strategy_score_credit": {
+          "type": "integer",
+          "const": 0
+        },
+        "promotion_authority": {
+          "const": false
+        },
+        "roi_calculations": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    "compute_budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maximum_runtime_minutes",
+        "replica_count",
+        "network_calls",
+        "external_api_calls",
+        "roi_calculations"
+      ],
+      "properties": {
+        "maximum_runtime_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1440
+        },
+        "replica_count": {
+          "type": "integer",
+          "const": 2
+        },
+        "network_calls": {
+          "type": "integer",
+          "const": 0
+        },
+        "external_api_calls": {
+          "type": "integer",
+          "const": 0
+        },
+        "roi_calculations": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    "score_components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "independent_information",
+        "racing_mechanism",
+        "outer_oos_failure_evidence",
+        "leakage_safety",
+        "minimal_falsifiability",
+        "acquisition_implementation_cost"
+      ],
+      "properties": {
+        "independent_information": {
+          "type": "integer",
+          "const": 0
+        },
+        "racing_mechanism": {
+          "type": "integer",
+          "const": 0
+        },
+        "outer_oos_failure_evidence": {
+          "type": "integer",
+          "const": 0
+        },
+        "leakage_safety": {
+          "type": "integer",
+          "const": 8
+        },
+        "minimal_falsifiability": {
+          "type": "integer",
+          "const": 10
+        },
+        "acquisition_implementation_cost": {
+          "type": "integer",
+          "const": 5
+        }
+      }
+    },
+    "eligibility_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "eligibility_class",
+        "strategy_score_applicable",
+        "recorded_strategy_score",
+        "strategy_score_credit",
+        "score_threshold_override_allowed",
+        "non_promotion_only",
+        "success_grants_shadow",
+        "success_grants_model_change",
+        "success_grants_buy"
+      ],
+      "properties": {
+        "eligibility_class": {
+          "const": "nonpromotion_reproduction_audit"
+        },
+        "strategy_score_applicable": {
+          "const": false
+        },
+        "recorded_strategy_score": {
+          "type": "integer",
+          "const": 23
+        },
+        "strategy_score_credit": {
+          "type": "integer",
+          "const": 0
+        },
+        "score_threshold_override_allowed": {
+          "const": false
+        },
+        "non_promotion_only": {
+          "const": true
+        },
+        "success_grants_shadow": {
+          "const": false
+        },
+        "success_grants_model_change": {
+          "const": false
+        },
+        "success_grants_buy": {
+          "const": false
+        }
+      }
+    },
+    "g1_capabilities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actual_codex_dispatch",
+        "automatic_execution",
+        "automatic_github_approval",
+        "synthetic_fixture_tests",
+        "real_data_execution",
+        "supervised_manifest_hash_read",
+        "raw_row_output",
+        "model_real_data_access",
+        "historical_result_label_access",
+        "historical_training",
+        "historical_replay",
+        "prospective_outer_oos",
+        "backtest_interpretation",
+        "price_access",
+        "payoff_access",
+        "roi_calculation",
+        "offline_unit_notional_evaluation",
+        "research_candidate_policy_change",
+        "production_candidate_policy_change",
+        "workload_network_access",
+        "workload_external_api_calls",
+        "credential_access",
+        "purchase_path_access",
+        "production_change",
+        "shadow_approval",
+        "merge",
+        "notification_side_effects",
+        "order_side_effects",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "actual_codex_dispatch": {
+          "const": false
+        },
+        "automatic_execution": {
+          "const": false
+        },
+        "automatic_github_approval": {
+          "const": false
+        },
+        "synthetic_fixture_tests": {
+          "const": false
+        },
+        "real_data_execution": {
+          "const": false
+        },
+        "supervised_manifest_hash_read": {
+          "const": false
+        },
+        "raw_row_output": {
+          "const": false
+        },
+        "model_real_data_access": {
+          "const": false
+        },
+        "historical_result_label_access": {
+          "const": false
+        },
+        "historical_training": {
+          "const": false
+        },
+        "historical_replay": {
+          "const": false
+        },
+        "prospective_outer_oos": {
+          "const": false
+        },
+        "backtest_interpretation": {
+          "const": false
+        },
+        "price_access": {
+          "const": false
+        },
+        "payoff_access": {
+          "const": false
+        },
+        "roi_calculation": {
+          "const": false
+        },
+        "offline_unit_notional_evaluation": {
+          "const": false
+        },
+        "research_candidate_policy_change": {
+          "const": false
+        },
+        "production_candidate_policy_change": {
+          "const": false
+        },
+        "workload_network_access": {
+          "const": false
+        },
+        "workload_external_api_calls": {
+          "const": false
+        },
+        "credential_access": {
+          "const": false
+        },
+        "purchase_path_access": {
+          "const": false
+        },
+        "production_change": {
+          "const": false
+        },
+        "shadow_approval": {
+          "const": false
+        },
+        "merge": {
+          "const": false
+        },
+        "notification_side_effects": {
+          "const": false
+        },
+        "order_side_effects": {
+          "const": false
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    }
+  }
+}

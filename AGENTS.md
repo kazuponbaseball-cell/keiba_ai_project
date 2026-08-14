@@ -89,6 +89,30 @@ PROPOSED
 `infrastructure_safety_v1`のpolicy fileはmain merge後にin-place変更しない。policy変更は
 新しいgate kind/versionと別pathで導入し、既存v3 scopeを引き続き読めるようにする。
 
+## ROI reproduction v2 — G1権限境界
+
+`roi_reproduction_audit_v2`のG1は
+`CONTRACT_COMPILER_ONLY_NO_AUTHORITY`である。G1はschema、別pathのpolicy、canonical
+serializer、state validator、非権限object compiler、synthetic-only governance testだけを
+実装する。provider、writer、authority verifier、executorは実装せず、proposal、queue、eventの
+正規形候補をrepositoryやledgerへ書かない。catalog未検証のproposal候補は
+`BLOCKED_CATALOG`、run候補は`BLOCKED_CAPABILITY`で停止する。
+
+- canonical artifact identityは将来用途を`execution_kind=historical_reproduction_v2`へbindするが、
+  G1の有効なruntime execution kindはnone、全authority flagはfalse/0、結論は
+  `EXECUTION_FORBIDDEN`である。人間comment、score、design artifactでも上書きできない。
+- G2のcatalog publisher/attester、authority verifier、durable runtime ledger、one-shot lease、
+  supervised executor、real-data/model accessは未実装であり、G1から存在を推論しない。
+- 現行legacy ROI queue/event schema v2とinfra queue/event schema v3のwriter、digest、transition、
+  approval semanticsは変更しない。現行writerはv4をdispatchせず、G1のv4 schemaとcanonical
+  line compilerはvalidation用であってlive event writerまたはauthority sourceではない。
+- prepare/run/resultの3 action workflowは現在activationされていない。既存のapproval keywordや
+  commentはG1/G2/Aのgrant、開始、再開、実行権限にならない。
+- G1/G2 root-of-trustは自身、`infrastructure_safety_v1`、branch copyで承認できない。
+  各bootstrapは別のhuman-owned Draft PRとしてreview・mergeし、merge済みmainだけを根拠にする。
+- G1 bootstrapのexact changed pathsはpolicyへ監査用に固定する。後続proposalからgovernance
+  root、workflow、既存approval verifier、registry writer、scorecard、infra v1 policyを変更できない。
+
 ### APPROVED_TO_PREPARE
 
 - GitHub Issue comment

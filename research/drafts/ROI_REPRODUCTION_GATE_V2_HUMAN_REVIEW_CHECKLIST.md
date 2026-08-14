@@ -8,13 +8,26 @@
 machine-readable map:
 `research/drafts/ROI_REPRODUCTION_GATE_V2_CONTRACT_MAP.design.json`
 
-状態: `REVIEW_ONLY / NON_AUTHORITY / NOT_IMPLEMENTED`
+状態: `G1_IMPLEMENTED_PENDING_HUMAN_REVIEW / CONTRACT_COMPILER_ONLY_NO_AUTHORITY /
+G2_NOT_IMPLEMENTED / EXECUTION_FORBIDDEN`
 
 > このchecklistへの記入はGitHub approval、proposal scope、run scope、execution lease、
 > merge approvalではない。PR #36は`fbbebc804c7a2393aff26a6de9ad7c55caa5bc92`として
 > mainへmerge済みである。実装を進める場合は、その子孫から別human-owned Draftを作り、
 > G1とG2を順にreview・mergeする。G2 activation後の通常experiment transitionには
 > Ready、merge、rebase、branch refreshを要求しない。
+
+現行G1はpure compiler、policy、schema、synthetic-only governance testを実装するが、provider、
+writer、authority verifier、executorを実装しない。legacy v2 / infra v3 writer semanticsは不変、
+schema v4のlive dispatchと通常3-action flowは未activation、G2は未実装である。
+
+- [ ] JSON Schema単独やtrusted policy/schema digestなしのnormalizer結果をauthorityに使わず、
+  `NON_AUTHORITY_FIXTURE_VALIDATION`として破棄する。
+- [ ] G2 activation前にcatalog source/provider allowlist、全catalog-contract↔run-manifest conformance、
+  cwd/env/timeout/read-only input/single output root、expected output/numeric reference、current-mainの
+  policy/schema hashを実効検証する。1件でも未実装なら`EXECUTION_FORBIDDEN`を維持する。
+- [ ] `catalog publication scope v1`をG2 authorityへ流用しない。expected object count、canonical
+  output、finite provider/command/budgetを別version/pathへfreezeし、人間review・main mergeする。
 
 ## A. Review metadata
 

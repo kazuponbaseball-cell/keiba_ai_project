@@ -1,0 +1,952 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_catalog_publication_event_v1.schema.json",
+  "title": "ROI reproduction catalog publication event v1",
+  "allOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "event_kind",
+        "event_id",
+        "global_sequence",
+        "subject_sequence",
+        "catalog_publication_scope_id",
+        "catalog_publication_scope_digest",
+        "catalog_gate_kind",
+        "catalog_contract_version",
+        "policy_ref",
+        "schema_ref",
+        "status",
+        "previous_status",
+        "previous_catalog_event_id",
+        "previous_catalog_event_digest",
+        "occurred_at",
+        "observer_actor",
+        "root_of_trust_evidence",
+        "github_trust_evidence",
+        "durable_ledger_evidence",
+        "approval_grant_evidence",
+        "revalidated_approval_evidence",
+        "provider_lease_issue_receipt_digest",
+        "provider_lease_consumption_receipt_digest",
+        "catalog_publication_receipt_digest",
+        "reference_catalog_release_id",
+        "reference_catalog_release_digest",
+        "capabilities",
+        "capability_digest",
+        "result_evidence",
+        "artifacts",
+        "notes",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "event_kind": {
+          "const": "ROI_REPRODUCTION_CATALOG_PUBLICATION_EVENT"
+        },
+        "event_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "global_sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "subject_sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "catalog_publication_scope_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "catalog_publication_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "catalog_gate_kind": {
+          "const": "roi_reproduction_reference_catalog"
+        },
+        "catalog_contract_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "policy_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "schema_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "status": {
+          "enum": [
+            "CATALOG_PUBLICATION_SCOPE_PROPOSED",
+            "APPROVED_TO_PUBLISH_REFERENCE_CATALOG",
+            "CATALOG_PUBLISHING",
+            "CATALOG_PUBLISHED",
+            "CATALOG_PUBLICATION_FAILED",
+            "INVALID"
+          ]
+        },
+        "previous_status": {
+          "oneOf": [
+            {
+              "enum": [
+                "CATALOG_PUBLICATION_SCOPE_PROPOSED",
+                "APPROVED_TO_PUBLISH_REFERENCE_CATALOG",
+                "CATALOG_PUBLISHING"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous_catalog_event_id": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "previous_catalog_event_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "occurred_at": {
+          "type": "string",
+          "minLength": 1
+        },
+        "observer_actor": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "actor_kind",
+            "actor_id"
+          ],
+          "properties": {
+            "actor_kind": {
+              "type": "string",
+              "minLength": 1
+            },
+            "actor_id": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "root_of_trust_evidence": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "evidence_kind",
+                "digest"
+              ],
+              "properties": {
+                "evidence_kind": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "github_trust_evidence": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "evidence_kind",
+                "digest"
+              ],
+              "properties": {
+                "evidence_kind": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "durable_ledger_evidence": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "evidence_kind",
+                "digest"
+              ],
+              "properties": {
+                "evidence_kind": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "approval_grant_evidence": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidence_kind",
+              "digest"
+            ],
+            "properties": {
+              "evidence_kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "revalidated_approval_evidence": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidence_kind",
+              "digest"
+            ],
+            "properties": {
+              "evidence_kind": {
+                "type": "string",
+                "minLength": 1
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "provider_lease_issue_receipt_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provider_lease_consumption_receipt_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "catalog_publication_receipt_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference_catalog_release_id": {
+          "oneOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reference_catalog_release_digest": {
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capabilities": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "actual_codex_dispatch",
+            "automatic_execution",
+            "automatic_github_approval",
+            "synthetic_fixture_tests",
+            "real_data_execution",
+            "supervised_manifest_hash_read",
+            "raw_row_output",
+            "model_real_data_access",
+            "historical_result_label_access",
+            "historical_training",
+            "historical_replay",
+            "prospective_outer_oos",
+            "backtest_interpretation",
+            "price_access",
+            "payoff_access",
+            "roi_calculation",
+            "offline_unit_notional_evaluation",
+            "research_candidate_policy_change",
+            "production_candidate_policy_change",
+            "workload_network_access",
+            "workload_external_api_calls",
+            "credential_access",
+            "purchase_path_access",
+            "production_change",
+            "shadow_approval",
+            "merge",
+            "notification_side_effects",
+            "order_side_effects",
+            "formal_buy",
+            "send_order",
+            "stake"
+          ],
+          "properties": {
+            "actual_codex_dispatch": {
+              "const": false
+            },
+            "automatic_execution": {
+              "const": false
+            },
+            "automatic_github_approval": {
+              "const": false
+            },
+            "synthetic_fixture_tests": {
+              "type": "boolean"
+            },
+            "real_data_execution": {
+              "type": "boolean"
+            },
+            "supervised_manifest_hash_read": {
+              "type": "boolean"
+            },
+            "raw_row_output": {
+              "const": false
+            },
+            "model_real_data_access": {
+              "type": "boolean"
+            },
+            "historical_result_label_access": {
+              "type": "boolean"
+            },
+            "historical_training": {
+              "type": "boolean"
+            },
+            "historical_replay": {
+              "type": "boolean"
+            },
+            "prospective_outer_oos": {
+              "const": false
+            },
+            "backtest_interpretation": {
+              "const": false
+            },
+            "price_access": {
+              "const": false
+            },
+            "payoff_access": {
+              "const": false
+            },
+            "roi_calculation": {
+              "const": false
+            },
+            "offline_unit_notional_evaluation": {
+              "const": false
+            },
+            "research_candidate_policy_change": {
+              "const": false
+            },
+            "production_candidate_policy_change": {
+              "const": false
+            },
+            "workload_network_access": {
+              "const": false
+            },
+            "workload_external_api_calls": {
+              "const": false
+            },
+            "credential_access": {
+              "const": false
+            },
+            "purchase_path_access": {
+              "const": false
+            },
+            "production_change": {
+              "const": false
+            },
+            "shadow_approval": {
+              "const": false
+            },
+            "merge": {
+              "const": false
+            },
+            "notification_side_effects": {
+              "const": false
+            },
+            "order_side_effects": {
+              "const": false
+            },
+            "formal_buy": {
+              "const": false
+            },
+            "send_order": {
+              "const": false
+            },
+            "stake": {
+              "type": "integer",
+              "const": 0
+            }
+          }
+        },
+        "capability_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "result_evidence": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "evidence_kind",
+                "digest"
+              ],
+              "properties": {
+                "evidence_kind": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifacts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "notes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "safety": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "event_is_execution_authority",
+            "automatic_execution_allowed",
+            "production_approved",
+            "merge_approved",
+            "buy_approved",
+            "formal_buy",
+            "send_order",
+            "stake"
+          ],
+          "properties": {
+            "event_is_execution_authority": {
+              "const": false
+            },
+            "automatic_execution_allowed": {
+              "const": false
+            },
+            "production_approved": {
+              "const": false
+            },
+            "merge_approved": {
+              "const": false
+            },
+            "buy_approved": {
+              "const": false
+            },
+            "formal_buy": {
+              "const": false
+            },
+            "send_order": {
+              "const": false
+            },
+            "stake": {
+              "type": "integer",
+              "const": 0
+            }
+          }
+        }
+      }
+    },
+    {
+      "oneOf": [
+        {
+          "required": [
+            "previous_status",
+            "status",
+            "previous_catalog_event_id",
+            "previous_catalog_event_digest"
+          ],
+          "properties": {
+            "previous_status": {
+              "const": null
+            },
+            "status": {
+              "const": "CATALOG_PUBLICATION_SCOPE_PROPOSED"
+            },
+            "previous_catalog_event_id": {
+              "const": null
+            },
+            "previous_catalog_event_digest": {
+              "const": null
+            }
+          }
+        },
+        {
+          "required": [
+            "previous_status",
+            "status"
+          ],
+          "properties": {
+            "previous_status": {
+              "const": "CATALOG_PUBLICATION_SCOPE_PROPOSED"
+            },
+            "status": {
+              "enum": [
+                "APPROVED_TO_PUBLISH_REFERENCE_CATALOG",
+                "INVALID"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "previous_status",
+            "status"
+          ],
+          "properties": {
+            "previous_status": {
+              "const": "APPROVED_TO_PUBLISH_REFERENCE_CATALOG"
+            },
+            "status": {
+              "enum": [
+                "CATALOG_PUBLISHING",
+                "INVALID"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "previous_status",
+            "status"
+          ],
+          "properties": {
+            "previous_status": {
+              "const": "CATALOG_PUBLISHING"
+            },
+            "status": {
+              "enum": [
+                "CATALOG_PUBLISHED",
+                "CATALOG_PUBLICATION_FAILED",
+                "INVALID"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "CATALOG_PUBLISHING"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "provider_lease_issue_receipt_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "provider_lease_consumption_receipt_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        },
+        "required": [
+          "provider_lease_issue_receipt_digest",
+          "provider_lease_consumption_receipt_digest"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "CATALOG_PUBLISHED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "provider_lease_issue_receipt_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "provider_lease_consumption_receipt_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "catalog_publication_receipt_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "reference_catalog_release_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reference_catalog_release_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "result_evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidence_kind",
+              "digest"
+            ],
+            "properties": {
+              "evidence_kind": {
+                "const": "CATALOG_PUBLICATION_COMPLETED"
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "required": [
+          "catalog_publication_receipt_digest",
+          "reference_catalog_release_id",
+          "reference_catalog_release_digest",
+          "result_evidence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "CATALOG_PUBLICATION_FAILED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "provider_lease_issue_receipt_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "provider_lease_consumption_receipt_digest": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "result_evidence": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "evidence_kind",
+              "digest"
+            ],
+            "properties": {
+              "evidence_kind": {
+                "const": "CATALOG_PUBLICATION_FAILED"
+              },
+              "digest": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        },
+        "required": [
+          "provider_lease_issue_receipt_digest",
+          "provider_lease_consumption_receipt_digest",
+          "result_evidence"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "CATALOG_PUBLICATION_SCOPE_PROPOSED"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approval_grant_evidence": {
+            "maxItems": 0
+          },
+          "revalidated_approval_evidence": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "APPROVED_TO_PUBLISH_REFERENCE_CATALOG"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approval_grant_evidence": {
+            "minItems": 1,
+            "maxItems": 1,
+            "contains": {
+              "properties": {
+                "evidence_kind": {
+                  "const": "APPROVED_TO_PUBLISH_REFERENCE_CATALOG"
+                }
+              },
+              "required": [
+                "evidence_kind"
+              ]
+            }
+          },
+          "revalidated_approval_evidence": {
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "CATALOG_PUBLISHING",
+              "CATALOG_PUBLISHED",
+              "CATALOG_PUBLICATION_FAILED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "approval_grant_evidence": {
+            "maxItems": 0
+          },
+          "revalidated_approval_evidence": {
+            "minItems": 1,
+            "maxItems": 1,
+            "contains": {
+              "properties": {
+                "evidence_kind": {
+                  "const": "APPROVED_TO_PUBLISH_REFERENCE_CATALOG"
+                }
+              },
+              "required": [
+                "evidence_kind"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": [
+              "CATALOG_PUBLICATION_SCOPE_PROPOSED",
+              "APPROVED_TO_PUBLISH_REFERENCE_CATALOG"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "provider_lease_issue_receipt_digest": {"type": "null"},
+          "provider_lease_consumption_receipt_digest": {"type": "null"},
+          "catalog_publication_receipt_digest": {"type": "null"},
+          "reference_catalog_release_id": {"type": "null"},
+          "reference_catalog_release_digest": {"type": "null"},
+          "result_evidence": {"type": "null"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "CATALOG_PUBLISHING"}
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "catalog_publication_receipt_digest": {"type": "null"},
+          "reference_catalog_release_id": {"type": "null"},
+          "reference_catalog_release_digest": {"type": "null"},
+          "result_evidence": {"type": "null"}
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {"const": "CATALOG_PUBLICATION_FAILED"}
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "catalog_publication_receipt_digest": {"type": "null"},
+          "reference_catalog_release_id": {"type": "null"},
+          "reference_catalog_release_digest": {"type": "null"}
+        }
+      }
+    }
+  ]
+}

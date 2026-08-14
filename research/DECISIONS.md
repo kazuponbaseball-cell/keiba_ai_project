@@ -351,3 +351,33 @@ root-of-trustとして固定し、後続infra testはCI自動探索外の`resear
 そのtestはhash-bound run scopeとstructured commandへ固定するが、別の人間review済み
 executor/authority verifierが導入されるまで実行しない。初回bootstrapのgovernance testは
 gate activation前の人間依頼に基づく別境界である。
+
+## D-026 — ROI reproduction v2 G1を非権限compiler境界として宣言する
+
+- Decision: `CONTRACT_COMPILER_ONLY_NO_AUTHORITY_ON_HUMAN_MERGE`
+- Evidence: merged PR #37 design artifacts + current legacy v2 / infra v3 compatibility inspection
+
+`roi_reproduction_audit_v2`のG1は、schema、別pathのpolicy、canonical serializer、state
+validator、非権限event compiler、CI自動探索外synthetic fixtureだけを将来実装可能な上限とする。
+このgovernance変更はpure compiler、policy、schema、synthetic-only governance testを実装するが、
+provider、writer、authority verifier、executorを実装せず、repository/ledgerへproposal、queue、
+run scope、registry eventを生成・追記しない。G1のmodeは
+`CONTRACT_COMPILER_ONLY_NO_AUTHORITY`である。artifact contractは
+`execution_kind=historical_reproduction_v2`をbindするが、現在の有効runtime execution kindはnone、
+全authorityはfalse/0、結論は`EXECUTION_FORBIDDEN`である。
+
+catalog publisher/attester、authority verifier、durable runtime ledger、one-shot lease、supervised
+executor、real-data/model/training/historical replay capabilityはG2の責務であり、現在未実装である。
+G2はG1 declarationのhuman merge後に別のhuman-owned Draftでreview・mergeしなければならず、
+G1の成功、design、score、人間commentからG2 authorityを推論しない。
+
+既存legacy ROI queue/event schema v2とinfra queue/event schema v3のwriter、canonical digest、
+transition、approval semanticsを変更しない。現行`update_registry.py`はschema v4をdispatchせず、
+`research/schemas/roi_reproduction_registry_event_v4.schema.json`とcanonical line compilerは
+validation用であり、live writerまたはauthority sourceではない。
+prepare/run/resultの3 action flowは現在activationされておらず、既存approval commentは
+G1/G2/Aの開始、再開、grant、実行tokenにならない。
+
+G1/G2のbootstrapは自身または`infrastructure_safety_v1`で承認できない。workflow、既存test、
+approval verifier、registry writer、approver allowlist、scorecard、infra v1 policyをG1 compilerの
+changed-path候補へ含めず、root-of-trust変更は人間reviewと人間mergeだけで有効にする。

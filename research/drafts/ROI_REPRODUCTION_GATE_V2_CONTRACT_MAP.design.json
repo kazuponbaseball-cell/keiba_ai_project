@@ -2,7 +2,7 @@
   "schema_version": 1,
   "document_kind": "roi_reproduction_gate_v2_human_review_design",
   "created_date": "2026-08-09",
-  "status": "HUMAN_REVIEW_REQUIRED_NON_AUTHORITY_NOT_IMPLEMENTED",
+  "status": "G1_IMPLEMENTED_PENDING_HUMAN_REVIEW_CONTRACT_COMPILER_ONLY_NO_AUTHORITY_G2_NOT_IMPLEMENTED_EXECUTION_FORBIDDEN",
   "design_base_commit": "fbbebc804c7a2393aff26a6de9ad7c55caa5bc92",
   "design_origin_base_commit": "b282cafb39435d15098bc409e76b4efaa6690f08",
   "source_seed": {
@@ -105,6 +105,22 @@
       "within_this_design_execution": false
     }
   ],
+  "current_g1_boundary": {
+    "mode": "CONTRACT_COMPILER_ONLY_NO_AUTHORITY",
+    "governance_declaration_only": false,
+    "compiler_implemented_by_this_change": true,
+    "policy_or_schema_implemented_by_this_change": true,
+    "g2_implemented": false,
+    "execution_forbidden": true,
+    "artifact_execution_kind_contract": "historical_reproduction_v2",
+    "effective_runtime_execution_kind": "none",
+    "all_authority_and_capability_flags_false": true,
+    "legacy_roi_v2_writer_semantics_unchanged": true,
+    "infrastructure_v3_writer_semantics_unchanged": true,
+    "event_schema_v4_dispatch_enabled": false,
+    "current_three_action_workflow_activated": false,
+    "registry_event_schema_path_reserved_only": "research/schemas/roi_reproduction_registry_event_v4.schema.json"
+  },
   "operator_interaction_budget": {
     "scope": "ordinary_single_experiment",
     "ready_or_merge_actions": 0,
@@ -450,7 +466,6 @@
       "provider_execution_commit",
       "provider_code_sha256",
       "provider_environment_sha256",
-      "publication_receipt_id",
       "publication_receipt_digest",
       "catalog_entry_set_digest",
       "logical_entries",
@@ -1631,7 +1646,7 @@
     "research/schemas/roi_reproduction_catalog_publication_receipt_v1.schema.json",
     "research/schemas/roi_reproduction_catalog_publication_event_v1.schema.json",
     "research/schemas/roi_reproduction_catalog_release_status_event_v1.schema.json",
-    "research/schemas/research_registry_event_v4.schema.json",
+    "research/schemas/roi_reproduction_registry_event_v4.schema.json",
     "scripts/research/github_approval.py",
     "scripts/research/roi_reproduction_contract_v2.py",
     "scripts/research/roi_reproduction_authority_verifier.py",
@@ -1642,10 +1657,10 @@
     "scripts/research/export_roi_reproduction_audit_checkpoint_v1.py",
     "scripts/research/roi_reproduction_supervised_executor_v2.py",
     "scripts/research/update_registry.py",
-    "tests/research/test_roi_reproduction_contract_v2.py",
-    "tests/research/test_roi_reproduction_lifecycle_v2.py",
-    "tests/research/test_roi_reproduction_reference_catalog_v1.py",
-    "tests/research/test_roi_reproduction_durable_ledger_v1.py",
+    "research/infra_tests/test_roi_reproduction_contract_v2.py",
+    "research/infra_tests/test_roi_reproduction_lifecycle_v2.py",
+    "research/infra_tests/test_roi_reproduction_reference_catalog_v1.py",
+    "research/infra_tests/test_roi_reproduction_durable_ledger_v1.py",
     "tests/research/test_registry_jsonl.py"
   ],
   "human_decisions_required": [

@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keiba-ai.local/schemas/roi_reproduction_review_v1.schema.json",
+  "title": "ROI reproduction review v1",
+  "allOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "experiment_id",
+        "gate_kind",
+        "gate_contract_version",
+        "execution_kind",
+        "policy_ref",
+        "schema_ref",
+        "proposal_scope_digest",
+        "run_scope_digest",
+        "validated_result_digest",
+        "computed_outcome",
+        "proposed_terminal_status",
+        "review_limitations",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "integer",
+          "const": 1
+        },
+        "experiment_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{2,127}$"
+        },
+        "gate_kind": {
+          "const": "roi_reproduction_audit_v2"
+        },
+        "gate_contract_version": {
+          "type": "integer",
+          "const": 2
+        },
+        "execution_kind": {
+          "const": "historical_reproduction_v2"
+        },
+        "policy_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "schema_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        },
+        "proposal_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "run_scope_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "validated_result_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "computed_outcome": {
+          "enum": [
+            "REPRODUCED",
+            "RECONSTRUCTED_NOT_REPRODUCED",
+            "REPRODUCTION_FAILED",
+            "INVALID"
+          ]
+        },
+        "proposed_terminal_status": {
+          "enum": [
+            "REPRODUCED",
+            "RECONSTRUCTED_NOT_REPRODUCED",
+            "REPRODUCTION_FAILED",
+            "REJECTED",
+            "INVALID"
+          ]
+        },
+        "review_limitations": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "formal_buy": {
+          "const": false
+        },
+        "send_order": {
+          "const": false
+        },
+        "stake": {
+          "type": "integer",
+          "const": 0
+        }
+      }
+    },
+    {
+      "oneOf": [
+        {
+          "required": [
+            "computed_outcome",
+            "proposed_terminal_status"
+          ],
+          "properties": {
+            "computed_outcome": {
+              "const": "REPRODUCED"
+            },
+            "proposed_terminal_status": {
+              "enum": [
+                "REPRODUCED",
+                "REJECTED"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "computed_outcome",
+            "proposed_terminal_status"
+          ],
+          "properties": {
+            "computed_outcome": {
+              "const": "RECONSTRUCTED_NOT_REPRODUCED"
+            },
+            "proposed_terminal_status": {
+              "enum": [
+                "RECONSTRUCTED_NOT_REPRODUCED",
+                "REJECTED"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "computed_outcome",
+            "proposed_terminal_status"
+          ],
+          "properties": {
+            "computed_outcome": {
+              "const": "REPRODUCTION_FAILED"
+            },
+            "proposed_terminal_status": {
+              "enum": [
+                "REPRODUCTION_FAILED",
+                "REJECTED"
+              ]
+            }
+          }
+        },
+        {
+          "required": [
+            "computed_outcome",
+            "proposed_terminal_status"
+          ],
+          "properties": {
+            "computed_outcome": {
+              "const": "INVALID"
+            },
+            "proposed_terminal_status": {
+              "const": "INVALID"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
