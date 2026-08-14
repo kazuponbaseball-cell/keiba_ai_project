@@ -27,7 +27,7 @@ research branch上で準備・実行できる制度である。本番変更、�
 - 既存dirty worktreeを暗黙にstageしない。commit対象を明示する。
 - 承認に任意の`--actor`や`--human-approved`を使用しない。
 
-## 二段階実行承認
+## 通常strategyの二段階実行承認
 
 ```text
 PROPOSED
@@ -42,7 +42,160 @@ PROPOSED
        -> INVALID
 ```
 
-`BLOCKED_SCORE`は75点未満の実行不可状態。`INVALID`はterminalである。
+通常strategy routeでは`BLOCKED_SCORE`は75点未満の実行不可状態である。
+`INVALID`は全routeでterminalである。
+
+## 登録済み非昇格診断 fast lane
+
+`registered_nonpromotion_diagnostic_v1`は、通常strategyの実行・採用ではなく、
+凍結済みartifactに対する再現可能な構造監査とhistorical impact診断だけを行う
+別routeである。通常の`HYPOTHESIS_SCORECARD`を無効化せず、strategy由来の診断は元のscore、
+`BLOCKED_SCORE`、`threshold_met=false`、`score_credit=0`を全artifactへ保持する。純粋な
+parity監査には架空のordinary scoreを作らず`NO_ORDINARY_STRATEGY_CLAIM`と記録する。
+診断結果をscore、shadow、adoption、production、BUYの根拠へ変換してはならない。
+
+trusted dispatcherは、`ordinary_strategy_v1`を既存75点gateへ、
+`registered_nonpromotion_diagnostic_v1`を下記hard classifierへ完全分岐し、その他を拒否する。
+proposalの自己申告だけでrouteを選択できない。
+
+- `A_PARITY_NO_DECISION_CHANGE`: lineage、hash、schema、alias、確率mass、bitwise parityを
+  監査する。candidate key、rank、tier、coverage、eligibility、decision vectorの差は0で
+  なければならず、result、odds、payoff、settlement、ROIを読まない。1行でも差があれば
+  settlementを開かずoutcome `INVALID`、reason code `INVALID_NO_SETTLEMENT`とする。
+  ordinary score recordは既存値を保持するか、
+  strategy claimがない場合は作成しない。
+- `B_REGISTERED_HISTORICAL_IMPACT`: current main上の有限・immutableなrecipe registryに
+  登録されたexact digestだけを実行する。exactly 2 arms、exactly 1 registered transform、
+  threshold/refit/recalibration/search 0を要求する。live policy/config、candidate identity、
+  rank/tier、model、calibrator、market式、cohort、stake ruleは変更しない。recipeが明示した
+  counterfactual eligibility mask差だけを許し、decision freeze後にのみsettlement/payoffを読む。
+  odds、price、popularity、market dataは全phaseで読まず、settlementはrace ID、candidate key、hit、
+  outcome completeness、official payoffのstrict allowlistに限る。source strategyのordinary score recordを
+  exact digestでbindしなければならない。
+
+fast laneは一度だけ、別のhuman-owned Draft PRでpolicy、strict schema、finite recipe registry、
+bounded generic runner、GitHub verifier、content-addressed candidate/settlement catalog、durable
+single-use ledger、one-shot lease、supervised executorを実装し、人間mergeとcutover receiptを
+完了してから有効になる。このroot amendmentのmergeだけでは実装・activation・executionを
+許可しない。
+
+有効化後の既存recipe実行ではper-run code変更、prepare phase、PR、mergeを行わない。
+recipe、input、cohort、metric、sensitivity、payoff、bootstrap、budget、seed/RNG、environment、phase plan、
+replica/attempt/retry topology、argvはproposal/caller値から作らず、active current-main registry/policyから
+resolverがexact bytesを取得する。attempt countは登録値そのものとし、automatic/manual retryとreplica結果の
+選り好みを禁止する。run digestはrepository、base branch、run-scope base commit、
+expected pre-grant global/subject heads、APPROVERS blob/content digest、lane activation receipt、policy、
+schema、compiler、verifier、executor、capability profile、recipe entry blob、ACTIVE candidate/settlement
+releaseとrevocation state、ordinary score scope、candidate identity、reference/counterfactual AST、
+allowed difference、semantic subject、race-set、metric/sensitivity/payoff/bootstrap、phase plan、lease
+schema/issuer/capability/counts、replica/attempt/retry topology、runner commit/blob、interpreter/dependency/
+locale/timezone/seed、cwd、empty environment、
+timeout、read/write allowlist、exact argv、fresh output root、approval evidence schemaを固定する。allowlist済みGitHub
+`User`による未使用comment
+`APPROVED_NONPROMOTION_DIAGNOSTIC_RUN <run_scope_digest>`を1回だけ要求する。commentとcurrent
+main、APPROVERS、recipe、catalog、authenticated ledger receipt chainはdispatch直前に再検証する。chat指示、CI成功、
+PR Ready、merge、過去commentはgrantではない。canonical semantic/exact subjectの不可逆実行を全generation横断で
+最大1とし、rename、alias、別experiment IDによる
+performance再探索を拒否する。認証済みpre-access abort後だけ、新scope、新comment、新generationで再予約できる。
+
+run scope seal後に作成されたcommentだけを受理する。durable ledgerの単一transaction/CASでcomment ID、
+semantic/exact subjectのprovisional reservation、run approval receiptを原子的に記録し、receiptへexpected/actualの
+old/new global/subject headsをbindする。comment IDはこの時点で永久consumeするが、phase leaseは発行しない。
+各phaseの直前にshared G2だけが、predecessor receiptとremote再検証を条件にrun/recipe/replica/phase/attempt別の
+one-shot leaseを発行・consumeする。cross-phase、cross-replica、cross-run、replay、self-issue、capability unionを
+拒否する。GitHub evidence、current main、APPROVERS、lane、recipe、catalog、authenticated receipt chainはdispatch、
+decision lease、settlement lease、result sealの各直前に再検証する。unrelatedな後続global appendだけでは、
+認証済みsubject receipt chainを無効にしない。
+
+run scopeへbindしたlane/policy/recipe/catalog/APPROVERS digestはbit-identical、ACTIVE、unrevokedでなければならない。
+driftをdecision lease consume前かつcandidate/result/odds/payoff/settlementへ一度もaccessする前に検出した場合だけ、
+authenticated atomic abort CASで旧runを`INVALID` terminal化し、global/subject headsを進め、発行済み未consume leaseを
+全てrevoke/tombstoneし、旧approval/predecessor receiptを永久に不適格化した上でsemantic/exact subject reservationを
+解除できる。comment IDは解除せず、置換実行には新scopeと新commentを要求する。decision leaseをcandidate mount直前に
+consumeする処理、semantic/exact subjectの永久consume、question-family execution countの加算、authenticated
+irreversible receipt発行を1つのatomic global/subject-head CASで行う。candidate mountはそのreceiptを再検証しなければ
+ならない。それ以降のdrift、crash、contract failureは`INVALID` terminalであり、新scope、retry、置換実行を認めない。
+automatic retryは禁止する。
+future approval receiptまたはlease ID/digestをrun scopeへ入れない。post-approvalで発行する全receiptと
+leaseが、逆向きにfrozen run digestをbindしなければならない。
+
+pre-grant resolverが読めるのは署名済みcatalog metadata/manifestだけで、candidate/settlement blobのmountやrow
+readを禁止する。ordered race-setはprepublished signed manifest digestから取得し、candidate/settlement contentは
+authenticated irreversible receiptの再検証後にのみmount/readできる。
+
+diagnostic lifecycleは通常strategy lifecycleを流用しない。
+
+```text
+RND_RUN_SCOPE_FROZEN
+  -> RND_RUN_APPROVAL_REQUIRED
+  -> RND_APPROVED
+  -> RND_LEASED
+  -> RND_RUNNING
+  -> RND_RESULT_SEALED
+       -> RND_COMPLETED
+       -> INVALID
+```
+
+上記の隣接遷移だけを許し、各nonterminalから`INVALID`へのfail-closeを許す。self transition、state skip、
+terminalからの復活を禁止する。scope seal、approval、lease issue、irreversible start、result seal、completion、
+fail-closeの各遷移は、run state、global/subject heads、対応receiptを1つのatomic CASで更新する。特に不可逆CASは
+`RND_LEASED -> RND_RUNNING`も同時に行い、state/head/receiptのsplit-brainを拒否する。
+
+`semantic_subject_digest`はcanonical IDへ正規化したgate/tier、recipe class、recipe ID/version/entry digest、
+source model/policy/calibrator、reference AST、registered transform、candidate identity/rank contract、population/cohort rule、
+metric/sensitivity、ordinary score scopeから作る。`exact_run_subject_digest`はこれにcandidate/settlement
+releaseとordered race-setを加える。ledgerは両方をreserveし、同じsemantic subjectを別release、別名、
+別experiment IDでroutine再実行しない。release/cohortを変える場合はfast laneを拒否し、通常strategyへ戻す。
+subject stateは`PROVISIONALLY_RESERVED`、`RELEASED_PREACCESS_ABORT`、`IRREVERSIBLY_CONSUMED`を区別する。
+global single-use blockerは新規実行かつ`IRREVERSIBLY_CONSUMED`にだけ適用し、pre-access abortで正しくreleaseされた
+subjectは新generationのscope/commentでのみ再予約できる。旧generationはterminal/tombstoneのまま、aggregate
+subject headをCASしてgeneration+1を`PROVISIONALLY_RESERVED`として開始する。同時active generationは最大1、
+全generation横断のirreversible executionは最大1とし、旧run、approval、receipt、leaseは永久tombstoneのままとする。
+exact digestのreplayは、trusted sealerのauthenticated receipt、semantic/exact subject digest、result digest、
+original approval evidence/receipt chain、lane/recipe/catalog/resultのunrevoked状態を再検証したsealed resultの
+read-only retrievalだけとする。不一致またはcache miss時は状態遷移せず停止し、新comment、lease、executor、
+再計算を起動しない。
+
+さらに`question_family_digest`はrecipe suppliedのID、名前、digestを信用せず、trusted verifierがimmutable source
+model/policy/calibratorとreference AST node、canonical target-decision/population/metric registry digestから導出する。
+recipe表示名、transform、threshold、cohort、releaseはdigestへ影響させず、同じlineageのaliasは同一digestへ解決する。
+既登録canonical familyへのrecipe追加はmerge eligibility判定前に拒否する。
+B-tierは1 familyにつきlifetime recipe 1件、new execution 1件を上限とする。隣接thresholdや別transformを
+新recipe名で追加して探索することを拒否し、追加検証は通常75点gateまたは新gate versionへ戻す。
+
+PR #40の一件限定designは初期recipeのsource evidenceであり、generic fast laneの実装契約または
+authorityではない。本root amendmentは同designの`generic catch-all=false`、recipe追加ごとのnew kind、
+prepare+run+ACKという将来案を、別のhuman-reviewed generic implementation contractにより置き換える。
+PR #40 bytesは変更せず、generic implementationがmainへmerge・cutoverされるまで旧designから権限を推論しない。
+
+shared G2 durable ledgerをsole live authorityとし、lane専用local/separate backendを作らない。activation前に
+legacy event、全gate共通grant comment ID、全terminal/nonterminal subject headを完全移行する。global headと
+subject headの両方をatomic CASし、old writerをfenceした後にsecond remote compareを通し、atomic cutoverと
+authenticated receiptを要求する。authenticated external monotonic checkpoint/witnessでbackup restore、rollback、
+fork、stale headを検出し、検出時はlaneを停止して新規leaseを発行しない。dual writerやlocal file、SQLite、
+worktree、branch、process-memory authorityへのfallbackを許可しない。
+
+run approval evidenceは既存`github_backed_approval_evidence_v1`をそのまま継承する。このrouteに限り、proposal base
+commitの役割をrun-scope base commitが担い、APPROVERSはGitHub上のそのcommitから取得する。それ以外のtrust
+semanticsは変更しない。repository、base branch、
+run-scope base commit、verified current main、compare URL/status、merge-base、APPROVERS blob SHAとcontent SHA-256、
+verification time、comment ID、Issue、URL、author login/type、body、keyword、run digest、body SHA-256、created_at、
+updated_atを個別に保存・再検証し、いずれかの変更、削除、再利用、非allowlistまたはbot actorをfail-closeする。
+
+新しいrecipeは既存entryを編集・削除せず、append-onlyの新規recipe JSONだけを小さなhuman-reviewed
+PRで追加する。そのPRはrunner、schema、policy、verifier、workflow、root governance、model/config/data/
+production path、execution scopeを同時変更せず、実データ、result、payoff、ROIを読まないCIで
+recipe schema/fixtureだけを検証する。
+新operator、新capability、free-form AST/SQL/Python/argv、新data source、training、
+fit、model inference、calibration、threshold/cohort/variant search、3 arms以上、candidate/rank/tier、
+market/value式、stake変更、prospective outer、shadow、production、network、credential、BUY、order、
+notificationを含む場合はfast laneを拒否し、通常75点gateまたは新gate versionへrouteする。
+
+全resultは`evidence_purpose_class=DIAGNOSTIC_NONPROMOTION`とし、source authority classを保持する。
+初期recipeは`source_authority_class=B_LOCAL_HASHED`である。全resultは`confirmatory=false`、
+`promotion_eligible=false`、`score_credit=0`、`formal_buy=false`、`send_order=false`、`stake=0`
+をconstとする。A-tier outcomeは`NO_DECISION_EFFECT|INVALID`、B-tierは
+`NO_DECISION_EFFECT|DIRECTIONAL_EFFECT|INVALID`だけで、`APPROVED_FOR_SHADOW`への遷移を定義しない。
 
 ## インフラ／安全性gate
 
@@ -113,6 +266,8 @@ serializer、state validator、非権限object compiler、synthetic-only governa
 - G1 bootstrapのexact changed pathsはpolicyへ監査用に固定する。後続proposalからgovernance
   root、workflow、既存approval verifier、registry writer、scorecard、infra v1 policyを変更できない。
 
+## 通常strategyの承認詳細
+
 ### APPROVED_TO_PREPARE
 
 - GitHub Issue comment
@@ -144,7 +299,12 @@ serializer、state validator、非権限object compiler、synthetic-only governa
   GitHubから再取得して再検証する。
 - production、merge、正式BUY再開を承認できない。
 
-## GitHub-backed approval evidence
+## 通常strategyのGitHub-backed approval evidence
+
+この節の`REGISTRY.jsonl` event、prepare/run/shadow comment、branch merge前提は通常strategyに適用する。
+fast laneが`github_backed_approval_evidence_v1`から継承するのはrepository identity、main ancestry、APPROVERS、
+human User、comment immutable fieldsのtrust semanticsだけである。fast laneのevidence保存、single run comment、
+CAS、leaseは前節のshared G2専用契約に従い、この節のordinary registry/event mechanicsを継承しない。
 
 - 承認対象repositoryは`kazuponbaseball-cell/keiba_ai_project`、base branchは
   `main`に実装定数として固定する。proposalはbase commitを固定する。
@@ -181,7 +341,10 @@ serializer、state validator、非権限object compiler、synthetic-only governa
   には`research/APPROVERS.json`がないため、そのcommitをproposal baseとする
   実承認は引き続きfail-closeする。
 
-## Canonical scope
+## 通常strategyのCanonical scope
+
+この節のproposal scope前提は通常strategyに適用する。fast laneはproposal free-form値を持たず、前節の
+current-main registry/policy resolverから作る専用canonical run scope契約に従う。
 
 Markdownは承認scopeの正本ではない。正本は
 `research/scopes/<experiment_id>.proposal.json`と

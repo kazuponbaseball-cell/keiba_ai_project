@@ -405,3 +405,104 @@ proposal、prepare、run、result、activation、grant、execution tokenでは�
 current live statusまたはauthorityとして扱わない。frozen policy/schema/compiler/test、legacy writer、
 registry、approver allowlist、scorecard、workflowは変更しない。G2と一件限定model-integrity laneの
 root amendment/activationは、それぞれ別のhuman-owned PR、scope、grant、durable receiptを必要とする。
+
+## D-028 — 登録済み非昇格診断fast laneをrootへ宣言する
+
+- Decision: `REGISTERED_NONPROMOTION_DIAGNOSTIC_ROUTE_DECLARED_ON_HUMAN_MAIN_MERGE`
+- Evidence: human-reviewed root governance amendment + PR #40 immutable recipe design
+
+頻発する構造監査のたびにrunner、scope制度、approval workflowを作り直す運用を廃止する。
+一度だけ`registered_nonpromotion_diagnostic_v1`を実装・cutoverし、その後の登録済みrecipeは
+pre-merged generic runnerとcanonical run digestを使って実行する。
+
+通常strategyの75点gateは変更しない。D-005の`score_below_75` blockerはordinary strategy routeへ
+適用し続ける。strategy由来ならordinary score record、`BLOCKED_SCORE`、
+threshold未達、credit 0を保持し、pure parity監査なら架空のscoreを作らない。診断結果をscore、
+shadow、adoption、promotion、production、BUYへ利用しない。
+routeはtrusted current-main policyだけが選択し、proposalの`diagnostic=true`等の自己申告を
+権限根拠にしない。
+
+routeは次の二層に限定する。
+
+1. `A_PARITY_NO_DECISION_CHANGE`: decision semantic digest差0のlineage/parity監査。settlement、
+   result、odds、payoff、ROIへaccessしない。
+2. `B_REGISTERED_HISTORICAL_IMPACT`: current mainのfinite immutable registryにあるexact recipeだけ。
+   exactly 2 arms、1 registered transform、search/refit/recalibration 0とし、live policy、candidate
+   identity、rank/tier、model、calibrator、market式、cohort、stake ruleを変えない。recipeが
+   明記したcounterfactual eligibility mask差だけを許し、decision freeze後のsettlementで
+   historical unit-notional impactを計算する。odds、price、popularity、market dataは全phaseで禁止し、
+   settlementはrace ID、candidate key、hit、outcome completeness、official payoffのallowlistに限る。
+
+PR #40で設計された`historical_ai_duplicate_gate_impact_v1`は、D0のraw upper gateを除くことで
+`0.325 <= p < 0.36909082652451414`相当をD1へ追加するため、単なる同義parityではない。
+`live_policy_or_config_mutation=false`、`candidate_identity_change=false`、
+`counterfactual_eligibility_mask_change=true`を別々に記録し、初期B-tier recipe候補として扱う。
+source contract-map Git blobは`aa4b3b389a8a191b9928eb53e13e1d019e067c14`、blob content
+SHA-256は`21d8b14121f37e238357605b7c6521203e9574c12a12b0645fd4ebe6a81cb2b1`、
+recipe fingerprintは`67b0d3e5b92166a10b3077bff03e107c9db071b310f60f43b8758ce316eda878`である。
+PR #40は初期recipeのsource evidenceだけで、generic fast laneのauthorityではない。同designの
+`generic catch-all=false`、recipe追加ごとのnew kind、prepare+run+ACKという将来案は、このD-028に
+基づく別のhuman-reviewed generic implementation contractが置き換える。PR #40 bytesは変更しない。
+同fingerprintはformula sourceに限り、generic wrapper recipe ID/version/digestはimplementationで新規固定する。
+PR #40の`DIRECTIONAL_DECISION_EFFECT`はgeneric `DIRECTIONAL_EFFECT`へversioned mappingし、
+`NO_DECISION_EFFECT|INVALID`は同名を保持する。ACKはgeneric lifecycleから削除する。
+
+root declarationの観測baseは`08b42ce8f12769a594a1cb1cd5da57ed3ab37e04`である。
+このdecisionを含むcommitが人間によりmainへmergeされることはroute宣言の発効条件だが、
+それだけで実装、cutover、catalog、ledger、lease、executor、real-data、settlement、ROIまたはrun
+authorityを生成しない。別のhuman-owned implementation PRとdurable cutover receiptが必要である。
+shared G2 durable ledgerをsole live authorityとし、legacy eventとglobal grant-IDを完全移行してold writerを
+fenceする。lane専用local/separate backend、dual writer、local file/SQLite fallbackを認めない。
+
+activation後の既存recipeはper-run code変更、prepare、PR、mergeを禁止し、未使用GitHub comment
+`APPROVED_NONPROMOTION_DIAGNOSTIC_RUN <run_scope_digest>`を1回だけ要求する。remote evidence、
+current main、APPROVERS、recipe、catalog、authenticated ledger receipt chainをdispatch直前に再検証する。
+新recipeはappend-onlyの
+小さなhuman-reviewed PRで追加し、新operator/capability/free-form codeまたは探索自由度は
+新gate versionか通常75点gateへ戻す。recipe登録PRは実データ、result、payoff、ROIを読まない。
+routine lifecycleは`RND_RUN_SCOPE_FROZEN -> RND_RUN_APPROVAL_REQUIRED -> RND_APPROVED -> RND_LEASED ->
+RND_RUNNING -> RND_RESULT_SEALED -> RND_COMPLETED|INVALID`で、`PREPARING`を持たない。run digestは
+activation/G2/policy/schema/compiler/verifier/executor/capability/recipe/catalog/score/cohort/metric/
+environment/argv/output/evidenceを固定する。canonical semantic/exact subjectの不可逆実行を全generation横断で最大1とし、
+exact replayはoriginal approval chainとtrusted sealを再検証したsealed resultのread-only retrievalだけとする。
+`question_family_digest`はrecipe supplied ID/name/digestを信用せず、trusted verifierがimmutable source-policy/
+reference-AST lineageとcanonical target/population/metric registry digestから導出する。transform/threshold/cohort/
+release/display stringは影響させず、B-tierは1 familyにつきlifetime recipe 1件・new execution 1件に制限する。
+evidence purposeは`DIAGNOSTIC_NONPROMOTION`、初期source authority classは`B_LOCAL_HASHED`として分離する。
+
+このroot PRは`AGENTS.md`、`research/CHARTER.md`、`research/DECISIONS.md`、
+`research/HYPOTHESIS_SCORECARD.yaml`、`research/STATE.yaml`だけを変更する。REGISTRY、APPROVERS、
+workflow、policy/schema/compiler/runner/test、model/data/config/outputs、production/BUY pathは変更せず、
+実データ、payoff、ROI、synthetic experimentも実行しない。
+
+run approval CASはcomment IDを永久consumeし、semantic/exact subjectをprovisional reserveするが、phase leaseを
+先行発行しない。shared G2だけが各phaseのpredecessor receiptとremote再検証後にdomain-separated one-shot leaseを
+発行・consumeする。不可逆点ではdecision lease consume、semantic/exact subject永久consume、question-family count加算、
+authenticated irreversible receipt発行を1つのatomic global/subject-head CASで行い、candidate mountはreceiptを再検証する。
+不可逆点より前で、decision lease未consumeかつcandidate/result/odds/payoff/settlement accessが0なら、authenticated
+abort CASが旧runを`INVALID` terminal化し、headsを進め、発行済み未consume leaseを全てrevoke/tombstoneし、旧approval/
+predecessor receiptを永久不適格化してからsubject reservationだけを解除できる。comment IDは解除せず、置換には
+新scopeと新commentを要する。不可逆点以後は`INVALID`でも再実行しない。
+
+diagnostic lifecycleは隣接遷移と各nonterminalから`INVALID`だけを許し、self transition、skip、terminal resurrectionを
+禁止する。各遷移はrun state、global/subject heads、対応receiptをatomic CASし、不可逆CASは
+`RND_LEASED -> RND_RUNNING`も含めてsplit-brainを防ぐ。run scopeはrepository/base/run-base、APPROVERS digest、expected pre-grant global/subject headsをbindし、
+grant receiptがactual old/new headsを記録する。将来receipt/lease IDをrun scopeへ混ぜず、後続receipt/leaseがrun digestへ
+逆向きにbindする。run approval evidenceは既存GitHub trust contractのidentity/ancestry/approver/comment fieldsだけを
+継承し、ordinary registry/prepare/run/shadow mechanicsは継承しない。このrouteではrun-scope base commitが
+proposal base commitの役割を担う。subject stateはprovisional/released/irreversibly-consumedを分け、single-use blockerは
+新規実行かつirreversibly consumedにだけ適用する。released後の再予約は旧generationをterminal/tombstoneのまま
+aggregate subject headでgeneration+1へ進めるCASに限り、同時active generation最大1、全generation横断のirreversible
+execution最大1を維持する。exact replayはtrusted seal receipt、original approval receipt chain、
+semantic/exact subject、result digest、unrevoked状態を再検証したread-only retrievalだけで、不一致やcache missでは
+状態遷移せず停止する。
+
+pre-grant resolverはsigned catalog metadata/manifestだけを読み、candidate/settlement blobのmountやrow readをしない。
+ordered race-setはprepublished manifest digestから取得し、content accessはirreversible receipt後に限る。recipe/input/cohort/
+metricだけでなくsensitivity/payoff/bootstrap/budget/seed/environment/phase/replica/attempt topology/argvもregistry/policyが
+解決し、caller/proposal自由値、retry、replica結果選択を認めない。
+
+shared G2はglobal/subject head CAS、全terminal/nonterminal subject headとgrant IDの移行、old-writer fence後のsecond
+remote compareを必須とする。authenticated external monotonic checkpoint/witnessによりbackup restore、rollback、fork、
+stale headを検出し、検出時はlaneを停止して新規leaseを発行しない。local file、SQLite、worktree、branch、process
+memoryをauthority fallbackにしない。
