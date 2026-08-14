@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://keiba-ai.local/schemas/registered_nonpromotion_phase_lease_v1.schema.json",
+  "title": "Shared-G2 authenticated registered non-promotion phase lease v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "envelope_kind",
+    "payload_type",
+    "payload_digest",
+    "payload",
+    "authentication"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "envelope_kind": {"const": "SHARED_G2_AUTHENTICATED_REMOTE_ENVELOPE_V1"},
+    "payload_type": {"const": "SHARED_G2_REGISTERED_DIAGNOSTIC_PHASE_LEASE_V1"},
+    "payload_digest": {"$ref": "#/definitions/nonzero_sha256"},
+    "payload": {"$ref": "#/definitions/phase_lease"},
+    "authentication": {"$ref": "#/definitions/authentication"}
+  },
+  "definitions": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nonzero_sha256": {
+      "allOf": [
+        {"$ref": "#/definitions/sha256"},
+        {"not": {"const": "0000000000000000000000000000000000000000000000000000000000000000"}}
+      ]
+    },
+    "safe_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{2,127}$"},
+    "opaque_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/@+\\-]{0,255}$"},
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:Z|\\+00:00)$"
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formal_buy", "send_order", "stake"],
+      "properties": {
+        "formal_buy": {"const": false},
+        "send_order": {"const": false},
+        "stake": {"type": "integer", "const": 0}
+      }
+    },
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "key_id", "signature", "attestation_digest", "issued_at"],
+      "properties": {
+        "scheme": {
+          "allOf": [
+            {"$ref": "#/definitions/safe_id"},
+            {
+              "not": {
+                "pattern": "^(?:[Dd][Ii][Ss][Aa][Bb][Ll][Ee][Dd]|[Ff][Ii][Xx][Tt][Uu][Rr][Ee]|[Ii][Nn]_[Mm][Ee][Mm][Oo][Rr][Yy]|[Ll][Oo][Cc][Aa][Ll]|[Nn][Oo][Nn][Ee]|[Pp][Ll][Aa][Ii][Nn][Tt][Ee][Xx][Tt]|[Ss][Ee][Ll][Ff]_[Aa][Ss][Ss][Ee][Rr][Tt][Ee][Dd]|[Tt][Ee][Ss][Tt]|[Uu][Nn][Cc][Oo][Nn][Ff][Ii][Gg][Uu][Rr][Ee][Dd])$"
+              }
+            }
+          ]
+        },
+        "key_id": {"$ref": "#/definitions/opaque_id"},
+        "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{43,4096}$"},
+        "attestation_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "issued_at": {"$ref": "#/definitions/utc_timestamp"}
+      }
+    },
+    "global_head": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "object_kind",
+        "authority_id",
+        "activation_epoch",
+        "backend_identity_digest",
+        "cutover_receipt_digest",
+        "sequence",
+        "head_digest",
+        "observed_at",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "object_kind": {"const": "SHARED_G2_GLOBAL_HEAD_V1"},
+        "authority_id": {"$ref": "#/definitions/safe_id"},
+        "activation_epoch": {"$ref": "#/definitions/safe_id"},
+        "backend_identity_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "cutover_receipt_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "sequence": {"type": "integer", "minimum": 0},
+        "head_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "observed_at": {"$ref": "#/definitions/utc_timestamp"},
+        "safety": {"$ref": "#/definitions/safety"}
+      }
+    },
+    "lease_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_scope_digest",
+        "run_generation",
+        "recipe_digest",
+        "semantic_subject_digest",
+        "exact_run_subject_digest",
+        "question_family_digest",
+        "replica_id",
+        "phase",
+        "attempt",
+        "predecessor_receipt_digest",
+        "issue_revalidation_receipt_digest",
+        "policy_digest",
+        "schema_digest",
+        "verifier_digest",
+        "executor_digest",
+        "runner_digest",
+        "bound_capability_profile_digest",
+        "phase_capability_digest",
+        "ttl_seconds"
+      ],
+      "properties": {
+        "run_scope_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "run_generation": {"type": "integer", "minimum": 0},
+        "recipe_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "semantic_subject_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "exact_run_subject_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "question_family_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "replica_id": {"enum": ["clean_a", "clean_b", "lane_coordinator", "canonical_sealer"]},
+        "phase": {
+          "enum": [
+            "DECISION_FREEZE",
+            "SETTLEMENT_DIAGNOSTIC",
+            "REPLICA_COMPARE",
+            "RESULT_SEAL"
+          ]
+        },
+        "attempt": {"type": "integer", "const": 1},
+        "predecessor_receipt_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "issue_revalidation_receipt_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "policy_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "schema_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "verifier_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "executor_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "runner_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "bound_capability_profile_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "phase_capability_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "ttl_seconds": {"type": "integer", "minimum": 1, "maximum": 3600}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"phase": {"const": "DECISION_FREEZE"}}, "required": ["phase"]},
+          "then": {
+            "properties": {
+              "replica_id": {"enum": ["clean_a", "clean_b"]},
+              "phase_capability_digest": {"const": "77bcf04fa806343dca20a7694c8d2ee19bae80d039cb81a117eb5d0fde4dd531"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"phase": {"const": "SETTLEMENT_DIAGNOSTIC"}}, "required": ["phase"]},
+          "then": {
+            "properties": {
+              "replica_id": {"enum": ["clean_a", "clean_b"]},
+              "phase_capability_digest": {"const": "b4d33ecde929b7f9386ed6fe72fc07a2803133e09a4dfe906aed1dfd0ad293e7"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"phase": {"const": "REPLICA_COMPARE"}}, "required": ["phase"]},
+          "then": {
+            "properties": {
+              "replica_id": {"const": "lane_coordinator"},
+              "phase_capability_digest": {"const": "679e105e168fc47b5dd4cc98dffe6933e33284ac2cdfc4f883732f98d13fb7ee"}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"phase": {"const": "RESULT_SEAL"}}, "required": ["phase"]},
+          "then": {
+            "properties": {
+              "replica_id": {"const": "canonical_sealer"},
+              "phase_capability_digest": {"const": "5f320c17a50a8185c30d83ba7b6dc0ed08f5f9e332a614f18e5e8547b470ba00"}
+            }
+          }
+        }
+      ]
+    },
+    "phase_lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "lease_kind",
+        "authority_id",
+        "activation_epoch",
+        "backend_identity_digest",
+        "cutover_receipt_digest",
+        "lease_id",
+        "binding",
+        "binding_digest",
+        "status",
+        "retry_budget",
+        "issued_from_global_head",
+        "issued_global_head",
+        "issue_transaction_id",
+        "lease_authority_identity_digest",
+        "issued_at",
+        "expires_at",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "lease_kind": {"const": "SHARED_G2_REGISTERED_DIAGNOSTIC_PHASE_LEASE_V1"},
+        "authority_id": {"$ref": "#/definitions/safe_id"},
+        "activation_epoch": {"$ref": "#/definitions/safe_id"},
+        "backend_identity_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "cutover_receipt_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "lease_id": {"$ref": "#/definitions/opaque_id"},
+        "binding": {"$ref": "#/definitions/lease_binding"},
+        "binding_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "status": {"const": "ISSUED"},
+        "retry_budget": {"type": "integer", "const": 0},
+        "issued_from_global_head": {"$ref": "#/definitions/global_head"},
+        "issued_global_head": {"$ref": "#/definitions/global_head"},
+        "issue_transaction_id": {"$ref": "#/definitions/opaque_id"},
+        "lease_authority_identity_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "issued_at": {"$ref": "#/definitions/utc_timestamp"},
+        "expires_at": {"$ref": "#/definitions/utc_timestamp"},
+        "safety": {"$ref": "#/definitions/safety"}
+      }
+    }
+  }
+}

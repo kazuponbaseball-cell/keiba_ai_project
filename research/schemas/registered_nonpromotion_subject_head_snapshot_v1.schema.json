@@ -1,0 +1,153 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://keiba-ai.local/schemas/registered_nonpromotion_subject_head_snapshot_v1.schema.json",
+  "title": "Registered non-promotion diagnostic authenticated subject-head snapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "envelope_kind",
+    "payload_type",
+    "payload_digest",
+    "payload",
+    "authentication"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "envelope_kind": {"const": "SHARED_G2_AUTHENTICATED_REMOTE_ENVELOPE_V1"},
+    "payload_type": {"const": "SHARED_G2_SUBJECT_HEAD_SNAPSHOT_V1"},
+    "payload_digest": {"$ref": "#/definitions/nonzero_sha256"},
+    "payload": {"$ref": "#/definitions/subject_head_snapshot"},
+    "authentication": {"$ref": "#/definitions/authentication"}
+  },
+  "definitions": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "nonzero_sha256": {
+      "allOf": [
+        {"$ref": "#/definitions/sha256"},
+        {"not": {"const": "0000000000000000000000000000000000000000000000000000000000000000"}}
+      ]
+    },
+    "safe_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{2,127}$"},
+    "opaque_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:/@+\\-]{0,255}$"},
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:Z|\\+00:00)$"
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["formal_buy", "send_order", "stake"],
+      "properties": {
+        "formal_buy": {"const": false},
+        "send_order": {"const": false},
+        "stake": {"type": "integer", "const": 0}
+      }
+    },
+    "authentication": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheme", "key_id", "signature", "attestation_digest", "issued_at"],
+      "properties": {
+        "scheme": {
+          "allOf": [
+            {"$ref": "#/definitions/safe_id"},
+            {
+              "not": {
+                "pattern": "^(?:[Dd][Ii][Ss][Aa][Bb][Ll][Ee][Dd]|[Ff][Ii][Xx][Tt][Uu][Rr][Ee]|[Ii][Nn]_[Mm][Ee][Mm][Oo][Rr][Yy]|[Ll][Oo][Cc][Aa][Ll]|[Nn][Oo][Nn][Ee]|[Pp][Ll][Aa][Ii][Nn][Tt][Ee][Xx][Tt]|[Ss][Ee][Ll][Ff]_[Aa][Ss][Ss][Ee][Rr][Tt][Ee][Dd]|[Tt][Ee][Ss][Tt]|[Uu][Nn][Cc][Oo][Nn][Ff][Ii][Gg][Uu][Rr][Ee][Dd])$"
+              }
+            }
+          ]
+        },
+        "key_id": {"$ref": "#/definitions/opaque_id"},
+        "signature": {"type": "string", "pattern": "^[A-Za-z0-9_-]{43,4096}$"},
+        "attestation_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "issued_at": {"$ref": "#/definitions/utc_timestamp"}
+      }
+    },
+    "global_head": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "object_kind",
+        "authority_id",
+        "activation_epoch",
+        "backend_identity_digest",
+        "cutover_receipt_digest",
+        "sequence",
+        "head_digest",
+        "observed_at",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "object_kind": {"const": "SHARED_G2_GLOBAL_HEAD_V1"},
+        "authority_id": {"$ref": "#/definitions/safe_id"},
+        "activation_epoch": {"$ref": "#/definitions/safe_id"},
+        "backend_identity_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "cutover_receipt_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "sequence": {"type": "integer", "minimum": 0},
+        "head_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "observed_at": {"$ref": "#/definitions/utc_timestamp"},
+        "safety": {"$ref": "#/definitions/safety"}
+      }
+    },
+    "subject_head": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subject_kind", "subject_digest", "generation", "sequence", "head_digest", "state_digest"],
+      "properties": {
+        "subject_kind": {
+          "enum": [
+            "CATALOG_RELEASE",
+            "COMMENT_ID",
+            "EXACT_SUBJECT",
+            "LANE",
+            "LEASE",
+            "LEASE_SET",
+            "PHASE_OUTPUT",
+            "QUESTION_FAMILY",
+            "RECIPE",
+            "RUN",
+            "SEMANTIC_SUBJECT"
+          ]
+        },
+        "subject_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "generation": {"type": "integer", "minimum": 0},
+        "sequence": {"type": "integer", "minimum": 0},
+        "head_digest": {"$ref": "#/definitions/sha256"},
+        "state_digest": {"$ref": "#/definitions/nonzero_sha256"}
+      }
+    },
+    "subject_head_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "snapshot_kind",
+        "authority_id",
+        "activation_epoch",
+        "backend_identity_digest",
+        "cutover_receipt_digest",
+        "global_head",
+        "subject_head",
+        "read_at",
+        "safety"
+      ],
+      "properties": {
+        "schema_version": {"type": "integer", "const": 1},
+        "snapshot_kind": {"const": "SHARED_G2_SUBJECT_HEAD_SNAPSHOT_V1"},
+        "authority_id": {"$ref": "#/definitions/safe_id"},
+        "activation_epoch": {"$ref": "#/definitions/safe_id"},
+        "backend_identity_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "cutover_receipt_digest": {"$ref": "#/definitions/nonzero_sha256"},
+        "global_head": {"$ref": "#/definitions/global_head"},
+        "subject_head": {"$ref": "#/definitions/subject_head"},
+        "read_at": {"$ref": "#/definitions/utc_timestamp"},
+        "safety": {"$ref": "#/definitions/safety"}
+      }
+    }
+  }
+}

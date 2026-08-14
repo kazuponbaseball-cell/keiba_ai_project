@@ -1,0 +1,181 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://keiba-ai.local/schemas/registered_nonpromotion_catalog_release_v1.schema.json",
+  "title": "Registered non-promotion diagnostic catalog release v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "release_id",
+    "status",
+    "revoked",
+    "manifest_sha256",
+    "authentication_receipt_sha256",
+    "status_receipt_sha256",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "release_id": {"$ref": "#/definitions/safe_id"},
+    "status": {"enum": ["ACTIVE", "INACTIVE", "REVOKED"]},
+    "revoked": {"type": "boolean"},
+    "manifest_sha256": {"$ref": "#/definitions/sha256"},
+    "authentication_receipt_sha256": {"$ref": "#/definitions/sha256"},
+    "status_receipt_sha256": {"$ref": "#/definitions/sha256"},
+    "entries": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": {"$ref": "#/definitions/catalog_entry"},
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": ["role"],
+            "properties": {"role": {"const": "candidate_only_projection"}}
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": ["role"],
+            "properties": {"role": {"const": "settlement_projection"}}
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"status": {"const": "REVOKED"}}, "required": ["status"]},
+      "then": {"properties": {"revoked": {"const": true}}},
+      "else": {"properties": {"revoked": {"const": false}}}
+    }
+  ],
+  "definitions": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "safe_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{2,127}$"},
+    "catalog_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_id",
+        "role",
+        "object_id",
+        "content_sha256",
+        "schema_sha256",
+        "provenance_sha256",
+        "role_attestations",
+        "columns",
+        "key_columns",
+        "row_count",
+        "race_count",
+        "ordered_race_id_set_sha256"
+      ],
+      "properties": {
+        "entry_id": {"$ref": "#/definitions/safe_id"},
+        "role": {"enum": ["candidate_only_projection", "settlement_projection"]},
+        "object_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "content_sha256": {"$ref": "#/definitions/sha256"},
+        "schema_sha256": {"$ref": "#/definitions/sha256"},
+        "provenance_sha256": {"$ref": "#/definitions/sha256"},
+        "role_attestations": {
+          "oneOf": [
+            {"$ref": "#/definitions/candidate_role_attestations"},
+            {"$ref": "#/definitions/settlement_role_attestations"}
+          ]
+        },
+        "columns": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_]{0,127}$"}
+        },
+        "key_columns": {"const": ["race_id", "candidate_key"]},
+        "row_count": {"type": "integer", "const": 3746},
+        "race_count": {"type": "integer", "const": 3746},
+        "ordered_race_id_set_sha256": {"$ref": "#/definitions/sha256"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"role": {"const": "candidate_only_projection"}},
+            "required": ["role"]
+          },
+          "then": {
+            "properties": {
+              "role_attestations": {
+                "$ref": "#/definitions/candidate_role_attestations"
+              },
+              "columns": {
+                "type": "array",
+                "minItems": 11,
+                "maxItems": 11,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "candidate_generated",
+                    "candidate_key",
+                    "eligible_race",
+                    "fold",
+                    "horse_a",
+                    "horse_b",
+                    "p_action_C0_offset",
+                    "race_date",
+                    "race_id",
+                    "top1_wide_prob",
+                    "venue_code"
+                  ]
+                }
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "role_attestations": {
+                "$ref": "#/definitions/settlement_role_attestations"
+              },
+              "columns": {
+                "type": "array",
+                "minItems": 5,
+                "maxItems": 5,
+                "uniqueItems": true,
+                "items": {
+                  "enum": [
+                    "candidate_hit",
+                    "candidate_key",
+                    "official_outcome_completeness",
+                    "official_wide_pay",
+                    "race_id"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "candidate_role_attestations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p_action_cross_source_equality_attestation_sha256",
+        "candidate_materializer_usecols_sha256",
+        "decision_base_lineage_sha256"
+      ],
+      "properties": {
+        "p_action_cross_source_equality_attestation_sha256": {"$ref": "#/definitions/sha256"},
+        "candidate_materializer_usecols_sha256": {"$ref": "#/definitions/sha256"},
+        "decision_base_lineage_sha256": {"$ref": "#/definitions/sha256"}
+      }
+    },
+    "settlement_role_attestations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["official_settlement_provenance_sha256"],
+      "properties": {
+        "official_settlement_provenance_sha256": {"$ref": "#/definitions/sha256"}
+      }
+    }
+  }
+}
