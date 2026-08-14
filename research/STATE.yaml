@@ -93,6 +93,185 @@ hypothesis_gate:
   human_approval_required_at_or_above_threshold: true
   scorecard: research/HYPOTHESIS_SCORECARD.yaml
 
+registered_nonpromotion_diagnostic_v1:
+  gate_kind: registered_nonpromotion_diagnostic_v1
+  contract_version: 1
+  governance_layer: ROOT_ROUTE_DECLARATION_ONLY
+  declaration_base_commit: 08b42ce8f12769a594a1cb1cd5da57ed3ab37e04
+  declaration_effective_only_after_containing_commit_human_merged_to_main: true
+  root_route_declared: true
+  route_is_ordinary_strategy_authorization: false
+  ordinary_score_record_must_not_be_fabricated: true
+  strategy_derived_diagnostic_must_bind_existing_score_record: true
+  ordinary_score_status_and_total_preserved: true
+  ordinary_score_credit: 0
+  threshold_override_allowed: false
+  score_below_75_remains_blocked_for_strategy_execution: true
+  tiers:
+    - A_PARITY_NO_DECISION_CHANGE
+    - B_REGISTERED_HISTORICAL_IMPACT
+  b_tier_odds_price_popularity_or_market_access_allowed: false
+  b_tier_settlement_allowlist: RACE_ID_CANDIDATE_KEY_HIT_OUTCOME_COMPLETENESS_OFFICIAL_PAYOFF_ONLY
+  tier_score_modes:
+    A_PARITY_NO_DECISION_CHANGE: NO_ORDINARY_STRATEGY_CLAIM_OR_PRESERVE_EXISTING
+    B_REGISTERED_HISTORICAL_IMPACT: BOUND_EXISTING_REQUIRED
+  initial_recipe_design:
+    recipe_id: historical_ai_duplicate_gate_impact_v1
+    tier: B_REGISTERED_HISTORICAL_IMPACT
+    source_pull_request: 40
+    source_merge_commit: 69a95a25a618e04fa73620f21a9010e78143f1eb
+    source_contract_map_path: research/drafts/MODEL_INTEGRITY_DIAGNOSTIC_GATE_V1_CONTRACT_MAP.design.json
+    source_contract_map_git_blob_sha: aa4b3b389a8a191b9928eb53e13e1d019e067c14
+    source_contract_map_git_blob_content_sha256: 21d8b14121f37e238357605b7c6521203e9574c12a12b0645fd4ebe6a81cb2b1
+    recipe_fingerprint_sha256: 67b0d3e5b92166a10b3077bff03e107c9db071b310f60f43b8758ce316eda878
+    source_recipe_fingerprint_scope: FORMULA_ONLY
+    source_design_authority: false
+    source_authority_class: B_LOCAL_HASHED
+    generic_wrapper_recipe_id: PENDING_SEPARATE_IMPLEMENTATION
+    generic_wrapper_recipe_version: null
+    generic_wrapper_recipe_digest: null
+    live_policy_or_config_mutation: false
+    candidate_identity_change: false
+    candidate_rank_or_tier_change: false
+    counterfactual_eligibility_mask_change: true
+    ordinary_strategy_score_total: 46
+    ordinary_strategy_status: BLOCKED_SCORE
+    ordinary_strategy_threshold: 75
+    ordinary_strategy_threshold_met: false
+    ordinary_strategy_score_credit: 0
+    pr40_is_initial_recipe_source_evidence_only: true
+    pr40_is_generic_fast_lane_authority: false
+    versioned_outcome_mapping:
+      DIRECTIONAL_DECISION_EFFECT: DIRECTIONAL_EFFECT
+      INVALID: INVALID
+      NO_DECISION_EFFECT: NO_DECISION_EFFECT
+    acknowledgement_removed_from_generic_lifecycle: true
+    registry_status: PENDING_SEPARATE_IMPLEMENTATION_HUMAN_REVIEW_AND_MERGE
+  generic_implementation_contract_required: true
+  shared_authority_requirements:
+    shared_g2_durable_ledger_is_sole_live_authority: true
+    separate_or_local_lane_backend_allowed: false
+    complete_legacy_event_and_global_grant_id_migration_required: true
+    all_terminal_and_nonterminal_subject_heads_import_required: true
+    global_and_subject_head_atomic_cas_required: true
+    old_writer_fence_required: true
+    second_remote_compare_after_old_writer_fence_required: true
+    atomic_cutover_and_authenticated_receipts_required: true
+    authenticated_external_monotonic_checkpoint_or_witness_required: true
+    backup_restore_rollback_and_fork_detection_required: true
+    rollback_fork_or_stale_checkpoint_action: HALT_LANE_NO_NEW_LEASES
+    dual_writer_allowed: false
+    local_file_sqlite_worktree_branch_or_process_memory_authority_fallback_allowed: false
+  implementation_merged: false
+  finite_recipe_registry_available: false
+  generic_runner_available: false
+  github_verifier_available: false
+  content_addressed_candidate_and_settlement_catalog_available: false
+  durable_global_single_use_ledger_available: false
+  one_shot_lease_available: false
+  supervised_executor_available: false
+  cutover_receipt_present: false
+  lane_activated: false
+  current_runtime_execution_kind: none
+  preparation_authorized: false
+  execution_authorized: false
+  automatic_execution_allowed: false
+  real_data_allowed: false
+  settlement_or_payoff_access_allowed: false
+  roi_calculation_allowed: false
+  shadow_transition_supported: false
+  production_change_allowed: false
+  merge_approval_supported: false
+  formal_buy: false
+  send_order: false
+  stake: 0
+  execution_status: EXECUTION_FORBIDDEN_PENDING_SEPARATE_IMPLEMENTATION_AND_CUTOVER
+  target_routine_flow_after_activation:
+    per_run_code_change: false
+    per_run_prepare_phase: false
+    per_run_pull_request: false
+    per_run_merge: false
+    run_approval_comment_format: "APPROVED_NONPROMOTION_DIAGNOSTIC_RUN <run_scope_digest>"
+    run_approval_comment_count: 1
+    result_acknowledgement_required: false
+    semantic_subject_maximum_irreversible_execution_count_global: 1
+    exact_run_subject_maximum_irreversible_execution_count_global: 1
+    registry_resolves_recipe_input_cohort_metric_and_argv: true
+    registry_also_resolves_sensitivity_payoff_bootstrap_budget_seed_environment_phase_replica_attempt_topology: true
+    proposal_or_caller_free_form_resolved_value_allowed: false
+    pregrant_resolver_reads_signed_catalog_metadata_and_manifest_only: true
+    pregrant_candidate_or_settlement_blob_mount_or_row_read_allowed: false
+    ordered_race_set_source: PREPUBLISHED_SIGNED_MANIFEST_DIGEST
+    content_access_requires_authenticated_irreversible_receipt: true
+    run_scope_binds_repository_base_run_commit_approvers_and_expected_pregrant_heads: true
+    approval_receipt_binds_actual_old_and_new_global_and_subject_heads: true
+    unrelated_global_append_does_not_invalidate_authenticated_subject_receipt_chain: true
+    github_backed_approval_evidence_v1_identity_ancestry_approver_and_comment_fields_inherited: true
+    ordinary_registry_prepare_run_shadow_event_mechanics_inherited: false
+    shared_g2_evidence_storage_single_run_comment_cas_and_lease_contract_applies: true
+    nonterminal_states:
+      - RND_RUN_SCOPE_FROZEN
+      - RND_RUN_APPROVAL_REQUIRED
+      - RND_APPROVED
+      - RND_LEASED
+      - RND_RUNNING
+      - RND_RESULT_SEALED
+    allowed_transitions:
+      RND_RUN_SCOPE_FROZEN:
+        - INVALID
+        - RND_RUN_APPROVAL_REQUIRED
+      RND_RUN_APPROVAL_REQUIRED:
+        - INVALID
+        - RND_APPROVED
+      RND_APPROVED:
+        - INVALID
+        - RND_LEASED
+      RND_LEASED:
+        - INVALID
+        - RND_RUNNING
+      RND_RUNNING:
+        - INVALID
+        - RND_RESULT_SEALED
+      RND_RESULT_SEALED:
+        - INVALID
+        - RND_COMPLETED
+      RND_COMPLETED: []
+      INVALID: []
+    terminal_states:
+      - INVALID
+      - RND_COMPLETED
+    self_skip_or_terminal_resurrection_allowed: false
+    every_lifecycle_transition_run_state_heads_and_receipt_are_one_atomic_cas: true
+    irreversible_cas_includes_leased_to_running_transition: true
+    phase_leases_issued_after_approval_by_shared_g2_only: true
+    phase_lease_predecessor_receipt_and_remote_revalidation_required: true
+    phase_lease_cross_use_replay_self_issue_or_capability_union_allowed: false
+    subject_reservation_is_provisional_until: ATOMIC_DECISION_LEASE_CONSUME_BEFORE_CANDIDATE_MOUNT
+    subject_state_scope: RESERVATION_GENERATION
+    subject_states:
+      - IRREVERSIBLY_CONSUMED
+      - PROVISIONALLY_RESERVED
+      - RELEASED_PREACCESS_ABORT
+    released_generation_is_terminal_and_new_generation_requires_new_scope_comment_authenticated_abort_receipt_and_cas: true
+    aggregate_subject_maximum_active_generation_count: 1
+    aggregate_subject_maximum_irreversible_execution_count_across_generations: 1
+    preirreversible_abort_release_requires_no_decision_lease_consumption_and_zero_candidate_result_odds_payoff_or_settlement_access: true
+    preirreversible_abort_release_requires_authenticated_atomic_receipt: true
+    preirreversible_abort_atomically_terminalizes_old_run_advances_heads_and_tombstones_all_unconsumed_leases: true
+    preirreversible_abort_makes_old_approval_and_predecessor_receipts_permanently_ineligible: true
+    preirreversible_abort_releases_comment_id: false
+    replacement_scope_and_new_comment_allowed_only_after_preirreversible_release_receipt: true
+    irreversible_point_is_one_atomic_cas_for_decision_lease_subjects_family_count_and_receipt: true
+    candidate_mount_requires_authenticated_irreversible_receipt_revalidation: true
+    subject_permanently_consumed_at_or_after_irreversible_point: true
+    question_family_derived_by_trusted_verifier_from_immutable_source_ast_and_canonical_population_metric_registry_digests: true
+    recipe_supplied_or_display_string_family_identity_allowed: false
+    exact_replay: SEALED_RESULT_READ_ONLY_RETRIEVAL_OR_STOP_ON_CACHE_MISS
+    exact_replay_requires_original_approval_receipt_chain_authenticated_trusted_seal_subject_and_result_digest_match_and_unrevoked_sources: true
+    exact_replay_validation_failure_action: STOP_NO_STATE_TRANSITION_NO_RERUN
+    question_family_lifetime_recipe_cap: 1
+    question_family_new_execution_cap: 1
+
 infrastructure_safety_gate:
   gate_kind: infrastructure_safety_v1
   policy: research/INFRASTRUCTURE_GATE.json

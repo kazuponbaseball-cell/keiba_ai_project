@@ -1,11 +1,15 @@
-version: 3
+version: 4
 name: research_os_v1_hypothesis_scorecard
+ordinary_strategy_gate_semantics_version: 3
+legacy_scorecard_v3_scope_bytes_and_digests_unchanged: true
+legacy_scorecard_v3_scope_read_and_invalid_compatibility_required: true
 total_points: 100
 auto_execution_threshold: 75
 human_approval_required: true
 human_approval_source: github_issue_comment
 caller_asserted_approval_allowed: false
 approval_trust:
+  contract_id: github_backed_approval_evidence_v1
   repository: kazuponbaseball-cell/keiba_ai_project
   base_branch: main
   current_main_source: github_read_only_api
@@ -26,6 +30,446 @@ rules:
   below_threshold_auto_execution: false
   threshold_or_above_auto_execution_without_approval: false
   production_promotion_supported: false
+
+registered_nonpromotion_diagnostic_route:
+  schema_version: 1
+  gate_kind: registered_nonpromotion_diagnostic_v1
+  route_is_ordinary_strategy_authorization: false
+  ordinary_score_record_must_not_be_fabricated: true
+  strategy_derived_diagnostic_must_bind_existing_score_record: true
+  ordinary_score_status_and_total_must_be_preserved: true
+  ordinary_score_credit: 0
+  ordinary_threshold_override_allowed: false
+  score_below_75_remains_blocked_for_strategy_execution: true
+  diagnostic_result_may_satisfy_ordinary_score_criteria: false
+  current_root_declaration_is_execution_authority: false
+  implementation_merged: false
+  cutover_receipt_present: false
+  execution_authorized: false
+  automatic_execution_allowed: false
+  routing_source: trusted_current_main_policy_only
+  proposal_self_asserted_routing_allowed: false
+  unknown_or_ambiguous_route_action: REJECT
+  trusted_dispatcher:
+    ordinary_strategy_v1: APPLY_EXISTING_75_POINT_GATE
+    registered_nonpromotion_diagnostic_v1: APPLY_REGISTERED_DIAGNOSTIC_HARD_CLASSIFIER
+    default: REJECT
+  tiers:
+    A_PARITY_NO_DECISION_CHANGE:
+      ordinary_score_record_mode: NO_ORDINARY_STRATEGY_CLAIM_OR_PRESERVE_EXISTING
+      settlement_access_allowed: false
+      result_label_access_allowed: false
+      odds_access_allowed: false
+      payoff_access_allowed: false
+      roi_calculation_allowed: false
+      decision_mask_change_allowed: false
+      candidate_identity_change_allowed: false
+      candidate_rank_or_tier_change_allowed: false
+    B_REGISTERED_HISTORICAL_IMPACT:
+      ordinary_score_record_mode: BOUND_EXISTING_REQUIRED
+      finite_immutable_current_main_recipe_required: true
+      odds_access_allowed: false
+      price_access_allowed: false
+      popularity_or_market_data_access_allowed: false
+      exactly_two_arms_required: true
+      exactly_one_registered_transform_required: true
+      threshold_search_count: 0
+      refit_count: 0
+      recalibration_count: 0
+      cohort_count: 1
+      live_policy_or_config_mutation_allowed: false
+      candidate_identity_change_allowed: false
+      candidate_rank_or_tier_change_allowed: false
+      counterfactual_eligibility_mask_change_allowed_only_if_recipe_declares_it: true
+      decision_freeze_before_settlement_required: true
+      final_official_payoff_diagnostic_allowed_after_activation: true
+      settlement_content_allowlist:
+        - candidate_hit
+        - candidate_key
+        - official_outcome_completeness
+        - official_wide_pay
+        - race_id
+      settlement_fields_outside_exact_allowlist_mount_or_read_allowed: false
+  routine_registered_recipe_flow_after_activation:
+    per_run_code_change_allowed: false
+    per_run_prepare_phase_required: false
+    per_run_pull_request_required: false
+    per_run_merge_required: false
+    run_approval_comment_format: "APPROVED_NONPROMOTION_DIAGNOSTIC_RUN <run_scope_digest>"
+    run_approval_comment_count: 1
+    allowlisted_github_user_required: true
+    registry_wide_comment_id_single_use_required: true
+    dispatch_time_remote_revalidation_required: true
+    semantic_subject_maximum_irreversible_execution_count_global: 1
+    result_acknowledgement_required_for_execution_or_completion: false
+    nonterminal_states:
+      - RND_RUN_SCOPE_FROZEN
+      - RND_RUN_APPROVAL_REQUIRED
+      - RND_APPROVED
+      - RND_LEASED
+      - RND_RUNNING
+      - RND_RESULT_SEALED
+    allowed_transitions:
+      RND_RUN_SCOPE_FROZEN:
+        - INVALID
+        - RND_RUN_APPROVAL_REQUIRED
+      RND_RUN_APPROVAL_REQUIRED:
+        - INVALID
+        - RND_APPROVED
+      RND_APPROVED:
+        - INVALID
+        - RND_LEASED
+      RND_LEASED:
+        - INVALID
+        - RND_RUNNING
+      RND_RUNNING:
+        - INVALID
+        - RND_RESULT_SEALED
+      RND_RESULT_SEALED:
+        - INVALID
+        - RND_COMPLETED
+      RND_COMPLETED: []
+      INVALID: []
+    terminal_states:
+      - INVALID
+      - RND_COMPLETED
+    any_nonterminal_to_invalid_allowed: true
+    self_transition_allowed: false
+    skipped_transition_allowed: false
+    terminal_resurrection_allowed: false
+    lifecycle_transaction_contract:
+      run_scope_seal_atomically_transitions_frozen_to_approval_required_with_receipt: true
+      approval_cas_atomically_transitions_approval_required_to_approved_with_receipt: true
+      decision_lease_issue_atomically_transitions_approved_to_leased_with_receipt: true
+      irreversible_cas_atomically_transitions_leased_to_running_with_receipt: true
+      result_seal_atomically_transitions_running_to_result_sealed_with_receipt: true
+      completion_cas_atomically_transitions_result_sealed_to_completed_with_receipt: true
+      failure_cas_atomically_transitions_current_nonterminal_to_invalid_with_receipt: true
+      run_state_global_head_subject_head_and_receipt_must_not_split: true
+    preparing_state_exists: false
+    registry_resolves_recipe_input_cohort_metric_and_argv: true
+    registry_resolved_fields:
+      - argv
+      - bootstrap_contract
+      - budget
+      - cohort
+      - environment_and_dependencies
+      - input_releases
+      - metric_and_sensitivity
+      - payoff_rule
+      - phase_plan
+      - recipe
+      - replica_attempt_and_retry_topology
+      - seed_and_rng
+    caller_or_proposal_free_form_values_for_registry_resolved_fields_allowed: false
+    proposal_free_form_recipe_input_cohort_metric_or_argv_allowed: false
+    pregrant_resolver_boundary:
+      signed_catalog_metadata_and_manifest_read_allowed: true
+      candidate_or_settlement_blob_mount_or_row_read_allowed: false
+      ordered_race_set_source: PREPUBLISHED_SIGNED_MANIFEST_DIGEST
+      content_access_requires_authenticated_irreversible_receipt: true
+    run_digest_required_bindings:
+      - activation_receipt
+      - active_candidate_and_settlement_release_and_revocation_state
+      - approval_evidence_schema
+      - approvers_blob_sha_and_content_sha256
+      - capability_profile
+      - candidate_identity_reference_counterfactual_ast_and_allowed_difference
+      - compiler_verifier_executor_runner_commit_and_blob_digests
+      - environment_interpreter_dependencies_locale_timezone_seed_and_exact_argv
+      - expected_pregrant_global_and_subject_heads
+      - fresh_output_root
+      - metric_sensitivity_payoff_bootstrap_and_budget
+      - ordinary_score_scope
+      - ordered_race_set
+      - phase_plan_lease_schema_issuer_capability_counts_and_replica_attempt_retry_topology
+      - policy_and_schema_digests
+      - recipe_entry_blob
+      - repository_base_branch_and_run_scope_base_commit
+      - repository_cwd_empty_environment_timeout_and_read_write_allowlist
+      - semantic_and_exact_run_subject_digests
+    approval_transaction:
+      scope_must_be_sealed_before_comment_created: true
+      atomic_cas_binds_comment_subject_reservation_and_approval_receipt: true
+      global_comment_id_reservation: true
+      semantic_and_exact_subject_provisional_reservation: true
+      run_approval_receipt_required: true
+      phase_leases_issued_in_approval_cas: false
+      future_approval_receipt_or_lease_ids_or_digests_in_run_scope_allowed: false
+      all_post_approval_receipts_and_leases_bind_backward_to_frozen_run_digest: true
+      approval_receipt_binds_expected_and_actual_old_and_new_global_and_subject_heads: true
+      unrelated_later_global_appends_do_not_invalidate_an_authenticated_subject_receipt_chain: true
+      comment_id_consumed_at_approval_cas_and_never_released: true
+      subject_reservation_release_before_irreversible_point:
+        allowed: true
+        requires_no_decision_lease_consumption: true
+        requires_zero_candidate_result_odds_payoff_or_settlement_access: true
+        requires_authenticated_atomic_abort_receipt: true
+        atomically_terminalizes_old_run_as_invalid: true
+        atomically_advances_global_and_subject_heads: true
+        atomically_revokes_and_tombstones_all_issued_unconsumed_leases: true
+        old_approval_and_predecessor_receipts_permanently_ineligible: true
+        releases_semantic_and_exact_subject_reservation: true
+        releases_comment_id: false
+        replacement_requires_new_sealed_scope_and_new_comment: true
+      irreversible_execution_point: ATOMIC_DECISION_LEASE_CONSUME_BEFORE_CANDIDATE_MOUNT
+      irreversible_execution_transaction:
+        single_atomic_global_and_subject_head_cas_required: true
+        consumes_decision_lease: true
+        permanently_consumes_semantic_and_exact_subjects: true
+        increments_question_family_execution_count: true
+        transitions_run_state_from_leased_to_running: true
+        emits_authenticated_irreversible_receipt: true
+        candidate_mount_requires_receipt_revalidation: true
+      at_or_after_irreversible_point_replacement_scope_comment_or_retry_allowed: false
+      revalidate_before:
+        - decision_lease
+        - dispatch
+        - result_seal
+        - settlement_lease
+    phase_lease_contract:
+      issuer: SHARED_G2_DURABLE_AUTHORITY_ONLY
+      issued_after_run_approval: true
+      domain_separated_by_run_recipe_replica_phase_and_attempt: true
+      predecessor_receipt_required: true
+      remote_authority_revalidation_before_issue_and_consume: true
+      one_shot_atomic_consume_required: true
+      lease_binds_backward_to_frozen_run_digest: true
+      cross_phase_cross_replica_cross_run_or_cross_recipe_use_allowed: false
+      capability_union_allowed: false
+      replay_or_self_issue_allowed: false
+    current_main_progression_rule:
+      run_scope_base_commit_must_remain_ancestor: true
+      bound_lane_policy_recipe_catalog_and_approvers_digests_must_be_bit_identical_active_and_unrevoked: true
+      non_identical_digest_before_irreversible_point_action: INVALID_WITH_AUTHENTICATED_ABORT_RELEASE_THEN_NEW_SCOPE_AND_COMMENT_ALLOWED
+      non_identical_digest_at_or_after_irreversible_point_action: INVALID_TERMINAL_SUBJECT_CONSUMED_NO_RERUN
+      recipe_or_catalog_revocation:
+        outcome: INVALID
+        before_irreversible_point_reason_code: INVALID_NO_EXECUTION_ABORT_RELEASE_REQUIRED
+        at_or_after_irreversible_point_reason_code: INVALID_AFTER_IRREVERSIBLE_NO_RERUN
+    replica_topology:
+      replica_count_bound_in_run_scope: true
+      phase_and_attempt_count_bound_in_run_scope: true
+      automatic_retry_allowed: false
+      manual_retry_allowed: false
+      attempt_count_is_exact_recipe_or_policy_constant: true
+      all_required_replica_outputs_must_be_semantically_equal: true
+      selecting_a_preferred_replica_output_allowed: false
+      crash_after_settlement_or_payoff_access_consumes_subject_permanently: true
+  semantic_subject_contract:
+    canonical_id_normalization_required: true
+    semantic_projection_fields:
+      - candidate_identity_and_rank_contract
+      - gate_kind_version_and_tier
+      - metric_and_sensitivity_contract
+      - ordinary_score_scope
+      - population_and_cohort_rule
+      - recipe_class
+      - recipe_id_version_entry_digest
+      - reference_ast_and_registered_transform
+      - source_model_policy_and_calibrator
+    exact_run_projection_additions:
+      - active_candidate_and_settlement_releases
+      - execution_material_and_environment
+      - ordered_race_set
+      - output_root
+    subject_state_scope: RESERVATION_GENERATION
+    subject_state_values:
+      - IRREVERSIBLY_CONSUMED
+      - PROVISIONALLY_RESERVED
+      - RELEASED_PREACCESS_ABORT
+    subject_state_transitions:
+      PROVISIONALLY_RESERVED:
+        - IRREVERSIBLY_CONSUMED
+        - RELEASED_PREACCESS_ABORT
+      RELEASED_PREACCESS_ABORT: []
+      IRREVERSIBLY_CONSUMED: []
+    released_generation_is_terminal: true
+    new_generation_reservation_after_release_allowed: true
+    new_generation_requires_authenticated_abort_receipt_new_scope_new_comment_and_atomic_cas: true
+    new_generation_reuses_canonical_subject_digest_but_has_distinct_generation_id: true
+    aggregate_subject_head_atomically_starts_generation_plus_one_as_provisionally_reserved: true
+    maximum_simultaneously_active_generation_count: 1
+    maximum_irreversible_execution_count_across_all_generations: 1
+    new_generation_cas_must_verify_no_active_or_irreversibly_consumed_generation: true
+    old_generation_run_approval_predecessors_and_leases_remain_permanently_tombstoned: true
+    global_single_use_applies_to_new_execution_after_irreversible_consumption: true
+    same_semantic_subject_new_release_without_valid_released_generation_action: REJECT_OR_ROUTE_TO_ORDINARY_STRATEGY
+    same_semantic_subject_new_release_after_irreversible_consumption_action: REJECT_NO_RERUN
+    exact_replay_mode: SEALED_RESULT_READ_ONLY_RETRIEVAL
+    exact_replay_cache_miss_action: STOP_NO_RERUN
+    exact_replay_may_issue_comment_lease_or_executor: false
+    exact_replay_required_validations:
+      - authenticated_trusted_result_seal_receipt
+      - exact_run_subject_digest_match
+      - original_approval_evidence_and_authenticated_receipt_chain_still_valid_and_unrevoked
+      - result_digest_match
+      - semantic_subject_digest_match
+      - unrevoked_lane_recipe_catalog_and_result
+    exact_replay_validation_failure_action: STOP_NO_STATE_TRANSITION_NO_RERUN
+    question_family_projection_excludes:
+      - cohort
+      - concrete_release
+      - recipe_display_name
+      - threshold
+      - transform
+    question_family_projection_fields:
+      - canonical_metric_registry_digest
+      - canonical_population_registry_digest
+      - immutable_source_model_policy_calibrator_and_reference_ast_node_digest
+      - target_decision_family_registry_digest
+    question_family_derived_by_trusted_verifier_only: true
+    recipe_supplied_family_id_name_or_digest_allowed: false
+    display_strings_may_affect_question_family_digest: false
+    lineage_aliases_must_resolve_to_identical_question_family_digest: true
+    recipe_registration_rejects_already_registered_canonical_family_before_merge_eligibility: true
+    b_tier_lifetime_recipe_cap_per_question_family: 1
+    b_tier_new_execution_cap_per_question_family: 1
+    adjacent_threshold_or_transform_as_new_recipe_action: ROUTE_TO_ORDINARY_GATE_OR_NEW_GATE_VERSION
+  forbidden:
+    - arbitrary_python_sql_ast_or_argv
+    - new_or_changed_model_feature_target_loss_estimator_or_calibrator
+    - training_fit_inference_recalibration_or_parameter_search
+    - threshold_variant_cohort_metric_or_payout_rule_search
+    - candidate_identity_rank_tier_market_value_or_stake_rule_change_outside_exact_registered_counterfactual_eligibility_transform
+    - prospective_outer_oos_shadow_adoption_promotion_production_or_buy
+    - workload_network_api_credential_notification_or_order
+    - formal_buy_send_order_or_nonzero_stake
+  result_contract:
+    evidence_purpose_class: DIAGNOSTIC_NONPROMOTION
+    source_authority_class_must_be_preserved: true
+    confirmatory: false
+    promotion_eligible: false
+    score_credit: 0
+    tier_allowed_outcomes:
+      A_PARITY_NO_DECISION_CHANGE:
+        - INVALID
+        - NO_DECISION_EFFECT
+      B_REGISTERED_HISTORICAL_IMPACT:
+        - DIRECTIONAL_EFFECT
+        - INVALID
+        - NO_DECISION_EFFECT
+    shadow_transition_supported: false
+    production_transition_supported: false
+    formal_buy: false
+    send_order: false
+    stake: 0
+  recipe_registry:
+    append_only: true
+    existing_entry_edit_or_delete_allowed: false
+    new_recipe_requires_human_reviewed_append_only_pr: true
+    recipe_registration_may_read_real_data_result_payoff_or_roi: false
+    recipe_registration_allowed_changed_paths: NEW_IMMUTABLE_RECIPE_JSON_ONLY
+    recipe_registration_forbidden_changed_paths:
+      - existing_recipe_entries
+      - model_config_data_or_production
+      - root_governance
+      - runner_schema_policy_verifier_or_workflow
+    recipe_and_execution_scope_same_pr_allowed: false
+    free_form_formula_or_new_threshold_literal_in_recipe_pr_allowed: false
+    new_operator_or_capability_requires_new_gate_kind_version_and_path: true
+  pr40_compatibility:
+    pr40_is_initial_recipe_source_evidence_only: true
+    pr40_is_generic_fast_lane_implementation_contract: false
+    pr40_bytes_remain_unchanged_and_nonauthoritative: true
+    superseded_future_design_clauses:
+      - generic_catch_all_false_for_the_pr40_exact_lane
+      - new_kind_version_path_for_each_recipe
+      - prepare_run_and_ack_for_each_execution
+    replacement_requires_separate_human_reviewed_generic_implementation_contract: true
+    source_recipe_fingerprint_scope: FORMULA_ONLY
+    generic_wrapper_recipe_id_version_and_digest_status: PENDING_SEPARATE_IMPLEMENTATION
+    versioned_outcome_mapping:
+      DIRECTIONAL_DECISION_EFFECT: DIRECTIONAL_EFFECT
+      INVALID: INVALID
+      NO_DECISION_EFFECT: NO_DECISION_EFFECT
+    acknowledgement_removed_from_generic_lifecycle: true
+
+  shared_authority_contract:
+    shared_g2_durable_ledger_is_sole_live_authority: true
+    separate_or_local_lane_backend_allowed: false
+    complete_legacy_event_and_global_grant_id_migration_required: true
+    all_terminal_and_nonterminal_subject_heads_import_required: true
+    global_and_subject_head_atomic_cas_required: true
+    old_writer_fence_required: true
+    second_remote_compare_after_old_writer_fence_required: true
+    atomic_cutover_and_authenticated_receipts_required: true
+    authenticated_external_monotonic_checkpoint_or_witness_required: true
+    backup_restore_rollback_and_fork_detection_required: true
+    rollback_fork_or_stale_checkpoint_action: HALT_LANE_NO_NEW_LEASES
+    dual_writer_allowed: false
+    local_file_sqlite_worktree_branch_or_process_memory_authority_fallback_allowed: false
+
+  approval_evidence_contract:
+    inherits: github_backed_approval_evidence_v1
+    inherits_identity_ancestry_approver_and_comment_evidence_only: true
+    ordinary_registry_prepare_run_shadow_event_mechanics_inherited: false
+    shared_g2_evidence_storage_single_run_comment_cas_and_lease_contract_applies: true
+    repository: kazuponbaseball-cell/keiba_ai_project
+    base_branch: main
+    current_main_source: github_read_only_api
+    run_scope_base_commit_required: true
+    approvers_source: github_contents_at_run_scope_base_commit
+    fast_lane_base_role_override: RUN_SCOPE_BASE_COMMIT_REPLACES_PROPOSAL_BASE_COMMIT_ONLY_FOR_THIS_ROUTE
+    all_other_inherited_trust_semantics_unchanged: true
+    verified_current_main_sha_required: true
+    compare_url_and_status_required: true
+    merge_base_sha_must_equal_run_scope_base_commit: true
+    base_ancestor_rule: compare_ahead_or_identical_and_merge_base_equals_run_scope_base_commit
+    approvers_blob_sha_required: true
+    approvers_content_sha256_required: true
+    verification_time_required: true
+    comment_id_required: true
+    issue_number_and_url_required: true
+    author_login_and_actor_type_required: true
+    author_must_be_allowlisted_non_bot_user: true
+    exact_body_and_body_sha256_required: true
+    exact_keyword_and_run_scope_digest_required: true
+    created_at_and_updated_at_required: true
+    comment_fields_immutable: true
+    comment_id_namespace: GLOBAL_ALL_GATES_AND_SCHEMAS
+
+registered_nonpromotion_diagnostic_hard_blockers:
+  - activation_or_cutover_receipt_missing
+  - any_phase_odds_price_popularity_or_market_column_mount_or_read
+  - a_tier_fabricated_ordinary_score_record
+  - a_tier_decision_or_mask_difference
+  - a_tier_settlement_result_odds_payoff_or_roi_access
+  - approval_comment_created_before_run_scope_seal
+  - approval_comment_missing_changed_deleted_reused_or_unauthorized
+  - automatic_retry_or_cache_miss_rerun
+  - b_tier_bound_ordinary_score_record_missing_changed_or_digest_mismatched
+  - candidate_identity_rank_tier_market_value_or_stake_rule_drift_outside_exact_registered_counterfactual_eligibility_transform
+  - candidate_or_settlement_catalog_missing_inactive_changed_or_revoked
+  - capability_union_or_cross_phase_lease_use
+  - current_main_approvers_lane_recipe_or_catalog_revalidation_failed
+  - diagnostic_result_used_for_score_shadow_adoption_promotion_production_or_buy
+  - free_form_ast_sql_python_argv_threshold_cohort_or_metric
+  - g2_ledger_or_lane_inactive
+  - g2_ledger_rollback_fork_or_stale_monotonic_checkpoint
+  - github_approval_evidence_contract_incomplete_or_mismatched
+  - illegal_lifecycle_transition_skip_self_transition_or_terminal_resurrection
+  - lifecycle_state_head_or_receipt_split_brain
+  - invalid_or_untrusted_exact_replay_seal_subject_result_or_revocation_state
+  - model_feature_target_loss_estimator_calibrator_or_data_source_change
+  - more_than_two_arms_or_more_than_one_registered_transform
+  - multiple_active_subject_generations_or_more_than_one_irreversible_execution_across_generations
+  - nonzero_threshold_search_refit_recalibration_variant_or_cohort_search
+  - outcome_odds_payoff_or_settlement_access_before_decision_freeze
+  - phase_lease_missing_wrong_domain_wrong_predecessor_replayed_self_issued_or_cross_used
+  - preirreversible_subject_release_without_authenticated_abort_or_after_any_protected_access
+  - preirreversible_abort_without_atomic_run_terminalization_head_advance_and_lease_tombstones
+  - pregrant_candidate_or_settlement_blob_mount_or_row_content_access
+  - production_network_api_credential_notification_order_or_nonzero_stake
+  - recipe_missing_inactive_edited_deleted_aliased_or_new_execution_replayed
+  - repeated_or_adjacent_recipe_in_same_question_family
+  - recipe_supplied_or_display_string_derived_question_family_identity
+  - registry_resolver_or_run_scope_binding_incomplete
+  - new_execution_requested_for_irreversibly_consumed_semantic_or_exact_run_subject
+  - settlement_join_changes_candidate_or_decision_digest
+  - subject_consume_family_count_and_decision_lease_consume_not_one_atomic_cas
+  - training_fit_or_model_inference
+  - unknown_kind_version_tier_operator_or_schema_field
 criteria:
   independent_information:
     label: 既存特徴では代替できない独立情報
@@ -69,6 +513,7 @@ criteria:
       0: 高コストまたは権利・運用リスクが不明である
       5: 既存dataで限定的に検証できる
       10: 小さく可逆で、失敗時の廃棄コストが低い
+hard_blockers_scope: ordinary_strategy_v1
 hard_blockers:
   - score_below_75
   - missing_github_prepare_approval
