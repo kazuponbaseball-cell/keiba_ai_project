@@ -165,9 +165,14 @@ roi_reproduction_gate_v2:
   gate_kind: roi_reproduction_audit_v2
   governance_layer: G1
   boundary: CONTRACT_COMPILER_ONLY_NO_AUTHORITY
-  declaration_status: G1_IMPLEMENTED_PENDING_HUMAN_REVIEW_AND_MAIN_MERGE
+  declaration_status: G1_IMPLEMENTED_AND_HUMAN_MERGED_CONTRACT_COMPILER_ONLY_NO_AUTHORITY
   design_commit: f24e6a0e394dd376d100502d33872d47dad0ec9a
+  g1_implementation_pull_request: 38
+  g1_implementation_merge_commit: 811ffd11bd80447f013c643b96c3eb8145916061
+  g1_implementation_merged: true
+  status_reconciliation_observed_main_commit: 69a95a25a618e04fa73620f21a9010e78143f1eb
   activation_requires_containing_commit_merged_to_main: true
+  g1_containing_commit_merge_requirement_satisfied: true
   compiler_implemented_by_this_change: true
   policy_implemented_by_this_change: true
   schema_implemented_by_this_change: true

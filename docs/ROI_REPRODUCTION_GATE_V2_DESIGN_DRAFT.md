@@ -2,7 +2,8 @@
 
 作成日: 2026-08-09
 
-状態: `HUMAN_REVIEW_REQUIRED / NON_AUTHORITY / NOT_IMPLEMENTED`
+状態: `G1_IMPLEMENTED_AND_HUMAN_MERGED / CONTRACT_COMPILER_ONLY_NO_AUTHORITY /
+G2_NOT_IMPLEMENTED / EXECUTION_FORBIDDEN`
 
 設計origin base: `b282cafb39435d15098bc409e76b4efaa6690f08`
 
@@ -16,6 +17,11 @@ seed commit: `e218c9dbd372f3e1f58531bcc71bbe9723652ed7`
 > policy、schema、proposal scope、queue、registry event、承認tokenではない。
 > このDraftだけではコード準備、synthetic test、manifest取得、実データ読取、
 > 学習、historical replay、outer OOS、ROI計算を一切許可しない。
+
+PR #38のG1 implementationは、人間ユーザーにより2026-08-14T12:21:27Zにmainへmergeされた。
+merge commitは`811ffd11bd80447f013c643b96c3eb8145916061`である。この事実はG1の
+compiler/policy/schemaがmainに含まれることだけを表し、G2、execution、real-data、ROI、
+shadow、production、BUY、prepare/run grantのauthorityを一切生成しない。
 
 Machine-readable design:
 `research/drafts/ROI_REPRODUCTION_GATE_V2_CONTRACT_MAP.design.json`
@@ -575,9 +581,10 @@ evidence compilerで全authorityをfalseにする。v2 designはPR #36を実行�
 - merged `research/INFRASTRUCTURE_GATE.json`はread-only compatibility inputであり、
   future changed-path候補に含めずin-place変更しない
 
-G1 compiler implementationはPR #37を含むmerged mainの子孫で行い、containing commitがhuman
-mergeされた後だけcode-owned G1 rootとして扱う。branch copyをapproval rootにせず、G2の
-governance変更も別にhuman review/mergeする。
+G1 compiler implementationはPR #37を含むmerged mainの子孫で行われ、PR #38のcontaining
+commit `811ffd11bd80447f013c643b96c3eb8145916061`が人間ユーザーによりmainへmerge済みである。
+branch copyをapproval rootにせず、G2のgovernance変更は引き続き別のhuman-owned PRで
+human review/mergeする。G1 merge単独ではauthorityを生成しない。
 G2 activation後の通常experiment transitionはPR mergeを要求しない。
 
 ## 17. Future root-of-trust implementation paths
@@ -678,7 +685,9 @@ G2 reviewで上記durability/security invariantsを満たせなければ`EXECUTI
 
 ```text
 DESIGN_REVIEWABLE
-IMPLEMENTATION_BLOCKED
+G1_IMPLEMENTED_AND_HUMAN_MERGED
+CONTRACT_COMPILER_ONLY_NO_AUTHORITY
+G2_NOT_IMPLEMENTED
 EXECUTION_FORBIDDEN
 ```
 
