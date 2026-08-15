@@ -180,8 +180,9 @@ strategy statusは`BLOCKED_SCORE`、threshold未達、credit 0のままである
 strategy authorizationとして利用できない。
 
 trusted dispatcherは`ordinary_strategy_v1`を既存75点gateへ、
-`registered_nonpromotion_diagnostic_v1`を下記hard classifierへ分岐し、unknown/ambiguous routeを
-拒否する。routeは二層とする。
+`registered_nonpromotion_diagnostic_v1`を下記strict hard classifierへ、
+`registered_nonpromotion_offline_diagnostic_v1`を§5.4のexact local classifierへ分岐し、unknown/ambiguous routeを
+拒否する。strict routeは二層とする。
 
 1. `A_PARITY_NO_DECISION_CHANGE`は、凍結済みbytesのlineage、schema、hash、alias、mass、
    deterministic parityだけを扱う。candidate、rank、tier、coverage、eligibility、decisionの
@@ -313,6 +314,53 @@ A-tierが`NO_DECISION_EFFECT|INVALID`、B-tierが`NO_DECISION_EFFECT|DIRECTIONAL
 ordinary scorecardへ入力したり、`APPROVED_FOR_SHADOW`、production、BUYへ遷移させたりしない。
 採用を検討する場合は、新しい通常strategy proposal、75点以上、untouched evidence、通常の
 prepare/run/shadow承認へ戻る。
+
+### 5.4 Exact local offline non-promotion diagnostic
+
+`registered_nonpromotion_offline_diagnostic_v1`は、§5.3のshared-G2 contractを変更せず、
+`historical_ai_duplicate_gate_impact_v1@1`だけを対象にする別gate kind/version/pathである。通常strategyの
+75点gateも変更しない。source scoreは`46 / BLOCKED_SCORE / threshold_met=false / credit 0`を保持する。
+
+root契約と固定実装は1つのhuman-owned Draft PRで導入できるが、含有commitのhuman main mergeはgate availability
+だけを発効し、run approvalではない。merge後、固定source hashからcandidate-onlyとsettlement-only projectionを
+作るdecision/metric/ROI-free materializerを使用し、clean current-main上でcanonical run scopeをsealする。その後の
+allowlist済みGitHub `User`による
+`APPROVED_OFFLINE_NONPROMOTION_DIAGNOSTIC_RUN <run_scope_digest>`だけがexact local runを許可する。
+commentはseal後に作成され、未編集、未削除、未使用、repository/Issue/author/digest一致でなければならない。raw sourcesに
+同居するoutcome/label/payoff/market列は固定hash検証の対象bytesに含まれるが、materializerはroleごとのallowlist列だけを
+投影する。candidateへ禁止値を使用・出力・永続化せず、decision/run phaseへraw sourceをmountしない。
+承認再検証後かつexclusive start receipt前のcontrol-plane provenance検査だけは固定3 sourceを再読し、projectionとmanifestを
+決定論的に再生成してbyte一致を確認する。この検査はdecision、metric、ROIを計算せず、fixed runner codeはstart receipt後に
+raw sourceをopenせずprojection-onlyのworkloadへ移る。OS/ACLによるfilesystem capability isolationは主張しない。
+
+runはcandidate projectionを先に検査してdecision freeze receiptを保存し、その後だけsettlement projectionをopenする。
+2 arms、1 transform、3,746 races、folds 2–4、metric、sensitivity、100,000 bootstrap、seed、environment、argv、
+logical replicas `clean_a`/`clean_b`の一致、
+fresh outputをscopeへ固定する。odds、price、popularity、market、training、inference、refit、recalibration、
+threshold/cohort/variant search、retry、candidate identity/rank/tier変更、production/BUY/order/notificationを禁止する。
+
+local exclusive receiptはbest-effortの重複防止であり、削除、rollback、別cloneに耐えるglobal authorityではない。
+`global_replay_proof=false`、`rollback_resistant=false`、`durable_remote_ledger=false`、
+`network_isolation=APPLICATION_LEVEL_NOT_OS_SANDBOX`をpolicy、scope、resultへ固定する。この制約のためresultは常に
+`B_LOCAL_HASHED`かつnonconfirmatory/nonpromotion/zero-creditであり、strict T-3、将来収益、shadow、adoption、
+production、BUYの証拠にならない。§5.3のstrict routeは独立かつ不変であり、軽量routeは
+cross-route重複実行を技術的に防止しない。offline resultはglobal question-family consumptionではない。将来のstrict resultを
+独立証拠として扱う場合はprior offline exposureをbindし、cross-route single-useや独立replicaを主張してはならない。
+別question-familyの将来診断は、同じ固定operator/capabilityに限り、add-only recipe/versionの小さな人間review PRで
+この実装パターンを再利用できる。同familyの隣接threshold/transform、追加arm、search自由度は拒否する。
+
+```text
+RNOD_RUN_SCOPE_FROZEN
+  -> RNOD_RUN_APPROVAL_REQUIRED | INVALID
+  -> RNOD_APPROVED | INVALID
+  -> RNOD_RUNNING | INVALID
+  -> RNOD_RESULT_SEALED | INVALID
+  -> RNOD_COMPLETED | INVALID
+```
+
+protected content access前の失敗は`BLOCKED_PREACCESS`として再検証できる。exclusive start receipt後の失敗は
+`INVALID_AFTER_START_NO_RETRY`でterminalとし、performance outputを公開しない。
+control-planeのclean HEAD/status検証だけは固定argvのread-only `git` subprocessを許可し、free-formまたはworkload subprocessを禁止する。
 
 ## 6. Ordinary strategy lifecycle
 

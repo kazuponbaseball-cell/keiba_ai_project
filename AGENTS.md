@@ -55,7 +55,8 @@ parity監査には架空のordinary scoreを作らず`NO_ORDINARY_STRATEGY_CLAIM
 診断結果をscore、shadow、adoption、production、BUYの根拠へ変換してはならない。
 
 trusted dispatcherは、`ordinary_strategy_v1`を既存75点gateへ、
-`registered_nonpromotion_diagnostic_v1`を下記hard classifierへ完全分岐し、その他を拒否する。
+`registered_nonpromotion_diagnostic_v1`を下記strict hard classifierへ、
+`registered_nonpromotion_offline_diagnostic_v1`を後述のexact one-recipe local classifierへ完全分岐し、その他を拒否する。
 proposalの自己申告だけでrouteを選択できない。
 
 - `A_PARITY_NO_DECISION_CHANGE`: lineage、hash、schema、alias、確率mass、bitwise parityを
@@ -196,6 +197,78 @@ notificationを含む場合はfast laneを拒否し、通常75点gateまたは�
 `promotion_eligible=false`、`score_credit=0`、`formal_buy=false`、`send_order=false`、`stake=0`
 をconstとする。A-tier outcomeは`NO_DECISION_EFFECT|INVALID`、B-tierは
 `NO_DECISION_EFFECT|DIRECTIONAL_EFFECT|INVALID`だけで、`APPROVED_FOR_SHADOW`への遷移を定義しない。
+
+## 一件限定の軽量offline非昇格診断
+
+`registered_nonpromotion_offline_diagnostic_v1`は、上記strict G2 routeを緩和しない。
+`historical_ai_duplicate_gate_impact_v1@1`だけを対象にする別gate kind/version/pathであり、通常strategyの
+75点gateと`registered_nonpromotion_diagnostic_v1`は不変である。source strategyは
+`46 / BLOCKED_SCORE / threshold_met=false / score_credit=0`を保持する。
+
+root契約と固定実装は同じhuman-owned Draft PRでbootstrapできるが、含有commitが人間により`main`へmergeされる
+までは利用不能である。merge、CI、PR Ready、review、chat指示だけではrunを許可しない。merge後にcleanな
+current-main checkoutでscopeをsealし、その後に作成されたallowlist済みGitHub `User`のexact comment
+
+```text
+APPROVED_OFFLINE_NONPROMOTION_DIAGNOSTIC_RUN <run_scope_digest>
+```
+
+をread-onlyで検証した場合だけ、そのscopeのlocal offline runを受理する。commentのrepository、Issue、URL、ID、
+author login/type、body、body SHA-256、created_at、updated_atを固定し、編集、削除、再利用、bot、allowlist外、
+seal以前、別digest、GitHub取得不能をfail-closeする。candidate contentを開く直前とresult公開直前にcomment、
+current main ancestry、APPROVERS、policy、recipe、schema、runner、input hashを再検証する。
+
+human merge後、scope seal前に許可する実データ操作は、policy固定の3 source hashからcandidate-only projectionと
+settlement-only projectionを別fileへ作る決定論的materializationだけである。materializerはD0/D1、hit率、profit、
+ROI、bootstrap、threshold、variantを計算・出力しない。raw sourcesに同居するoutcome、label、payoff、
+popularity列は固定hash検証の対象bytesに含まれるが、materializerはroleごとのexplicit allowlist列だけを投影する。
+candidate projectionへoutcome/label/payoff/market値を使用・出力・永続化せず、decision/run phaseへraw sourceをmountしない。
+承認再検証後かつexclusive start receipt作成前に限り、control-plane provenance verifierが固定3 sourceを再読し、
+projectionとmanifestを決定論的に再生成してbyte一致を検査する。このpreaccess検査はdecision、metric、ROIを計算せず、
+完了後にraw bytesとrunner内部のraw root参照を破棄し、fixed runner codeはexclusive start receipt後にraw sourceを
+openしない。OS/ACLによるfilesystem capability isolationを保証したとは主張せず、workloadはprojectionだけを読む。
+runはcandidate projectionだけを先にopenし、exact
+3,746 races / folds 2–4 / one row per race / p-action cross-source equalityを検査してD0/D1 decisionをfreezeし、
+freeze receiptを保存した後だけsettlement projectionをopenする。settlementはrace ID、candidate key、hit、
+outcome completeness、official payoffだけを含み、odds、price、popularity、market列をすべてのdecision/run phaseで禁止する。
+
+runはexactly 2 arms、1 registered transform、固定cohort、固定metric/sensitivity、100,000回の固定bootstrap、
+logical replicas `clean_a`/`clean_b`各1回の意味論的一致、retry 0である。別process/OS隔離は保証したとは主張しない。callerの
+formula、threshold、cohort、metric、seed、argv、output変更を拒否する。candidate identity、
+rank、tier、model、calibrator、live policy、stake ruleを変えない。候補を開く前にfixed question-family pathへ
+exclusive local start receiptを作成し、それ以後のcrash、drift、contract failureは
+`INVALID_AFTER_START_NO_RETRY`とする。fresh output rootだけを許し、overwriteとpartial performance outputを禁止する。
+
+この軽量routeにはdurable remote ledger、global CAS、rollback/fork detection、OS sandboxがない。全artifactは
+`single_use_policy=ONE_ACCEPTED_EXECUTION`、
+`single_use_enforcement=BEST_EFFORT_LOCAL_EXCLUSIVE_RECEIPT`、`global_replay_proof=false`、
+`rollback_resistant=false`、`durable_remote_ledger=false`、
+`network_isolation=APPLICATION_LEVEL_NOT_OS_SANDBOX`を記録する。削除・rollback・別cloneによる再計算を技術的に
+完全阻止したとは主張しない。
+
+resultは常に`B_LOCAL_HASHED / DIAGNOSTIC_NONPROMOTION / confirmatory=false / promotion_eligible=false /
+score_credit=0 / strict_t3_rows=0 / reused_development_oos=true`であり、ROI差をscore、shadow、adoption、production、
+BUYへ利用しない。`formal_buy=false`、`send_order=false`、`stake=0`を固定する。同question familyの将来のstrict-v1
+routeは独立かつ不変であり、この軽量routeはcross-route重複実行を技術的に防止しない。offline resultはglobalな
+question-family consumptionではなく、将来のstrict resultを独立証拠として扱う場合はprior offline exposureを明示的に
+bindしなければならない。cross-route single-use、独立replica、global replay protectionを主張しない。
+将来の別question-family診断はこの実装パターンを再利用できるが、このv1に自動適格はしない。同じ固定operator/capabilityの
+add-only recipe/versionを小さなhuman-reviewed PRで追加し、distinct question-familyであることを検査する。隣接threshold、同familyの
+別transform、追加arm、searchは通常strategy gateへ戻す。shared G2/root bootstrapを診断ごとに作り直さない。
+
+軽量routeのlifecycleは次に限定する。各nonterminalから`INVALID`を許すが、skip、self transition、terminal復活、
+retryを禁止する。protected content access前の検証失敗は`BLOCKED_PREACCESS`で、まだrunを消費しない。
+control-planeのclean HEAD/status検証に限り、固定argvのread-only `git` subprocessを許可する。free-formまたはworkload subprocessは
+禁止する。
+
+```text
+RNOD_RUN_SCOPE_FROZEN
+  -> RNOD_RUN_APPROVAL_REQUIRED | INVALID
+  -> RNOD_APPROVED | INVALID
+  -> RNOD_RUNNING | INVALID
+  -> RNOD_RESULT_SEALED | INVALID
+  -> RNOD_COMPLETED | INVALID
+```
 
 ## インフラ／安全性gate
 

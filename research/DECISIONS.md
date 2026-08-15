@@ -506,3 +506,42 @@ shared G2はglobal/subject head CAS、全terminal/nonterminal subject headとgra
 remote compareを必須とする。authenticated external monotonic checkpoint/witnessによりbackup restore、rollback、fork、
 stale headを検出し、検出時はlaneを停止して新規leaseを発行しない。local file、SQLite、worktree、branch、process
 memoryをauthority fallbackにしない。
+
+## D-029 — 一件限定の軽量offline非昇格診断を別gateとして導入する
+
+- Decision: `EXACT_LOCAL_OFFLINE_DIAGNOSTIC_BOOTSTRAP_ON_HUMAN_MAIN_MERGE`
+- Evidence: D-028 / PR #43 strict client boundary + human choice of the explicitly lower-assurance local route
+- Does not supersede: ordinary strategy 75-point gate or `registered_nonpromotion_diagnostic_v1`
+
+外部shared G2の配備コストを今回の一件だけに課さず、`historical_ai_duplicate_gate_impact_v1@1`を
+`registered_nonpromotion_offline_diagnostic_v1`という別kind/version/pathで実行できるようにする。root契約と固定実装を
+同じhuman-owned Draft PRでreviewできるが、含有commitのhuman main mergeはgate availabilityだけを発効する。実行には
+merge後にsealしたscopeと、seal後のexact GitHub comment
+`APPROVED_OFFLINE_NONPROMOTION_DIAGNOSTIC_RUN <run_scope_digest>`を別途必要とする。
+
+human merge後、scope seal前に認めるreal-data operationは、固定された3 source hashからcandidate-onlyと
+settlement-only projectionを別fileへ作る決定論的materializationだけである。materializerはdecision、hit率、profit、
+ROI、bootstrap、thresholdまたはvariantを計算しない。raw sourcesに同居するoutcome/label/payoff/market bytesは固定
+hash検証に含めるが、roleごとのallowlist列だけを投影する。candidateへ禁止値を使用・出力・永続化せず、
+decision/run phaseへraw sourceをmountしない。承認再検証後かつexclusive start receipt前に限り、control-plane provenance
+verifierが固定3 sourceからprojectionとmanifestを再生成しbyte一致を確認する。この検査はdecision、metric、ROIを計算せず、
+fixed runner codeはstart receipt後にraw sourceをopenしない。OS/ACLによるfilesystem capability isolationは主張しない。
+runはcandidateだけでdecisionを
+freezeしてreceiptを保存した後に
+settlementを読む。3,746 races、folds 2–4、D0/D1、metric、sensitivity、bootstrap、seed、environment、argv、outputを
+固定し、logical replicas `clean_a`/`clean_b`の科学projection一致を要求する。これは別process/OS隔離の保証ではない。
+odds/price/popularity/market、training/inference/refit/recalibration/search、retry、candidate変更を拒否する。
+
+このrouteはdurable ledger、global CAS、rollback/fork detection、OS sandboxを持たない。
+`single_use_enforcement=BEST_EFFORT_LOCAL_EXCLUSIVE_RECEIPT`、`global_replay_proof=false`、
+`rollback_resistant=false`、`durable_remote_ledger=false`を必須とし、削除・rollback・別cloneによる再計算を技術的に
+完全阻止したとは扱わない。このため結果は常に`B_LOCAL_HASHED / DIAGNOSTIC_NONPROMOTION / confirmatory=false /
+promotion_eligible=false / score_credit=0 / strict_t3_rows=0 / reused_development_oos=true`である。ROIの符号にかかわらず
+score、shadow、adoption、production、BUYへ遷移しない。strict-v1側は独立かつ不変であり、このrouteはcross-route
+重複実行を技術的に防止しない。offline resultはglobal question-family consumptionではない。将来のstrict resultを
+独立証拠として扱う場合はprior offline exposureをbindし、cross-route single-useや独立replicaを主張してはならない。
+別question-familyの将来診断は、同じoperator/capabilityに限りadd-only recipe/versionの小さなhuman-reviewed PRで再利用できる。
+同familyの隣接threshold/transform、追加arm、search自由度は拒否し、通常strategy gateへ戻す。
+
+本decisionは既存strict-v1 policy/schema/recipe/code、ordinary lifecycle、`REGISTRY.jsonl`、APPROVERS、workflow、
+model/config/data/output/production/BUY bytesを変更しない。実データROIは本bootstrap PRでは実行しない。
