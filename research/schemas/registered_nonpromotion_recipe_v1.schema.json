@@ -1,0 +1,824 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://keiba-ai.local/schemas/registered_nonpromotion_recipe_v1.schema.json",
+  "title": "Registered non-promotion diagnostic recipe v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "recipe_id",
+    "recipe_version",
+    "gate_kind",
+    "tier",
+    "status",
+    "source_authority_class",
+    "evidence_purpose_class",
+    "source_design",
+    "ordinary_strategy_score",
+    "question_family_source",
+    "comparison",
+    "recipe_contract",
+    "catalog_requirements",
+    "source_inventory",
+    "cohort",
+    "metric",
+    "sensitivity",
+    "bootstrap",
+    "execution_contract",
+    "phase_plan",
+    "replica_topology",
+    "output_contract",
+    "result_contract",
+    "safety"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "recipe_id": {"const": "historical_ai_duplicate_gate_impact_v1"},
+    "recipe_version": {"type": "integer", "const": 1},
+    "gate_kind": {"const": "registered_nonpromotion_diagnostic_v1"},
+    "tier": {"const": "B_REGISTERED_HISTORICAL_IMPACT"},
+    "status": {"const": "REGISTERED_PENDING_LANE_CUTOVER_AND_CATALOG_RELEASE"},
+    "source_authority_class": {"const": "B_LOCAL_HASHED"},
+    "evidence_purpose_class": {"const": "DIAGNOSTIC_NONPROMOTION"},
+    "source_design": {"$ref": "#/definitions/source_design"},
+    "ordinary_strategy_score": {"$ref": "#/definitions/ordinary_strategy_score"},
+    "question_family_source": {"$ref": "#/definitions/question_family_source"},
+    "comparison": {"$ref": "#/definitions/comparison"},
+    "recipe_contract": {"$ref": "#/definitions/recipe_contract"},
+    "catalog_requirements": {"$ref": "#/definitions/catalog_requirements"},
+    "source_inventory": {"$ref": "#/definitions/source_inventory"},
+    "cohort": {"$ref": "#/definitions/cohort"},
+    "metric": {"$ref": "#/definitions/metric"},
+    "sensitivity": {"$ref": "#/definitions/sensitivity"},
+    "bootstrap": {"$ref": "#/definitions/bootstrap"},
+    "execution_contract": {"$ref": "#/definitions/execution_contract"},
+    "phase_plan": {"$ref": "#/definitions/phase_plan"},
+    "replica_topology": {"$ref": "#/definitions/replica_topology"},
+    "output_contract": {"$ref": "#/definitions/output_contract"},
+    "result_contract": {"$ref": "#/definitions/result_contract"},
+    "safety": {"$ref": "#/definitions/safety"}
+  },
+  "definitions": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "git_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_design": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pull_request",
+        "merge_commit",
+        "contract_map_path",
+        "contract_map_git_blob_sha",
+        "contract_map_git_blob_content_sha256",
+        "formula_fingerprint_sha256",
+        "authority"
+      ],
+      "properties": {
+        "pull_request": {"type": "integer", "const": 40},
+        "merge_commit": {"$ref": "#/definitions/git_sha"},
+        "contract_map_path": {"const": "research/drafts/MODEL_INTEGRITY_DIAGNOSTIC_GATE_V1_CONTRACT_MAP.design.json"},
+        "contract_map_git_blob_sha": {"$ref": "#/definitions/git_sha"},
+        "contract_map_git_blob_content_sha256": {"$ref": "#/definitions/sha256"},
+        "formula_fingerprint_sha256": {"const": "67b0d3e5b92166a10b3077bff03e107c9db071b310f60f43b8758ce316eda878"},
+        "authority": {"const": false}
+      }
+    },
+    "ordinary_strategy_score": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "recorded_total",
+        "threshold",
+        "threshold_met",
+        "status",
+        "score_credit",
+        "threshold_override_allowed"
+      ],
+      "properties": {
+        "recorded_total": {"type": "integer", "const": 46},
+        "threshold": {"type": "integer", "const": 75},
+        "threshold_met": {"const": false},
+        "status": {"const": "BLOCKED_SCORE"},
+        "score_credit": {"type": "integer", "const": 0},
+        "threshold_override_allowed": {"const": false}
+      }
+    },
+    "question_family_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "immutable_source_lineage_id",
+        "reference_ast_node_id",
+        "target_decision_registry_id",
+        "population_registry_id",
+        "metric_registry_id",
+        "recipe_display_fields_affect_digest"
+      ],
+      "properties": {
+        "immutable_source_lineage_id": {"const": "M1C_C0_OFFSET_WIDE_TOP1_ACTION_POLICY"},
+        "reference_ast_node_id": {"const": "RAW_P_GATE_FAMILY"},
+        "target_decision_registry_id": {"const": "POSTFREEZE_WIDE_VALUE_ELIGIBILITY"},
+        "population_registry_id": {"const": "CITED_FOLDS_2_TO_4"},
+        "metric_registry_id": {"const": "PAIRED_UNIT_NOTIONAL_PROFIT_PER_ENROLLED_RACE"},
+        "recipe_display_fields_affect_digest": {"const": false}
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_id",
+        "arm_ids",
+        "registered_transform_id",
+        "counterfactual_eligibility_mask_change",
+        "candidate_identity_change",
+        "candidate_rank_or_tier_change",
+        "live_policy_or_config_mutation",
+        "threshold_search_count",
+        "refit_count",
+        "recalibration_count"
+      ],
+      "properties": {
+        "comparison_id": {"const": "D1_REMOVE_RAW_GATES_MINUS_D0_REFERENCE"},
+        "arm_ids": {"const": ["D0_REFERENCE", "D1_REMOVE_RAW_GATES"]},
+        "registered_transform_id": {"const": "REMOVE_RAW_P_GATE_FAMILY"},
+        "counterfactual_eligibility_mask_change": {"const": true},
+        "candidate_identity_change": {"const": false},
+        "candidate_rank_or_tier_change": {"const": false},
+        "live_policy_or_config_mutation": {"const": false},
+        "threshold_search_count": {"type": "integer", "const": 0},
+        "refit_count": {"type": "integer", "const": 0},
+        "recalibration_count": {"type": "integer", "const": 0}
+      }
+    },
+    "boolean_clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "column", "value"],
+      "properties": {
+        "op": {"const": "boolean_eq"},
+        "column": {"enum": ["eligible_race", "candidate_generated"]},
+        "value": {"const": true}
+      }
+    },
+    "p_clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "column", "value"],
+      "properties": {
+        "op": {"enum": ["ge", "lt"]},
+        "column": {"const": "top1_wide_prob"},
+        "value": {"enum": ["0.225", "0.325", "0.21275851149504352"]}
+      }
+    },
+    "a_clause": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "column", "value"],
+      "properties": {
+        "op": {"enum": ["ge", "lt"]},
+        "column": {"const": "p_action_C0_offset"},
+        "value": {"enum": ["0.25", "0.4"]}
+      }
+    },
+    "and_clause_node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "clause_refs"],
+      "properties": {
+        "op": {"const": "and"},
+        "clause_refs": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "eligible_race_true",
+              "candidate_generated_true",
+              "p_ge_0_225",
+              "p_lt_0_325",
+              "p_ge_primary_0_21275851149504352",
+              "a_ge_0_25",
+              "a_lt_0_4"
+            ]
+          }
+        }
+      }
+    },
+    "and_arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["op", "node_refs"],
+      "properties": {
+        "op": {"const": "and"},
+        "node_refs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {"enum": ["ACTION_GATE", "DECISION_BASE", "RAW_P_GATE_FAMILY"]}
+        }
+      }
+    },
+    "recipe_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "comparison_id",
+        "numeric_semantics",
+        "numeric_parser_and_runtime_hash_required_in_run_scope",
+        "threshold_literals_are_canonical_decimal_strings",
+        "p_column",
+        "a_column",
+        "a_lineage_formula",
+        "decision_uses_hash_bound_stored_a_bytes",
+        "trusted_verifier_verifies_candidate_entry_provenance_attestation_for_p_action_cross_source_equality",
+        "trusted_verifier_recomputes_a_decision_base_d0_and_d1_for_every_row",
+        "runner_self_asserted_masks_are_authority",
+        "shared_decision_base_vector_digest_required",
+        "shared_decision_base_producer_schema_and_lineage_digest_required",
+        "shared_candidate_key_p_a_calibrator_fit_data_label_bytes_required",
+        "clause_registry",
+        "typed_gate_nodes",
+        "arm_asts",
+        "allowed_ast_diff",
+        "expected_relation",
+        "allowed_disagreement",
+        "expected_d1_only_raw_p_region",
+        "expected_d1_only_a_region",
+        "d0_true_d1_false_action",
+        "formula_ast_digest_required",
+        "calibrator_refit_allowed",
+        "threshold_override_allowed"
+      ],
+      "properties": {
+        "comparison_id": {"const": "D1_REMOVE_RAW_GATES_MINUS_D0_REFERENCE"},
+        "numeric_semantics": {"const": "IEEE754_BINARY64_FROM_UTF8_DECIMAL"},
+        "numeric_parser_and_runtime_hash_required_in_run_scope": {"const": true},
+        "threshold_literals_are_canonical_decimal_strings": {"const": true},
+        "p_column": {"const": "top1_wide_prob"},
+        "a_column": {"const": "p_action_C0_offset"},
+        "a_lineage_formula": {"const": "sigmoid(logit(p)+0.130654047367905)"},
+        "decision_uses_hash_bound_stored_a_bytes": {"const": true},
+        "trusted_verifier_verifies_candidate_entry_provenance_attestation_for_p_action_cross_source_equality": {"const": true},
+        "trusted_verifier_recomputes_a_decision_base_d0_and_d1_for_every_row": {"const": true},
+        "runner_self_asserted_masks_are_authority": {"const": false},
+        "shared_decision_base_vector_digest_required": {"const": true},
+        "shared_decision_base_producer_schema_and_lineage_digest_required": {"const": true},
+        "shared_candidate_key_p_a_calibrator_fit_data_label_bytes_required": {"const": true},
+        "clause_registry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "eligible_race_true",
+            "candidate_generated_true",
+            "p_ge_0_225",
+            "p_lt_0_325",
+            "p_ge_primary_0_21275851149504352",
+            "a_ge_0_25",
+            "a_lt_0_4"
+          ],
+          "properties": {
+            "eligible_race_true": {
+              "allOf": [
+                {"$ref": "#/definitions/boolean_clause"},
+                {"properties": {"column": {"const": "eligible_race"}}}
+              ]
+            },
+            "candidate_generated_true": {
+              "allOf": [
+                {"$ref": "#/definitions/boolean_clause"},
+                {"properties": {"column": {"const": "candidate_generated"}}}
+              ]
+            },
+            "p_ge_0_225": {
+              "allOf": [
+                {"$ref": "#/definitions/p_clause"},
+                {"properties": {"op": {"const": "ge"}, "value": {"const": "0.225"}}}
+              ]
+            },
+            "p_lt_0_325": {
+              "allOf": [
+                {"$ref": "#/definitions/p_clause"},
+                {"properties": {"op": {"const": "lt"}, "value": {"const": "0.325"}}}
+              ]
+            },
+            "p_ge_primary_0_21275851149504352": {
+              "allOf": [
+                {"$ref": "#/definitions/p_clause"},
+                {"properties": {"op": {"const": "ge"}, "value": {"const": "0.21275851149504352"}}}
+              ]
+            },
+            "a_ge_0_25": {
+              "allOf": [
+                {"$ref": "#/definitions/a_clause"},
+                {"properties": {"op": {"const": "ge"}, "value": {"const": "0.25"}}}
+              ]
+            },
+            "a_lt_0_4": {
+              "allOf": [
+                {"$ref": "#/definitions/a_clause"},
+                {"properties": {"op": {"const": "lt"}, "value": {"const": "0.4"}}}
+              ]
+            }
+          }
+        },
+        "typed_gate_nodes": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["DECISION_BASE", "RAW_P_GATE_FAMILY", "ACTION_GATE"],
+          "properties": {
+            "DECISION_BASE": {
+              "allOf": [
+                {"$ref": "#/definitions/and_clause_node"},
+                {"properties": {"clause_refs": {"const": ["candidate_generated_true", "eligible_race_true"]}}}
+              ]
+            },
+            "RAW_P_GATE_FAMILY": {
+              "allOf": [
+                {"$ref": "#/definitions/and_clause_node"},
+                {"properties": {"clause_refs": {"const": ["p_ge_0_225", "p_ge_primary_0_21275851149504352", "p_lt_0_325"]}}}
+              ]
+            },
+            "ACTION_GATE": {
+              "allOf": [
+                {"$ref": "#/definitions/and_clause_node"},
+                {"properties": {"clause_refs": {"const": ["a_ge_0_25", "a_lt_0_4"]}}}
+              ]
+            }
+          }
+        },
+        "arm_asts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["D0_REFERENCE", "D1_REMOVE_RAW_GATES"],
+          "properties": {
+            "D0_REFERENCE": {
+              "allOf": [
+                {"$ref": "#/definitions/and_arm"},
+                {"properties": {"node_refs": {"const": ["ACTION_GATE", "DECISION_BASE", "RAW_P_GATE_FAMILY"]}}}
+              ]
+            },
+            "D1_REMOVE_RAW_GATES": {
+              "allOf": [
+                {"$ref": "#/definitions/and_arm"},
+                {"properties": {"node_refs": {"const": ["ACTION_GATE", "DECISION_BASE"]}}}
+              ]
+            }
+          }
+        },
+        "allowed_ast_diff": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "removed_node_refs",
+            "added_node_refs",
+            "changed_clause_ids",
+            "changed_threshold_ids",
+            "changed_non_ai_clause_ids"
+          ],
+          "properties": {
+            "removed_node_refs": {"const": ["RAW_P_GATE_FAMILY"]},
+            "added_node_refs": {"const": []},
+            "changed_clause_ids": {"const": []},
+            "changed_threshold_ids": {"const": []},
+            "changed_non_ai_clause_ids": {"const": []}
+          }
+        },
+        "expected_relation": {"const": "D0_SUBSET_OF_D1"},
+        "allowed_disagreement": {"const": "D1_TRUE_D0_FALSE_ONLY"},
+        "expected_d1_only_raw_p_region": {"const": "0.325<=p<0.36909082652451414"},
+        "expected_d1_only_a_region": {"const": "0.35429028335310075<=a<0.4"},
+        "d0_true_d1_false_action": {"const": "INVALID"},
+        "formula_ast_digest_required": {"const": true},
+        "calibrator_refit_allowed": {"const": false},
+        "threshold_override_allowed": {"const": false}
+      }
+    },
+    "candidate_role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_columns", "forbidden_columns", "key"],
+      "properties": {
+        "required_columns": {
+          "const": [
+            "candidate_generated",
+            "candidate_key",
+            "eligible_race",
+            "fold",
+            "horse_a",
+            "horse_b",
+            "p_action_C0_offset",
+            "race_date",
+            "race_id",
+            "top1_wide_prob",
+            "venue_code"
+          ]
+        },
+        "forbidden_columns": {
+          "const": [
+            "candidate_hit",
+            "hit",
+            "official_outcome_joined",
+            "official_wide_pay",
+            "return_yen",
+            "roi",
+            "wide_odds_high",
+            "wide_odds_low",
+            "wide_pay",
+            "wide_popularity"
+          ]
+        },
+        "key": {"const": ["race_id", "candidate_key"]}
+      }
+    },
+    "settlement_role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_columns", "key"],
+      "properties": {
+        "required_columns": {"const": ["race_id", "candidate_key", "candidate_hit", "official_outcome_completeness", "official_wide_pay"]},
+        "key": {"const": ["race_id", "candidate_key"]}
+      }
+    },
+    "catalog_requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "exact_active_release_count",
+        "exact_entry_count",
+        "allowed_roles",
+        "candidate_role",
+        "settlement_role",
+        "candidate_and_settlement_must_be_distinct_content_objects"
+      ],
+      "properties": {
+        "exact_active_release_count": {"type": "integer", "const": 1},
+        "exact_entry_count": {"type": "integer", "const": 2},
+        "allowed_roles": {"const": ["candidate_only_projection", "settlement_projection"]},
+        "candidate_role": {"$ref": "#/definitions/candidate_role"},
+        "settlement_role": {"$ref": "#/definitions/settlement_role"},
+        "candidate_and_settlement_must_be_distinct_content_objects": {"const": true}
+      }
+    },
+    "inventory_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "sha256"],
+      "properties": {
+        "role": {
+          "enum": [
+            "diagnostic_master",
+            "p_action_artifact",
+            "official_payoff_source",
+            "r0_policy",
+            "r0_reference_implementation",
+            "r0_audit_config",
+            "calibrator_fit_rows_with_labels",
+            "calibrator_summary",
+            "calibrator_producer"
+          ]
+        },
+        "sha256": {"$ref": "#/definitions/sha256"}
+      }
+    },
+    "source_inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_materialization_sources", "settlement_materialization_sources", "lineage_sources"],
+      "properties": {
+        "candidate_materialization_sources": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {"$ref": "#/definitions/inventory_item"},
+          "allOf": [
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "diagnostic_master"}}}},
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "p_action_artifact"}}}}
+          ]
+        },
+        "settlement_materialization_sources": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "allOf": [
+              {"$ref": "#/definitions/inventory_item"},
+              {"properties": {"role": {"const": "official_payoff_source"}}}
+            ]
+          }
+        },
+        "lineage_sources": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {"$ref": "#/definitions/inventory_item"},
+          "allOf": [
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "r0_policy"}}}},
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "r0_reference_implementation"}}}},
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "r0_audit_config"}}}},
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "calibrator_fit_rows_with_labels"}}}},
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "calibrator_summary"}}}},
+            {"contains": {"type": "object", "required": ["role"], "properties": {"role": {"const": "calibrator_producer"}}}}
+          ]
+        }
+      }
+    },
+    "cohort": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cohort_id",
+        "fold_values",
+        "fold_counts",
+        "race_count",
+        "date_min",
+        "date_max",
+        "row_key",
+        "race_id_format",
+        "one_row_per_race",
+        "reused_development_oos",
+        "confirmatory_outer_oos",
+        "strict_t3_rows",
+        "settlement_basis"
+      ],
+      "properties": {
+        "cohort_id": {"const": "CITED_FOLDS_2_TO_4"},
+        "fold_values": {"const": ["fold2", "fold3", "fold4"]},
+        "fold_counts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["fold2", "fold3", "fold4"],
+          "properties": {
+            "fold2": {"type": "integer", "const": 1661},
+            "fold3": {"type": "integer", "const": 1653},
+            "fold4": {"type": "integer", "const": 432}
+          }
+        },
+        "race_count": {"type": "integer", "const": 3746},
+        "date_min": {"const": "2025-01-05"},
+        "date_max": {"const": "2026-02-15"},
+        "row_key": {"const": "race_id"},
+        "race_id_format": {"const": "16_DIGIT_STRING"},
+        "one_row_per_race": {"const": true},
+        "reused_development_oos": {"const": true},
+        "confirmatory_outer_oos": {"const": false},
+        "strict_t3_rows": {"type": "integer", "const": 0},
+        "settlement_basis": {"const": "FINAL_OFFICIAL_PAYOFF_ONLY"}
+      }
+    },
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "offline_evaluation_notional_yen",
+        "offline_evaluation_notional_is_stake",
+        "artifact_stake",
+        "evaluation_stake_formula",
+        "evaluation_return_formula",
+        "evaluation_profit_formula",
+        "paired_delta_formula",
+        "primary_metric",
+        "secondary_metrics"
+      ],
+      "properties": {
+        "offline_evaluation_notional_yen": {"type": "integer", "const": 100},
+        "offline_evaluation_notional_is_stake": {"const": false},
+        "artifact_stake": {"type": "integer", "const": 0},
+        "evaluation_stake_formula": {"const": "100_IF_ELIGIBLE_ELSE_ZERO"},
+        "evaluation_return_formula": {"const": "OFFICIAL_WIDE_PAY_IF_ELIGIBLE_AND_HIT_ELSE_ZERO"},
+        "evaluation_profit_formula": {"const": "EVALUATION_RETURN_MINUS_EVALUATION_STAKE"},
+        "paired_delta_formula": {"const": "PROFIT_D1_MINUS_PROFIT_D0"},
+        "primary_metric": {"const": "SUM_DELTA_PROFIT_DIVIDED_BY_3746_ENROLLED_RACES"},
+        "secondary_metrics": {
+          "const": [
+            "arm_bet_count",
+            "arm_hit_count",
+            "arm_profit_yen",
+            "arm_return_yen",
+            "arm_roi_percent",
+            "arm_stake_denominator_yen",
+            "decision_disagreement_count"
+          ]
+        }
+      }
+    },
+    "sensitivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "common_high_payout_sets",
+        "high_payout_set_is_arm_independent",
+        "high_payout_rows_retained_and_return_zeroed",
+        "winsor_cap_yen",
+        "winsor_applied_before_arm_eligibility"
+      ],
+      "properties": {
+        "common_high_payout_sets": {"const": ["TOP1_SETTLED_CANDIDATE_RETURN", "TOP3_SETTLED_CANDIDATE_RETURN"]},
+        "high_payout_set_is_arm_independent": {"const": true},
+        "high_payout_rows_retained_and_return_zeroed": {"const": true},
+        "winsor_cap_yen": {"type": "integer", "const": 2000},
+        "winsor_applied_before_arm_eligibility": {"const": true}
+      }
+    },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "cluster_key",
+        "cluster_ordering",
+        "within_cluster_ordering",
+        "replicates",
+        "seed",
+        "rng",
+        "draw_call_per_replicate",
+        "statistic",
+        "one_sided_95_lower_bound"
+      ],
+      "properties": {
+        "cluster_key": {"const": ["race_date", "venue_code"]},
+        "cluster_ordering": {"const": "UNIQUE_TUPLES_LEXICOGRAPHIC_ASCENDING"},
+        "within_cluster_ordering": {"const": "RACE_ID_ASCENDING"},
+        "replicates": {"type": "integer", "const": 100000},
+        "seed": {"type": "integer", "const": 20260814},
+        "rng": {"const": "numpy.random.Generator(PCG64)"},
+        "draw_call_per_replicate": {"const": "rng.integers(0,n_clusters,size=n_clusters,dtype=np.int64,endpoint=False)_EXACTLY_ONCE"},
+        "statistic": {"const": "SUM_DELTA_PROFIT_DIVIDED_BY_RESAMPLED_RACE_ROW_COUNT_INCLUDING_MULTIPLICITY"},
+        "one_sided_95_lower_bound": {"const": "numpy.quantile(statistics,0.05,method=linear)"}
+      }
+    },
+    "execution_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "runner_template_id",
+        "capability_profile_id",
+        "structured_argv",
+        "shell_interpretation",
+        "free_form_argv_allowed",
+        "repository_cwd",
+        "environment_mode",
+        "interpreter_contract",
+        "locale",
+        "timezone",
+        "phase_timeout_seconds",
+        "maximum_memory_megabytes",
+        "workload_network_access",
+        "workload_credential_access",
+        "candidate_phase_read_roles",
+        "settlement_phase_read_roles",
+        "output_roles",
+        "retry_count"
+      ],
+      "properties": {
+        "runner_template_id": {"const": "REGISTERED_NONPROMOTION_BOUNDED_EXECUTOR_V1"},
+        "capability_profile_id": {"const": "RND_TIER_B_FINAL_PAYOFF_DIAGNOSTIC_V1"},
+        "structured_argv": {"const": ["registered_nonpromotion_supervised_executor_v1", "RUN_SCOPE_BOUND_PHASE_PLAN"]},
+        "shell_interpretation": {"const": false},
+        "free_form_argv_allowed": {"const": false},
+        "repository_cwd": {"const": "."},
+        "environment_mode": {"const": "EMPTY_EXCEPT_HASH_BOUND_RUNTIME_ALLOWLIST"},
+        "interpreter_contract": {"const": "CPYTHON_3_11_OR_3_12_BOUND_BY_ENVIRONMENT_MANIFEST"},
+        "locale": {"const": "C.UTF-8"},
+        "timezone": {"const": "UTC"},
+        "phase_timeout_seconds": {"type": "integer", "const": 1200},
+        "maximum_memory_megabytes": {"type": "integer", "const": 4096},
+        "workload_network_access": {"const": false},
+        "workload_credential_access": {"const": false},
+        "candidate_phase_read_roles": {"const": ["candidate_only_projection"]},
+        "settlement_phase_read_roles": {"const": ["settlement_projection"]},
+        "output_roles": {"const": ["replica_scientific_projection", "authenticated_result_seal"]},
+        "retry_count": {"type": "integer", "const": 0}
+      }
+    },
+    "phase_plan": {
+      "const": [
+        "VERIFY_CUTOVER_AND_RUN_SCOPE",
+        "DECISION_FREEZE",
+        "SETTLEMENT_DIAGNOSTIC",
+        "REPLICA_COMPARE",
+        "RESULT_SEAL"
+      ]
+    },
+    "replica_topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "replica_ids",
+        "attempt_count_per_replica_phase",
+        "automatic_retry",
+        "manual_retry",
+        "semantic_equality_required",
+        "preferred_replica_selection_allowed"
+      ],
+      "properties": {
+        "replica_ids": {"const": ["clean_a", "clean_b"]},
+        "attempt_count_per_replica_phase": {"type": "integer", "const": 1},
+        "automatic_retry": {"const": false},
+        "manual_retry": {"const": false},
+        "semantic_equality_required": {"const": true},
+        "preferred_replica_selection_allowed": {"const": false}
+      }
+    },
+    "output_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fresh_output_root_required",
+        "overwrite_allowed",
+        "invalid_run_performance_outputs_allowed",
+        "required_replica_outputs",
+        "required_canonical_outputs",
+        "csv_encoding",
+        "race_id_is_string",
+        "boolean_serialization",
+        "float_serialization"
+      ],
+      "properties": {
+        "fresh_output_root_required": {"const": true},
+        "overwrite_allowed": {"const": false},
+        "invalid_run_performance_outputs_allowed": {"const": false},
+        "required_replica_outputs": {
+          "const": [
+            "arm_summary.csv",
+            "bootstrap_summary.json",
+            "candidate_projection_manifest.json",
+            "cohort_manifest.json",
+            "contract_assertions.csv",
+            "decision_freeze_receipt.json",
+            "paired_primary_metric.json",
+            "replica_comparison_projection.json",
+            "sensitivity_metrics.csv",
+            "settlement_projection_manifest.json"
+          ]
+        },
+        "required_canonical_outputs": {"const": ["result.json", "summary.json"]},
+        "csv_encoding": {"const": "UTF8_NO_BOM_LF"},
+        "race_id_is_string": {"const": true},
+        "boolean_serialization": {"const": "lowercase_true_false"},
+        "float_serialization": {"const": "%.17g"}
+      }
+    },
+    "result_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "allowed_outcomes",
+        "computed_outcome_rule",
+        "confirmatory",
+        "promotion_eligible",
+        "score_credit",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "allowed_outcomes": {"const": ["NO_DECISION_EFFECT", "DIRECTIONAL_EFFECT", "INVALID"]},
+        "computed_outcome_rule": {"const": "INVALID_ON_CONTRACT_FAILURE_ELSE_NO_DECISION_EFFECT_IF_DISAGREEMENT_COUNT_ZERO_ELSE_DIRECTIONAL_EFFECT"},
+        "confirmatory": {"const": false},
+        "promotion_eligible": {"const": false},
+        "score_credit": {"type": "integer", "const": 0},
+        "formal_buy": {"const": false},
+        "send_order": {"const": false},
+        "stake": {"type": "integer", "const": 0}
+      }
+    },
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "odds_price_popularity_or_market_access",
+        "training",
+        "model_inference",
+        "recalibration",
+        "threshold_search",
+        "workload_network_access",
+        "workload_external_api_calls",
+        "workload_credential_access",
+        "production_change",
+        "shadow_transition",
+        "formal_buy",
+        "send_order",
+        "stake"
+      ],
+      "properties": {
+        "odds_price_popularity_or_market_access": {"const": false},
+        "training": {"const": false},
+        "model_inference": {"const": false},
+        "recalibration": {"const": false},
+        "threshold_search": {"const": false},
+        "workload_network_access": {"const": false},
+        "workload_external_api_calls": {"const": false},
+        "workload_credential_access": {"const": false},
+        "production_change": {"const": false},
+        "shadow_transition": {"const": false},
+        "formal_buy": {"const": false},
+        "send_order": {"const": false},
+        "stake": {"type": "integer", "const": 0}
+      }
+    }
+  }
+}

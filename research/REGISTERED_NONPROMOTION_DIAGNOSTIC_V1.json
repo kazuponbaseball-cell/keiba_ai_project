@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "gate_kind": "registered_nonpromotion_diagnostic_v1",
+  "gate_contract_version": 1,
+  "implementation_layer": "G2_CLIENT_AND_BOUNDED_EXECUTOR",
+  "implementation_status": "IMPLEMENTED_PENDING_HUMAN_MERGE_EXTERNAL_G2_AND_CUTOVER",
+  "authority": false,
+  "execution_status": "EXECUTION_FORBIDDEN",
+  "repository": "kazuponbaseball-cell/keiba_ai_project",
+  "base_branch": "main",
+  "root_declaration_commit": "62636e3270704339d8fbc25ec4050db8dfeae0c1",
+  "activation_contract": {
+    "lane_activated": false,
+    "external_g2_configured": false,
+    "cutover_receipt_present": false,
+    "containing_commit_must_be_human_merged_to_main": true,
+    "external_g2_must_be_configured": true,
+    "authenticated_cutover_receipt_required": true,
+    "cutover_receipt_must_bind_current_main_and_all_runtime_blobs": true,
+    "cutover_receipt_must_bind_migrated_legacy_grants_and_subject_heads": true,
+    "cutover_receipt_must_bind_old_writer_fence_and_second_remote_compare": true,
+    "cutover_receipt_must_bind_external_monotonic_witness": true,
+    "branch_ci_merge_or_chat_is_activation": false,
+    "local_file_sqlite_worktree_branch_or_memory_authority_allowed": false
+  },
+  "schema_paths": {
+    "policy": "research/schemas/registered_nonpromotion_policy_v1.schema.json",
+    "recipe": "research/schemas/registered_nonpromotion_recipe_v1.schema.json",
+    "catalog_release": "research/schemas/registered_nonpromotion_catalog_release_v1.schema.json",
+    "run_scope": "research/schemas/registered_nonpromotion_run_scope_v1.schema.json",
+    "authority_receipt": "research/schemas/registered_nonpromotion_authority_receipt_v1.schema.json",
+    "subject_head_snapshot": "research/schemas/registered_nonpromotion_subject_head_snapshot_v1.schema.json",
+    "phase_lease": "research/schemas/registered_nonpromotion_phase_lease_v1.schema.json",
+    "decision_lease_batch": "research/schemas/registered_nonpromotion_decision_lease_batch_v1.schema.json",
+    "decision_consumption_batch": "research/schemas/registered_nonpromotion_decision_consumption_batch_v1.schema.json",
+    "lease_consumption_receipt": "research/schemas/registered_nonpromotion_lease_consumption_receipt_v1.schema.json",
+    "phase_output_attestation": "research/schemas/registered_nonpromotion_phase_output_attestation_v1.schema.json",
+    "phase_output_seal_receipt": "research/schemas/registered_nonpromotion_phase_output_seal_receipt_v1.schema.json",
+    "result": "research/schemas/registered_nonpromotion_result_v1.schema.json",
+    "cutover_receipt": "research/schemas/registered_nonpromotion_cutover_receipt_v1.schema.json"
+  },
+  "recipe_registry": {
+    "append_only": true,
+    "existing_entry_edit_or_delete_allowed": false,
+    "maximum_active_entries_per_question_family": 1,
+    "entries": [
+      {
+        "recipe_id": "historical_ai_duplicate_gate_impact_v1",
+        "recipe_version": 1,
+        "tier": "B_REGISTERED_HISTORICAL_IMPACT",
+        "path": "research/diagnostic_recipes/historical_ai_duplicate_gate_impact_v1.json",
+        "canonical_recipe_sha256": "3754b796ba6dcb3f3c0f084641411e5e3decce0c8d934a0a294976f66caab292",
+        "source_formula_fingerprint_sha256": "67b0d3e5b92166a10b3077bff03e107c9db071b310f60f43b8758ce316eda878",
+        "question_family_sha256": "a9555c0fe36f57b924822ed8d718ba6d2b150140feb4607d7749e300151318d7",
+        "eligibility_ast_sha256": "09383c64cca20fa5a7a8fcfb9f76f1bf7feeb5e8b76744a90e4aa954b9ba0c5f",
+        "source_authority_class": "B_LOCAL_HASHED",
+        "active_only_after_cutover": true
+      }
+    ]
+  },
+  "tiers": {
+    "A_PARITY_NO_DECISION_CHANGE": {
+      "settlement_access": false,
+      "result_label_access": false,
+      "odds_price_popularity_or_market_access": false,
+      "payoff_access": false,
+      "roi_calculation": false,
+      "decision_mask_change": false
+    },
+    "B_REGISTERED_HISTORICAL_IMPACT": {
+      "exact_arm_count": 2,
+      "exact_registered_transform_count": 1,
+      "threshold_search_count": 0,
+      "refit_count": 0,
+      "recalibration_count": 0,
+      "candidate_identity_rank_or_tier_change": false,
+      "live_policy_or_config_mutation": false,
+      "odds_price_popularity_or_market_access": false,
+      "settlement_after_decision_freeze_only": true,
+      "settlement_allowed_columns": [
+        "candidate_hit",
+        "candidate_key",
+        "official_outcome_completeness",
+        "official_wide_pay",
+        "race_id"
+      ]
+    }
+  },
+  "run_approval": {
+    "keyword": "APPROVED_NONPROMOTION_DIAGNOSTIC_RUN",
+    "comment_count": 1,
+    "run_scope_must_be_sealed_before_comment": true,
+    "allowlisted_github_user_required": true,
+    "comment_id_namespace": "GLOBAL_ALL_GATES_AND_SCHEMAS",
+    "comment_id_permanently_consumed": true,
+    "ordinary_prepare_run_shadow_event_mechanics_inherited": false,
+    "github_identity_ancestry_approver_and_comment_evidence_inherited": true
+  },
+  "lifecycle": {
+    "states": [
+      "RND_RUN_SCOPE_FROZEN",
+      "RND_RUN_APPROVAL_REQUIRED",
+      "RND_APPROVED",
+      "RND_LEASED",
+      "RND_RUNNING",
+      "RND_RESULT_SEALED",
+      "RND_COMPLETED",
+      "INVALID"
+    ],
+    "allowed_transitions": {
+      "RND_RUN_SCOPE_FROZEN": ["RND_RUN_APPROVAL_REQUIRED", "INVALID"],
+      "RND_RUN_APPROVAL_REQUIRED": ["RND_APPROVED", "INVALID"],
+      "RND_APPROVED": ["RND_LEASED", "INVALID"],
+      "RND_LEASED": ["RND_RUNNING", "INVALID"],
+      "RND_RUNNING": ["RND_RESULT_SEALED", "INVALID"],
+      "RND_RESULT_SEALED": ["RND_COMPLETED", "INVALID"],
+      "RND_COMPLETED": [],
+      "INVALID": []
+    },
+    "preparing_state_exists": false,
+    "skip_self_transition_or_terminal_resurrection_allowed": false,
+    "every_transition_is_atomic_global_and_subject_head_cas": true
+  },
+  "shared_g2": {
+    "sole_live_authority": true,
+    "transport_contract": "INJECTED_AUTHENTICATED_REMOTE_TRANSACTIONAL_G2_V1",
+    "local_fallback": false,
+    "global_and_subject_head_atomic_cas": true,
+    "complete_legacy_event_comment_id_and_subject_head_migration_required": true,
+    "old_writer_fence_required": true,
+    "second_remote_compare_required": true,
+    "external_monotonic_witness_required": true,
+    "all_terminal_and_nonterminal_subject_heads_import_required": true,
+    "backup_restore_rollback_and_fork_detection_required": true,
+    "dual_writer_allowed": false,
+    "rollback_fork_or_stale_witness_action": "HALT_LANE_NO_NEW_LEASES",
+    "phase_lease_one_shot": true,
+    "lease_domain_fields": ["run_scope_digest", "recipe_digest", "replica_id", "phase", "attempt"],
+    "cross_use_replay_self_issue_or_capability_union_allowed": false,
+    "approval_cas_issues_phase_lease": false,
+    "irreversible_cas_fields": [
+      "decision_lease_consume",
+      "exact_subject_consume",
+      "question_family_execution_count_increment",
+      "run_state_RND_LEASED_to_RND_RUNNING",
+      "semantic_subject_consume"
+    ]
+  },
+  "subject_contract": {
+    "states": ["PROVISIONALLY_RESERVED", "RELEASED_PREACCESS_ABORT", "IRREVERSIBLY_CONSUMED"],
+    "maximum_active_generation_count": 1,
+    "maximum_irreversible_execution_count_across_generations": 1,
+    "preaccess_abort_requires_zero_protected_content_access": true,
+    "preaccess_abort_atomically_invalidates_run_advances_heads_and_tombstones_leases": true,
+    "replacement_requires_new_scope_comment_and_generation": true,
+    "exact_replay": "AUTHENTICATED_SEALED_RESULT_READ_ONLY_OR_STOP_NO_RERUN"
+  },
+  "capability_profiles": {
+    "resolver": {
+      "candidate_or_settlement_content_access": false,
+      "catalog_metadata_access": true,
+      "network_access": false,
+      "credential_access": false,
+      "payoff_access": false,
+      "roi_calculation": false
+    },
+    "decision_freeze": {
+      "candidate_content_access": true,
+      "settlement_content_access": false,
+      "odds_price_popularity_or_market_access": false,
+      "payoff_access": false,
+      "roi_calculation": false
+    },
+    "settlement_diagnostic": {
+      "candidate_content_access": false,
+      "settlement_content_access": true,
+      "odds_price_popularity_or_market_access": false,
+      "payoff_access": true,
+      "roi_calculation": true
+    }
+  },
+  "result_contract": {
+    "evidence_purpose_class": "DIAGNOSTIC_NONPROMOTION",
+    "source_authority_class_preserved": true,
+    "confirmatory": false,
+    "promotion_eligible": false,
+    "score_credit": 0,
+    "allowed_outcomes": {
+      "A_PARITY_NO_DECISION_CHANGE": ["NO_DECISION_EFFECT", "INVALID"],
+      "B_REGISTERED_HISTORICAL_IMPACT": ["NO_DECISION_EFFECT", "DIRECTIONAL_EFFECT", "INVALID"]
+    },
+    "shadow_transition_supported": false,
+    "production_transition_supported": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0
+  },
+  "hard_blockers": [
+    "missing_or_untrusted_cutover_receipt",
+    "missing_external_g2_or_monotonic_witness",
+    "activation_pregrant_head_or_latest_witness_binding_unverified",
+    "missing_external_isolated_replica_supervisor_or_invalid_failclose",
+    "local_or_dual_writer_authority",
+    "unknown_recipe_or_recipe_digest_mismatch",
+    "free_form_formula_threshold_cohort_metric_argv_or_output",
+    "candidate_settlement_or_result_content_read_before_irreversible_receipt",
+    "any_phase_odds_price_popularity_or_market_column",
+    "settlement_field_outside_exact_allowlist",
+    "candidate_identity_rank_tier_or_digest_drift",
+    "threshold_search_refit_recalibration_training_or_model_inference",
+    "approval_comment_missing_changed_deleted_reused_or_unauthorized",
+    "illegal_lifecycle_or_subject_transition",
+    "lease_missing_wrong_domain_replayed_self_issued_or_cross_used",
+    "rollback_fork_stale_witness_or_head_split_brain",
+    "result_used_for_score_shadow_adoption_promotion_production_or_buy",
+    "formal_buy_send_order_or_nonzero_stake"
+  ],
+  "safety": {
+    "automatic_execution": false,
+    "automatic_github_approval": false,
+    "workload_network_access": false,
+    "workload_external_api_calls": false,
+    "workload_credential_access": false,
+    "purchase_path_access": false,
+    "production_change": false,
+    "shadow_approval": false,
+    "merge": false,
+    "notification_side_effects": false,
+    "order_side_effects": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0
+  }
+}
