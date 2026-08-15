@@ -85,24 +85,25 @@ class RegisteredNonpromotionOfflineFirewallV1Tests(unittest.TestCase):
 
     def test_control_plane_subprocess_is_two_fixed_read_only_git_commands(self) -> None:
         head = "a" * 40
+        fixed_root = Path("C:/fixed/repo")
         completed = [
             SimpleNamespace(stdout=head + "\n"),
             SimpleNamespace(stdout=""),
         ]
         with mock.patch.object(runner.subprocess, "run", side_effect=completed) as run:
-            runner._verify_clean_git_head(Path("C:/fixed/repo"), head)
+            runner._verify_clean_git_head(fixed_root, head)
         self.assertEqual(run.call_count, 2)
         first, second = run.call_args_list
         self.assertEqual(
             first.args[0],
-            ["git", "-C", "C:\\fixed\\repo", "rev-parse", "HEAD"],
+            ["git", "-C", str(fixed_root), "rev-parse", "HEAD"],
         )
         self.assertEqual(
             second.args[0],
             [
                 "git",
                 "-C",
-                "C:\\fixed\\repo",
+                str(fixed_root),
                 "status",
                 "--porcelain",
                 "--untracked-files=all",
