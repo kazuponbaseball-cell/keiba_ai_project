@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260821-034",
+  "variant": "exp033_input_canonicalization_v0",
+  "research_only": true,
+  "proposal_scope": {
+    "path": "research/scopes/EXP-20260821-034.proposal.json",
+    "digest": "da76a639a01a179f3061adaa14236741c226b223772953bb5551b2d277351021",
+    "byte_sha256": "c6c02b486f1e253f606f4438e4e0a7ea4eb567cd283f00ca37fb25a760d0937e"
+  },
+  "frozen_contracts": {
+    "input_canonicalization_contract": {
+      "path": "research/drafts/EXP-20260821-034.input_canonicalization_contract.json",
+      "sha256": "1d72ca2443f3bb49c912074152c5afafb0b6e9e50647ab7b571cb7a072caf21a"
+    },
+    "fold_manifest": {
+      "path": "research/drafts/EXP-20260821-034.fold_manifest.json",
+      "sha256": "b939dd6504e59d2214324141726bb0b0e91c7c762c99bb508743fee7257737e1"
+    },
+    "synthetic_fixture_plan": {
+      "path": "research/drafts/EXP-20260821-034.synthetic_fixture_plan.md",
+      "sha256": "f79e322785063cb41fa610a7f4ee7f904e291faf5cf7a78033edf64fbc32668c"
+    },
+    "dependency_environment_manifest": {
+      "path": "research/drafts/EXP-20260821-034.dependency_environment_manifest.json",
+      "sha256": "c0f1264160eccf582cadc37056d73f7c61b5b9474931699427d5b33f287cda43"
+    },
+    "exp033_feature_allowlist": {
+      "path": "research/drafts/EXP-20260821-033.feature_allowlist.json",
+      "sha256": "9d1108ea13d39b74535c5bdd4cdb87afb8f21be37686cfe645332949359db7f2",
+      "numeric_count": 77,
+      "categorical_count": 11,
+      "total_count": 88
+    },
+    "exp033_feature_denylist": {
+      "path": "research/drafts/EXP-20260821-033.feature_denylist.json",
+      "sha256": "84387f57e1696263f72121c6e6eebe544281d8cbc7a82568512d7cfddfc3e8e9",
+      "numeric_count": 279,
+      "categorical_count": 7,
+      "total_count": 286
+    },
+    "exp033_fold_manifest": {
+      "path": "research/drafts/EXP-20260821-033.fold_manifest.json",
+      "sha256": "622b01ea20241858d7692d7cf169c4c46082d53620066e6ad7be5e517ea592fb"
+    }
+  },
+  "artifact_split": {
+    "runner_universe": "approved append-only runner ledger",
+    "declared_card_and_result_events": "source-time-bound event release",
+    "feature_input": "wide exact ordered 88-feature release",
+    "feature_lineage": "long per-feature lineage sidecar",
+    "label_reconciliation": "all-declared audit ledger with whole-race eligibility",
+    "manifests": "immutable leaf, diff, and root manifests"
+  },
+  "requested_dto_to_canonical_mapping": {
+    "release_id": "release_family_id",
+    "release_version": "release_version",
+    "parent_release_id": "parent_manifest_digest; must be null for v1 or the exact lowercase SHA-256 parent manifest digest",
+    "event_date": "declared-card event date derived from prediction_event_time; not a runner-ledger column",
+    "post_time": "prediction_event_time in the declared-card source envelope; not a runner-ledger column",
+    "age": "declared-card field 年齢; not a runner-ledger column",
+    "sex": "declared-card field 性別; not a runner-ledger column",
+    "assigned_weight": "runner carried_weight and declared-card field 斤量",
+    "frame_no": "frame_number",
+    "horse_no": "horse_number",
+    "source_content_hash": "source_content_sha256",
+    "feature_value": "value in the wide 88-feature row; not duplicated in the lineage sidecar",
+    "dtype": "feature_dtype",
+    "transform_version": "transformation_version",
+    "asof_safe": "lineage_verdict must equal certified_asof_safe",
+    "lineage_status": "lineage_verdict"
+  },
+  "runner_contract": {
+    "primary_key": [
+      "race_id",
+      "horse_id"
+    ],
+    "horse_name_join_allowed": false,
+    "release_family_id_mutable": false,
+    "release_version_minimum": 1,
+    "as_of_semantics": "prediction_event_time cutoff in UTC; immutable across predraw and draw-confirmed child versions",
+    "predraw_stage": {
+      "draw_status": "scheduled_pending_draw",
+      "entry_stage": "declared_without_draw",
+      "frame_number": null,
+      "horse_number": null
+    },
+    "confirmed_positive_integer_numbers_required": true,
+    "feature_safe_dependency_fields": [
+      "race_id",
+      "horse_id",
+      "runner_status",
+      "jockey_id",
+      "carried_weight",
+      "trainer_id",
+      "active_for_feature_materialization"
+    ],
+    "child_identity_add_remove_allowed": false,
+    "mutable_latest_alias_allowed": false
+  },
+  "feature_contract": {
+    "default_deny": true,
+    "numeric_dtype": "float64",
+    "categorical_dtype": "string",
+    "nonfinite_allowed": false,
+    "lineage_required_fraction": 1.0,
+    "lineage_safe_verdict": "certified_asof_safe",
+    "target_result_dependency_allowed": false,
+    "future_dependency_allowed": false,
+    "draw_dependency_allowed": false,
+    "market_dependency_allowed": false,
+    "approved_transform": {
+      "name": "synthetic_safe_transform",
+      "version": "SYN-TRANSFORM-v1",
+      "code_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    }
+  },
+  "source_lineage_contract": {
+    "accepted_canonical_source_payloads": [
+      "runner_feature_safe",
+      "declared_card_event",
+      "completed_result_event"
+    ],
+    "direct_source_evidence_required_fields": [
+      "canonical_source_payload",
+      "content_sha256",
+      "source_path",
+      "source_event_time",
+      "received_at",
+      "available_as_of",
+      "source_version"
+    ],
+    "approved_non_feature_raw_columns": [
+      "record_kind",
+      "race_id",
+      "horse_id",
+      "prediction_event_time",
+      "source_event_time",
+      "received_at",
+      "available_as_of",
+      "source_version",
+      "source_content_sha256",
+      "missing_reason",
+      "年齢",
+      "斤量",
+      "距離",
+      "場所",
+      "性別",
+      "騎手コード",
+      "調教師コード",
+      "芝・ダ",
+      "クラス名",
+      "トラックコード",
+      "declared_status",
+      "starter_status",
+      "official_result_status",
+      "official_finish_rank_raw",
+      "runner_status",
+      "jockey_id",
+      "carried_weight",
+      "trainer_id",
+      "active_for_feature_materialization"
+    ],
+    "historical_completed_result_raw_columns": [
+      "確定着順",
+      "1角",
+      "2角",
+      "4角",
+      "result_status",
+      "official_finish_rank_raw"
+    ]
+  },
+  "label_eligibility": {
+    "version": "exp034_label_eligibility_v1",
+    "eligible_result_status": "finished",
+    "precutoff_nonstarter_statuses": [
+      "scratched",
+      "nonstarter",
+      "excluded"
+    ],
+    "whole_race_ineligible_statuses": [
+      "did_not_finish",
+      "race_stopped",
+      "disqualified",
+      "abnormal",
+      "void",
+      "dead_heat",
+      "result_missing"
+    ],
+    "exact_rank_permutation_required": true,
+    "rank_compaction_allowed": false,
+    "tie_break_allowed": false,
+    "declared_row_deletion_allowed": false,
+    "target_labels_allowed": false
+  },
+  "required_manifest_kinds": [
+    "runner_universe_manifest",
+    "training_source_manifest",
+    "target_source_manifest",
+    "feature_release_manifest",
+    "lineage_manifest",
+    "label_eligibility_manifest",
+    "environment_manifest",
+    "dependency_lock_manifest",
+    "release_diff_manifest",
+    "canonical_root_manifest"
+  ],
+  "manifest_composition_contract": {
+    "artifact_name_by_kind": {
+      "runner_universe_manifest": "runner_universe_release",
+      "training_source_manifest": "training_source_release",
+      "target_source_manifest": "target_source_release",
+      "feature_release_manifest": "feature_input_release",
+      "lineage_manifest": "lineage_release",
+      "label_eligibility_manifest": "label_eligibility_release",
+      "environment_manifest": "environment_release",
+      "dependency_lock_manifest": "dependency_lock_release",
+      "release_diff_manifest": "release_diff",
+      "canonical_root_manifest": "canonical_root"
+    },
+    "root_synchronized_kinds": [
+      "runner_universe_manifest",
+      "target_source_manifest",
+      "feature_release_manifest",
+      "lineage_manifest",
+      "release_diff_manifest"
+    ],
+    "immutable_reusable_kinds": [
+      "training_source_manifest",
+      "label_eligibility_manifest",
+      "environment_manifest",
+      "dependency_lock_manifest"
+    ]
+  },
+  "manifest_path_contract": {
+    "synthetic_input_prefix": "synthetic/",
+    "synthetic_output_prefix": "outputs/research/SYN/",
+    "canonical_output_prefix": "outputs/research/EXP-20260821-034/",
+    "approved_real_input_paths": [
+      "date/raw/全競走馬成績.csv",
+      "outputs/analysis/race_intelligence_recovery_20260823/declared_without_draw_entry_snapshot.csv",
+      "outputs/analysis/race_intelligence_recovery_20260823/predraw_history_scope.csv",
+      "outputs/analysis/race_intelligence_t0_20260823/factor_field_lineage_audited.csv",
+      "research/drafts/EXP-20260821-033.feature_allowlist.json",
+      "research/drafts/EXP-20260821-033.feature_denylist.json",
+      "research/drafts/EXP-20260821-033.fold_manifest.json",
+      "research/drafts/EXP-20260821-034.dependency_environment_manifest.json",
+      "research/drafts/EXP-20260821-034.fold_manifest.json",
+      "research/drafts/EXP-20260821-034.input_canonicalization_contract.json",
+      "research/scopes/EXP-20260821-034.proposal.json"
+    ]
+  },
+  "exp033_handoff": {
+    "contract_version": "exp034_to_exp033_handoff_v1",
+    "consumer_experiment_id": "EXP-20260821-033",
+    "required_hash_fields": [
+      "canonical_root_manifest_sha256",
+      "runner_universe_release_sha256",
+      "feature_input_release_sha256",
+      "training_release_sha256",
+      "target_release_sha256",
+      "lineage_manifest_sha256",
+      "label_eligibility_manifest_sha256",
+      "fold_manifest_sha256",
+      "environment_manifest_sha256",
+      "dependency_lock_sha256"
+    ],
+    "required_identity_fields": [
+      "runner_universe_release_id",
+      "feature_input_release_id",
+      "training_release_id",
+      "target_release_id",
+      "label_eligibility_version",
+      "stage"
+    ],
+    "allowed_stages": [
+      "predraw",
+      "draw_confirmed"
+    ],
+    "target_runner_completeness_required": 1.0,
+    "source_time_completeness_required": 1.0,
+    "exp033_allowlist_sha256": "9d1108ea13d39b74535c5bdd4cdb87afb8f21be37686cfe645332949359db7f2",
+    "exp033_denylist_sha256": "84387f57e1696263f72121c6e6eebe544281d8cbc7a82568512d7cfddfc3e8e9",
+    "exp033_fold_manifest_sha256": "622b01ea20241858d7692d7cf169c4c46082d53620066e6ad7be5e517ea592fb"
+  },
+  "runtime_authorization": {
+    "prepare_execution_kind": "synthetic_fixture",
+    "real_data_cli_status": "fail_closed",
+    "real_data_required_registry_status": "running",
+    "real_data_required_execution_kind": "real-data",
+    "versioned_real_data_run_contract_required": true,
+    "run_scope_generation_during_prepare": false,
+    "real_source_path_resolution_during_prepare": false,
+    "real_data_rows_during_prepare": 0
+  },
+  "real_data_execution_blockers": [
+    "ordinary Research OS schema-v2 run scope does not bind execution_kind and rejects real-data RUNNING",
+    "authoritative source_event_time/received_at/available_as_of receipt-ledger manifests are not yet hash-bound",
+    "exact real runner/training/target source manifests are not yet bound before access",
+    "exact interpreter/dependency/locale/timezone/read-write capability contract is not yet frozen in a versioned run scope",
+    "distinct APPROVED_TO_RUN evidence and live Prepare/Run revalidation do not exist",
+    "append-only real output sealing and durable execution receipts are not authorized",
+    "a hash-bound source_event_time/received_at/available_as_of/versioned historical nonstarter status-evidence ledger is absent from the frozen artifact schema",
+    "per-race official post-time and one release-level as_of cannot be canonicalized without an approved cutoff mapping; no common timestamp may be invented",
+    "a distinct canonical training 88-feature input and lineage manifest is absent, so EXP-033 handoff cannot yet bind both training and target feature releases",
+    "canonical real-data feature values are not yet generated by and semantically reverified against the exact EXP-033 materializer; synthetic value-binding hashes are structural fixture receipts only"
+  ],
+  "prepare_commands": {
+    "validate_contract": "python scripts/research/run_exp033_input_canonicalization_v0.py validate-contract --config research/configs/EXP-20260821-034.input_canonicalization_v0.json",
+    "blocker_report": "python scripts/research/run_exp033_input_canonicalization_v0.py blocker-report --config research/configs/EXP-20260821-034.input_canonicalization_v0.json",
+    "synthetic_tests": "python -m unittest tests.research.test_exp033_input_canonicalization_v0 -v"
+  },
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0,
+  "production_change_allowed": false,
+  "champion_change_allowed": false,
+  "notification_allowed": false,
+  "order_allowed": false,
+  "network_allowed": false,
+  "netkeiba_allowed": false
+}
