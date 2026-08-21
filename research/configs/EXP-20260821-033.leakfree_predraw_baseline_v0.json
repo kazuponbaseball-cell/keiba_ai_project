@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260821-033",
+  "variant": "leakfree_predraw_baseline_v0",
+  "research_only": true,
+  "proposal_scope": {
+    "path": "research/scopes/EXP-20260821-033.proposal.json",
+    "digest": "6993e9f5a6e0d6b2ef726bbc65fd047479a7b1bf79e948689a588f26f034ff6d"
+  },
+  "frozen_contracts": {
+    "feature_allowlist": {
+      "path": "research/drafts/EXP-20260821-033.feature_allowlist.json",
+      "sha256": "9d1108ea13d39b74535c5bdd4cdb87afb8f21be37686cfe645332949359db7f2",
+      "numeric_count": 77,
+      "categorical_count": 11,
+      "total_count": 88
+    },
+    "feature_denylist": {
+      "path": "research/drafts/EXP-20260821-033.feature_denylist.json",
+      "sha256": "84387f57e1696263f72121c6e6eebe544281d8cbc7a82568512d7cfddfc3e8e9",
+      "numeric_count": 279,
+      "categorical_count": 7,
+      "total_count": 286
+    },
+    "leakage_dependency_manifest": {
+      "path": "research/drafts/EXP-20260821-033.leakage_dependency_manifest.json",
+      "sha256": "80080ede6a707d05e379517bbf0ee82418616ff176eb69f64d06763b3698d0fd"
+    },
+    "fold_manifest": {
+      "path": "research/drafts/EXP-20260821-033.fold_manifest.json",
+      "sha256": "622b01ea20241858d7692d7cf169c4c46082d53620066e6ad7be5e517ea592fb"
+    },
+    "synthetic_fixture_plan": {
+      "path": "research/drafts/EXP-20260821-033.synthetic_fixture_plan.md",
+      "sha256": "7417c4b28ed117d3322661fb02b60dcff8373d2dd739accf36a1e687d3c226b4"
+    },
+    "active_reference_config": {
+      "path": "config/baseline_features_workout.json",
+      "sha256": "5a0b7f41831dcefb49cc9a64d21817442a118223d3a53d6ad1afff9e30ef8c5c",
+      "numeric_count": 356,
+      "categorical_count": 18
+    },
+    "simple_ranker_source": {
+      "path": "src/train/simple_ranker.py",
+      "sha256": "5d69f7092ee33e229bcf8aba217c608906277d65d0f6b6a4424a0d312d11cc0a"
+    }
+  },
+  "model": {
+    "module": "src.train.simple_ranker",
+    "class": "SimpleRaceRanker",
+    "ridge_alpha": 10.0,
+    "categorical_top_k": 80,
+    "seed": 20260823,
+    "maximum_variants": 1,
+    "maximum_model_fits": 1,
+    "maximum_calibrator_fits": 1,
+    "unknown_category_policy": "all_zero_reference_encoding",
+    "categorical_missing_token": "__MISSING__",
+    "numeric_dtype": "float64",
+    "categorical_dtype": "string",
+    "tie_break": [
+      "clean_ai_score descending",
+      "horse_id ascending"
+    ]
+  },
+  "identity": {
+    "race_id": "race_id",
+    "horse_id": "horse_id",
+    "model_input": false,
+    "join_by_horse_name": false
+  },
+  "source_contract": {
+    "envelope_columns": [
+      "record_kind",
+      "race_id",
+      "horse_id",
+      "prediction_event_time",
+      "source_event_time",
+      "received_at",
+      "available_as_of",
+      "source_version",
+      "source_content_sha256",
+      "missing_reason"
+    ],
+    "card_record_kind": "declared_card",
+    "result_record_kind": "completed_result",
+    "card_time_rule": "source_event_time <= received_at <= available_as_of < prediction_event_time",
+    "result_time_rule": "prediction_event_time < source_event_time <= received_at <= available_as_of; use only when available_as_of < later prediction_event_time",
+    "timezone_required": true,
+    "content_sha256_lowercase_required": true,
+    "content_hash_scope": "canonical JSON of the complete source record excluding source_content_sha256 and internal __ fields",
+    "allowed_missing_reasons": [
+      "not_missing",
+      "debut_no_history",
+      "source_not_recorded",
+      "structurally_not_applicable"
+    ],
+    "lineage_policy": "sorted unique dependency content hashes plus maximum available_as_of",
+    "same_race_result_dependency": "forbidden",
+    "future_row_dependency": "forbidden"
+  },
+  "current_card_required_columns": [
+    "年齢",
+    "斤量",
+    "距離",
+    "場所",
+    "性別",
+    "騎手コード",
+    "調教師コード",
+    "芝・ダ",
+    "クラス名",
+    "トラックコード"
+  ],
+  "completed_result_required_columns": [
+    "確定着順"
+  ],
+  "history_optional_columns": [
+    "1角",
+    "2角",
+    "4角"
+  ],
+  "missing_value_policy": {
+    "core_current_card": "hard_reject",
+    "debut_history_counts_rates_means": 0.0,
+    "debut_distance_diff": 0.0,
+    "debut_class_changed": 0.0,
+    "debut_jockey_changed": 0.0,
+    "missing_previous_corner4_position_rate": 0.5,
+    "early_move_fallback": [
+      "1角",
+      "2角",
+      "4角"
+    ],
+    "final_non_finite": "hard_reject"
+  },
+  "feature_generation": {
+    "implementation_version": "exp033_predraw_event_batch_v1",
+    "race_event_batch_update": "materialize all cards at one prediction_event_time before making any result from that batch eligible",
+    "interval_weeks": "floor(nonnegative calendar days since latest available prior race divided by 7)",
+    "distance_category": {
+      "right_closed_upper_bounds": [
+        1300,
+        1600,
+        2000,
+        2400
+      ],
+      "labels": [
+        "sprint",
+        "mile",
+        "middle",
+        "classic",
+        "long"
+      ]
+    },
+    "past3_window": 3,
+    "pace_style_window": 5,
+    "position_rate_denominator": "declared field size",
+    "rank_normalization": "average tie rank normalized to [0,1] inside race",
+    "off_surface_history": "match audited base semantics: populate only the current-surface history block and set the off-current-surface block to zero"
+  },
+  "chronology": {
+    "fold_manifest_path": "research/drafts/EXP-20260821-033.fold_manifest.json",
+    "purge_days": 28,
+    "embargo_days": 28,
+    "race_overlap_allowed": false,
+    "target_date": "2026-08-23",
+    "target_labels_allowed": false,
+    "outer_open_limit": 1
+  },
+  "clean_outputs": {
+    "score_column": "clean_ai_score",
+    "rank_column": "clean_baseline_rank",
+    "forbidden_output_prefixes": [
+      "ai_score",
+      "slow_",
+      "middle_",
+      "fast_",
+      "BUY",
+      "candidate",
+      "stake"
+    ],
+    "top3_probability_output": false
+  },
+  "runtime_authorization": {
+    "synthetic_fixture_execution_kind": "synthetic_fixture",
+    "real_data_required_registry_status": "running",
+    "real_data_required_execution_kind": "real-data",
+    "real_data_required_run_scope": true,
+    "real_data_without_run_scope": "fail_closed"
+  },
+  "real_input_canonicalization_gate": {
+    "status": "blocked_pending_separately_approved_real_input_canonicalization",
+    "all_declared_runner_cards_required": true,
+    "scratched_runner_policy": "retain in universe audit but remove before feature materialization and report the identity diff",
+    "historical_abnormal_status_policy": "must bind all-declared field denominator separately from label eligibility; do not silently drop or renumber",
+    "dead_heat_and_finish_gap_policy": "must be preregistered and count-reconciled before EXP-20260821-033 run-scope freeze",
+    "required_target_source_fields": [
+      "age",
+      "sex",
+      "jockey_code",
+      "trainer_code",
+      "class",
+      "track_code",
+      "race_id",
+      "horse_id"
+    ],
+    "required_real_artifacts": [
+      "identity-sorted 70-runner universe plus scratch diff",
+      "source-time-bound predraw target input release",
+      "feature-level lineage sidecar",
+      "historical declared-card and eligible-label reconciliation manifest"
+    ],
+    "placeholder_or_synthetic_substitution": "forbidden"
+  },
+  "prepare_commands": {
+    "static_contract": "python scripts/research/run_leakfree_predraw_baseline_v0.py validate-contract --config research/configs/EXP-20260821-033.leakfree_predraw_baseline_v0.json",
+    "synthetic_tests": "python -m pytest -q tests/research/test_leakfree_predraw_baseline_v0.py"
+  },
+  "future_run_command_contract": [
+    "python scripts/research/run_leakfree_predraw_baseline_v0.py fit-freeze --config research/configs/EXP-20260821-033.leakfree_predraw_baseline_v0.json --run-scope research/scopes/EXP-20260821-033.run.json --registry research/REGISTRY.jsonl",
+    "python scripts/research/run_leakfree_predraw_baseline_v0.py evaluate-predict --config research/configs/EXP-20260821-033.leakfree_predraw_baseline_v0.json --run-scope research/scopes/EXP-20260821-033.run.json --registry research/REGISTRY.jsonl"
+  ],
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0,
+  "production_change_allowed": false,
+  "champion_change_allowed": false,
+  "notification_allowed": false,
+  "order_allowed": false,
+  "netkeiba_allowed": false
+}
