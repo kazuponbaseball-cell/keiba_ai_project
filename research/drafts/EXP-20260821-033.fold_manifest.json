@@ -1,0 +1,148 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260821-033",
+  "variant": "leakfree_predraw_baseline_v0",
+  "inspection_contract": {
+    "distribution_fields_inspected": [
+      "abnormal_status",
+      "event_date",
+      "finish_rank_presence",
+      "race_id",
+      "race_type",
+      "surface"
+    ],
+    "performance_outcomes_inspected": false,
+    "result_driven_boundary_changes_allowed": false
+  },
+  "canonical_training_evaluation_release": {
+    "path": "date/raw/全競走馬成績.csv",
+    "sha256": "5e7e88ec69b313b9a9d30af41394b5b40374542e0d42c29f18a377bc9bbb7c0f",
+    "release_max_event_date": "2026-02-15",
+    "encoding": "cp932",
+    "eligibility": [
+      "JRA only",
+      "flat races only",
+      "surface is turf or dirt",
+      "abnormal status equals 0",
+      "race types 18 and 19 are excluded",
+      "valid event date, race_id, and finish rank",
+      "at least two valid finishers per race"
+    ]
+  },
+  "ordered_blocks": [
+    {
+      "name": "history_warmup_only",
+      "start": "2016-01-05",
+      "end": "2017-12-31",
+      "expected_rows": 95612,
+      "expected_races": 6655,
+      "label_use": "forbidden",
+      "purpose": "strictly prior horse-history warmup only"
+    },
+    {
+      "name": "train",
+      "start": "2018-01-01",
+      "end": "2023-06-25",
+      "expected_rows": 253721,
+      "expected_races": 18308,
+      "label_use": "fit"
+    },
+    {
+      "name": "purge_1",
+      "start": "2023-06-26",
+      "end": "2023-07-23",
+      "expected_rows": 3614,
+      "expected_races": 276,
+      "label_use": "forbidden"
+    },
+    {
+      "name": "validation",
+      "start": "2023-07-24",
+      "end": "2023-12-24",
+      "expected_rows": 18531,
+      "expected_races": 1366,
+      "label_use": "report_only_no_tuning"
+    },
+    {
+      "name": "purge_2",
+      "start": "2023-12-25",
+      "end": "2024-01-21",
+      "expected_rows": 3338,
+      "expected_races": 231,
+      "label_use": "forbidden"
+    },
+    {
+      "name": "calibration",
+      "start": "2024-01-22",
+      "end": "2024-06-23",
+      "expected_rows": 20069,
+      "expected_races": 1456,
+      "label_use": "fit_single_fixed_temperature_only"
+    },
+    {
+      "name": "embargo",
+      "start": "2024-06-24",
+      "end": "2024-07-21",
+      "expected_rows": 3589,
+      "expected_races": 276,
+      "label_use": "forbidden"
+    },
+    {
+      "name": "untouched_outer_oos",
+      "start": "2024-07-22",
+      "end": "2026-02-15",
+      "expected_rows": 71159,
+      "expected_races": 5155,
+      "label_use": "open_once_after_model_calibrator_and_hash_freeze"
+    }
+  ],
+  "fixed_outer_segments": [
+    {
+      "name": "2024_remainder",
+      "start": "2024-07-22",
+      "end": "2024-12-31",
+      "expected_rows": 18784,
+      "expected_races": 1387
+    },
+    {
+      "name": "2025_h1",
+      "start": "2025-01-01",
+      "end": "2025-06-30",
+      "expected_rows": 23686,
+      "expected_races": 1666
+    },
+    {
+      "name": "2025_h2",
+      "start": "2025-07-01",
+      "end": "2025-12-31",
+      "expected_rows": 22474,
+      "expected_races": 1669
+    },
+    {
+      "name": "2026_to_release_end",
+      "start": "2026-01-01",
+      "end": "2026-02-15",
+      "expected_rows": 6215,
+      "expected_races": 433
+    }
+  ],
+  "purge_embargo_days": 28,
+  "history_update_rule": "A completed event in a gap block may update a later runner's history only when source_event_time is strictly earlier than prediction_event_time; it never supplies a fit, calibration, or evaluation label.",
+  "race_overlap_allowed": false,
+  "horse_overlap_allowed": true,
+  "target_race_date": "2026-08-23",
+  "target_labels_allowed": false,
+  "target_input_contract": {
+    "current_audited_entry_snapshot_path": "outputs/analysis/race_intelligence_recovery_20260823/declared_without_draw_entry_snapshot.csv",
+    "current_audited_entry_snapshot_sha256": "4ec29eea0f35d478161b6472ca325f5cc08399cffa71d8e73a196bc7e12dc661",
+    "current_audited_history_path": "outputs/analysis/race_intelligence_recovery_20260823/predraw_history_scope.csv",
+    "current_audited_history_sha256": "605587d525dfb5c6aecc720b8f97f82b42edf7c382976403d2e9d7cb5c86cb66",
+    "history_max_event_date": "2026-08-09",
+    "runner_count": 70,
+    "join_key": "horse_id",
+    "run_approval_requirement": "A separately canonicalized predraw feature-input release with source_event_time and received_at must be materialized, hashed, and bound in the run scope; the 2026-02-15 training release may not be extrapolated as if it covered the target card."
+  },
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}

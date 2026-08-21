@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260821-033",
+  "direct_leakage_roots": [
+    {
+      "feature": "race_winner_prior_strength",
+      "current_race_raw_field": "確定着順",
+      "selector": "finish == 1",
+      "aggregation": "race-wise max of _member_prior_strength",
+      "active_config_location": "config/baseline_features_workout.json:189",
+      "audited_generation_location": "src/features/baseline.py:1041-1045 in the T0/Recovery audited working snapshot",
+      "base_commit_generation_location": "src/features/baseline.py:1035-1039 at 36cc0eef4950cf00cb7ebc6854c3ef4a45d611e0",
+      "training_semantic_availability_fraction": 1.0,
+      "latest_live_semantic_availability_fraction": 0.0,
+      "latest_live_physical_zero_fraction": 1.0,
+      "active_standardized_coefficient": 0.00048023139180466127
+    },
+    {
+      "feature": "race_top3_prior_strength_mean",
+      "current_race_raw_field": "確定着順",
+      "selector": "finish <= 3",
+      "aggregation": "race-wise mean of _member_prior_strength",
+      "active_config_location": "config/baseline_features_workout.json:190",
+      "audited_generation_location": "src/features/baseline.py:1041-1045 in the T0/Recovery audited working snapshot",
+      "base_commit_generation_location": "src/features/baseline.py:1035-1039 at 36cc0eef4950cf00cb7ebc6854c3ef4a45d611e0",
+      "training_semantic_availability_fraction": 1.0,
+      "latest_live_semantic_availability_fraction": 0.0,
+      "latest_live_physical_zero_fraction": 1.0,
+      "active_standardized_coefficient": -0.0019425053904380566
+    }
+  ],
+  "prefit_feature_to_feature_descendants": [],
+  "prefit_feature_to_feature_descendant_count": 0,
+  "contamination_explanation": "Although neither root directly constructs another peer model-input feature, both roots entered the joint ridge fit. Correlation and regularization can alter every fitted coefficient, so subtracting their direct contributions cannot clean the fitted model.",
+  "contaminated_model_and_output_descendants": [
+    "baseline_rank",
+    "fast_ai_score",
+    "fast_rank",
+    "middle_ai_score",
+    "middle_rank",
+    "slow_ai_score",
+    "slow_rank",
+    "ai_confidence_bucket",
+    "ai_confidence_score",
+    "ai_rank",
+    "ai_score",
+    "ai_score_gap_to_second",
+    "ai_top_score_vs_median",
+    "any candidate, decision, freeze, notification, BUY, order, or stake artifact consuming a contaminated score"
+  ],
+  "quarantine_contract": [
+    "No artifact fitted with either leakage root may be an input, calibrator source, threshold source, target, or canonical Sunday comparator for the clean model.",
+    "Old-model outputs may be appended for display comparison only after the clean accept/reject decision is frozen.",
+    "Any alias, copy, normalization, interaction, aggregate, or learned upstream score whose lineage includes a direct root is forbidden."
+  ],
+  "required_negative_controls": [
+    "Mutating current-race 確定着順, target_score, target_win, and target_top3 must not change any feature or score for that race.",
+    "Appending rows after prediction_event_time must not change any prior feature or score.",
+    "Inserting odds, popularity, market, payout, ROI, BUY, value, draw, or horse-number columns must not change the ordered feature matrix or scores.",
+    "Every model input must have a machine-verifiable path to an allowed pre-race source or a strictly shifted prior event."
+  ],
+  "evidence": [
+    {
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/leakage_dependency_graph.csv",
+      "sha256": "1cdaf89d69fb36d7a6f305ed88be04fc9927c97a2358f8548e54242df3409923"
+    },
+    {
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/leakage_affected_features.csv",
+      "sha256": "957b535c000681c78f6da95c7d309918f20fe9180bed2a2f9640e2950b91b78b"
+    },
+    {
+      "path": "outputs/analysis/race_intelligence_t0_20260823/factor_field_lineage_audited.csv",
+      "sha256": "a7dd4050aea75e28fa1483c9a9c4e11ec42285578d23fc5812e57ddca8a48283"
+    }
+  ],
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
