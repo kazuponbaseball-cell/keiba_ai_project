@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260821-033",
+  "variant": "leakfree_predraw_baseline_v0",
+  "environment_contract_version": "exp033-python-cpu-v1",
+  "supported_python": [
+    "3.11",
+    "3.12"
+  ],
+  "prepare_test_interpreter": {
+    "implementation": "CPython",
+    "version": "3.12.13",
+    "platform": "Windows",
+    "isolated_temporary_environment": true,
+    "repository_environment_mutated": false
+  },
+  "dependencies": [
+    {
+      "name": "numpy",
+      "version": "2.2.6",
+      "purpose": "deterministic numeric feature and ridge operations"
+    },
+    {
+      "name": "pandas",
+      "version": "2.3.2",
+      "purpose": "ordered event-batch materialization and schema enforcement"
+    },
+    {
+      "name": "pytest",
+      "version": "8.4.1",
+      "purpose": "synthetic Prepare-stage contract tests only"
+    }
+  ],
+  "prepare_environment_lock": {
+    "python": "CPython==3.12.13",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "packages": [
+      "colorama==0.4.6",
+      "iniconfig==2.3.0",
+      "numpy==2.2.6",
+      "packaging==26.3",
+      "pandas==2.3.2",
+      "pip==25.0.1",
+      "pluggy==1.6.0",
+      "Pygments==2.21.0",
+      "pytest==8.4.1",
+      "python-dateutil==2.9.0.post0",
+      "pytz==2026.3.post1",
+      "six==1.17.0",
+      "tzdata==2026.3"
+    ],
+    "creation_recipe": [
+      "py -3.12 -m venv <isolated-path-outside-repository>",
+      "<isolated-python> -m pip install colorama==0.4.6 iniconfig==2.3.0 numpy==2.2.6 packaging==26.3 pandas==2.3.2 pip==25.0.1 pluggy==1.6.0 Pygments==2.21.0 pytest==8.4.1 python-dateutil==2.9.0.post0 pytz==2026.3.post1 six==1.17.0 tzdata==2026.3"
+    ],
+    "wheel_hashes_status": "not_frozen_prepare_blocker; require hash-bound dependency lock before real run-scope freeze"
+  },
+  "determinism": {
+    "seed": 20260823,
+    "pythonhashseed": "20260823",
+    "omp_num_threads": "1",
+    "mkl_num_threads": "1",
+    "stable_sort": "mergesort",
+    "timezone_internal": "UTC",
+    "timezone_business": "Asia/Tokyo",
+    "model_fit_count_maximum": 1,
+    "calibrator_fit_count_maximum": 1,
+    "outer_open_count_maximum": 1
+  },
+  "code_contract": {
+    "model_family_module": "src.train.simple_ranker",
+    "model_family_class": "SimpleRaceRanker",
+    "model_family_source_sha256": "5d69f7092ee33e229bcf8aba217c608906277d65d0f6b6a4424a0d312d11cc0a",
+    "runner": "scripts/research/run_leakfree_predraw_baseline_v0.py",
+    "config": "research/configs/EXP-20260821-033.leakfree_predraw_baseline_v0.json",
+    "synthetic_tests": "tests/research/test_leakfree_predraw_baseline_v0.py",
+    "text_hash_line_ending_policy": "frozen text hash may match exact bytes, canonical LF, or canonical CRLF; content changes beyond line endings fail"
+  },
+  "prepare_test_commands": [
+    "python scripts/research/run_leakfree_predraw_baseline_v0.py validate-contract --config research/configs/EXP-20260821-033.leakfree_predraw_baseline_v0.json",
+    "python -m pytest -q tests/research/test_leakfree_predraw_baseline_v0.py"
+  ],
+  "future_real_execution_commands": [
+    "python scripts/research/run_leakfree_predraw_baseline_v0.py fit-freeze --config research/configs/EXP-20260821-033.leakfree_predraw_baseline_v0.json --run-scope research/scopes/EXP-20260821-033.run.json --registry research/REGISTRY.jsonl",
+    "python scripts/research/run_leakfree_predraw_baseline_v0.py evaluate-predict --config research/configs/EXP-20260821-033.leakfree_predraw_baseline_v0.json --run-scope research/scopes/EXP-20260821-033.run.json --registry research/REGISTRY.jsonl"
+  ],
+  "network_access_during_execution": false,
+  "gpu_required": false,
+  "netkeiba_allowed": false,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
