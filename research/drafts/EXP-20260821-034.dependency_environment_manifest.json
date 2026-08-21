@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "experiment_id": "EXP-20260821-034",
+  "variant": "exp033_input_canonicalization_v0",
+  "environment_contract_version": "exp034-stdlib-canonicalization-v1",
+  "supported_python": [
+    "3.11",
+    "3.12"
+  ],
+  "runtime": {
+    "implementation": "CPython",
+    "dependencies": [],
+    "dependency_policy": "Python standard library only",
+    "dependency_lock": "stdlib-only; the exact interpreter executable, version, platform, and SHA-256 must be bound by a future versioned real-data run scope",
+    "encoding": "UTF-8",
+    "line_endings": "LF",
+    "timezone": "UTC",
+    "locale": "C.UTF-8 or an explicitly hash-bound equivalent",
+    "pythonhashseed": "0",
+    "network_access": false,
+    "filesystem_mtime_as_received_at": false
+  },
+  "prepare_commands": [
+    "python scripts/research/run_exp033_input_canonicalization_v0.py validate-contract --config research/configs/EXP-20260821-034.input_canonicalization_v0.json",
+    "python scripts/research/run_exp033_input_canonicalization_v0.py blocker-report --config research/configs/EXP-20260821-034.input_canonicalization_v0.json",
+    "python -m unittest tests.research.test_exp033_input_canonicalization_v0 -v"
+  ],
+  "future_real_execution_requirements": [
+    "a versioned ordinary Research OS run schema that binds execution_kind=real-data in the canonical run digest",
+    "an exact execution commit and clean worktree",
+    "hash-bound interpreter and full dependency/environment manifest",
+    "hash-bound source and authoritative receipt-ledger manifests available before any row access",
+    "a runner-universe manifest and target/training source manifests whose exact bytes are bound before dispatch",
+    "ordered exact commands, cwd, empty inherited environment, timeout, read allowlist, and write allowlist",
+    "a distinct unused APPROVED_TO_RUN comment plus live Prepare and Run approval revalidation",
+    "append-only output sealing with artifact, logical-content, schema, parent, and root manifest hashes"
+  ],
+  "prepare_real_data_rows_opened": 0,
+  "prepare_network_calls": 0,
+  "formal_buy": false,
+  "send_order": false,
+  "stake": 0
+}
