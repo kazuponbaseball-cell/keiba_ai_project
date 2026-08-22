@@ -53,6 +53,7 @@ registered_nonpromotion_diagnostic_route:
   trusted_dispatcher:
     ordinary_strategy_v1: APPLY_EXISTING_75_POINT_GATE
     registered_nonpromotion_diagnostic_v1: APPLY_REGISTERED_DIAGNOSTIC_HARD_CLASSIFIER
+    registered_nonpromotion_offline_diagnostic_v1: APPLY_EXACT_LOCAL_OFFLINE_DIAGNOSTIC_CLASSIFIER
     default: REJECT
   tiers:
     A_PARITY_NO_DECISION_CHANGE:
@@ -428,6 +429,183 @@ registered_nonpromotion_diagnostic_route:
     created_at_and_updated_at_required: true
     comment_fields_immutable: true
     comment_id_namespace: GLOBAL_ALL_GATES_AND_SCHEMAS
+
+registered_nonpromotion_offline_diagnostic_route:
+  schema_version: 1
+  gate_kind: registered_nonpromotion_offline_diagnostic_v1
+  gate_contract_version: 1
+  routing_source: trusted_current_main_policy_only
+  exact_recipe_id: historical_ai_duplicate_gate_impact_v1
+  exact_recipe_version: 1
+  source_recipe_sha256: 3754b796ba6dcb3f3c0f084641411e5e3decce0c8d934a0a294976f66caab292
+  source_formula_fingerprint_sha256: 67b0d3e5b92166a10b3077bff03e107c9db071b310f60f43b8758ce316eda878
+  question_family_sha256: a9555c0fe36f57b924822ed8d718ba6d2b150140feb4607d7749e300151318d7
+  recipe_alias_or_caller_supplied_formula_allowed: false
+  containing_commit_human_main_merge_required_for_gate_availability: true
+  containing_commit_merge_is_run_approval: false
+  static_policy_authority: false
+  per_run_authority_class: GITHUB_POSTSEAL_COMMENT_PLUS_CURRENT_MAIN_HASH_BOUND_LOCAL
+  external_g2_or_lease_required: false
+  ordinary_strategy_gate_applicable_and_unchanged: true
+  ordinary_strategy_score_record:
+    recorded_total: 46
+    threshold: 75
+    threshold_met: false
+    status: BLOCKED_SCORE
+    score_credit: 0
+    threshold_override_allowed: false
+  exact_science_contract:
+    arm_count: 2
+    transform_count: 1
+    transform_id: REMOVE_RAW_P_GATE_FAMILY
+    counterfactual_eligibility_mask_change: true
+    live_policy_or_config_mutation: false
+    candidate_identity_rank_or_tier_change: false
+    race_count: 3746
+    date_min: "2025-01-05"
+    date_max: "2026-02-15"
+    fold_counts:
+      fold2: 1661
+      fold3: 1653
+      fold4: 432
+    metric_cohort_sensitivity_payoff_rule_seed_and_bootstrap_are_policy_resolved: true
+    bootstrap_repetitions: 100000
+    threshold_search_count: 0
+    refit_count: 0
+    recalibration_count: 0
+    retry_count: 0
+    logical_replica_ids:
+      - clean_a
+      - clean_b
+    attempt_count_per_replica: 1
+    replica_scientific_projection_equality_required: true
+    preferred_replica_selection_allowed: false
+    process_or_os_isolation_claimed: false
+    caller_free_form_value_allowed: false
+  projection_contract:
+    fixed_source_hash_count: 3
+    candidate_and_settlement_files_must_be_distinct: true
+    materializer_must_be_human_merged_exact_fixed_projection: true
+    materializer_may_compute_decision_metric_roi_bootstrap_threshold_or_variant: false
+    raw_sources_contain_co_resident_outcome_label_payoff_or_market_bytes: true
+    preaccess_raw_provenance_revalidation_required: true
+    preaccess_raw_provenance_revalidation_may_compute_decisions_or_metrics: false
+    runner_code_opens_raw_sources_after_exclusive_start_receipt: false
+    raw_source_filesystem_capability_isolation_claimed: false
+    role_specific_explicit_projection_allowlists_required: true
+    candidate_materializer_may_use_project_or_persist_forbidden_semantic_values: false
+    raw_sources_may_be_mounted_in_decision_or_run_phase: false
+    candidate_projection_opened_first: true
+    decision_freeze_receipt_persisted_before_settlement_open: true
+    settlement_allowed_fields:
+      - candidate_hit
+      - candidate_key
+      - official_outcome_completeness
+      - official_wide_pay
+      - race_id
+    odds_price_popularity_or_market_allowed_in_any_decision_or_run_phase: false
+  approval_evidence_contract:
+    repository: kazuponbaseball-cell/keiba_ai_project
+    base_branch: main
+    exact_keyword: APPROVED_OFFLINE_NONPROMOTION_DIAGNOSTIC_RUN
+    exact_comment_count: 1
+    run_scope_must_be_sealed_before_comment_created: true
+    allowlisted_nonbot_github_user_required: true
+    exact_unedited_comment_and_body_sha256_required: true
+    current_main_ancestry_approvers_and_runtime_materials_required: true
+    revalidate_before_candidate_open: true
+    revalidate_before_result_publish: true
+    comment_id_must_not_appear_in_existing_registry_grants: true
+    global_comment_consumption_or_deletion_resistance_guaranteed: false
+  lifecycle:
+    allowed_transitions:
+      RNOD_RUN_SCOPE_FROZEN:
+        - INVALID
+        - RNOD_RUN_APPROVAL_REQUIRED
+      RNOD_RUN_APPROVAL_REQUIRED:
+        - INVALID
+        - RNOD_APPROVED
+      RNOD_APPROVED:
+        - INVALID
+        - RNOD_RUNNING
+      RNOD_RUNNING:
+        - INVALID
+        - RNOD_RESULT_SEALED
+      RNOD_RESULT_SEALED:
+        - INVALID
+        - RNOD_COMPLETED
+      RNOD_COMPLETED: []
+      INVALID: []
+    protected_content_access_failure_before_start: BLOCKED_PREACCESS
+    failure_after_exclusive_start_receipt: INVALID_AFTER_START_NO_RETRY
+    preparing_state_exists: false
+    shadow_or_ack_state_exists: false
+    skip_self_transition_terminal_resurrection_or_retry_allowed: false
+  local_single_use_contract:
+    single_use_policy: ONE_ACCEPTED_EXECUTION
+    single_use_enforcement: BEST_EFFORT_LOCAL_EXCLUSIVE_RECEIPT
+    global_replay_proof: false
+    rollback_resistant: false
+    durable_remote_ledger: false
+    network_isolation: APPLICATION_LEVEL_NOT_OS_SANDBOX
+    deletion_rollback_or_other_clone_reexecution_technically_prevented: false
+    exact_sealed_result_retrieval_only: true
+    cache_miss_incomplete_or_invalid_output_action: STOP_NO_RERUN
+  result_contract:
+    evidence_purpose_class: DIAGNOSTIC_NONPROMOTION
+    source_authority_class: B_LOCAL_HASHED
+    reused_development_oos: true
+    strict_t3_rows: 0
+    confirmatory: false
+    promotion_eligible: false
+    score_credit: 0
+    allowed_outcomes:
+      - DIRECTIONAL_EFFECT
+      - INVALID
+      - NO_DECISION_EFFECT
+    shadow_transition_supported: false
+    production_transition_supported: false
+    formal_buy: false
+    send_order: false
+    stake: 0
+  strict_route_independent_and_unmodified: true
+  cross_route_duplicate_execution_technically_prevented: false
+  cross_route_single_use_guaranteed: false
+  offline_result_is_global_question_family_consumption: false
+  later_strict_result_may_not_claim_independent_evidence_without_binding_prior_offline_exposure: true
+  future_distinct_question_family_reuse:
+    same_fixed_operator_and_capability_required: true
+    add_only_recipe_or_version_human_reviewed_pr_required: true
+    root_or_shared_g2_bootstrap_repeated_per_recipe: false
+    adjacent_threshold_same_family_transform_added_arm_or_search_action: ROUTE_TO_ORDINARY_STRATEGY
+
+registered_nonpromotion_offline_diagnostic_hard_blockers:
+  - containing_commit_not_human_merged_to_current_main
+  - static_policy_or_merge_ci_ready_review_or_chat_treated_as_run_authority
+  - source_score_missing_changed_raised_to_75_or_given_credit
+  - wrong_unknown_or_aliased_recipe_family_formula_or_transform
+  - future_recipe_claims_same_question_family_with_adjacent_threshold_transform_added_arm_or_search
+  - more_than_two_arms_more_than_one_transform_or_any_search_refit_recalibration_or_retry
+  - cohort_not_exactly_3746_fold_counts_or_ordered_race_set_mismatch
+  - caller_supplied_threshold_cohort_metric_seed_bootstrap_argv_or_output
+  - source_or_projection_hash_size_schema_provenance_or_path_mismatch
+  - candidate_and_settlement_not_physically_distinct
+  - materializer_computes_decision_metric_roi_bootstrap_threshold_or_variant
+  - result_payoff_odds_price_popularity_or_market_visible_before_decision_freeze
+  - materializer_uses_projects_or_persists_forbidden_outcome_label_payoff_or_market_semantic_values_in_candidate_projection
+  - odds_price_popularity_or_market_visible_in_any_decision_or_run_phase
+  - approval_missing_preseal_edited_deleted_reused_bot_unauthorized_or_mismatched
+  - github_current_main_approvers_runtime_material_or_input_revalidation_failed
+  - protected_content_opened_before_exclusive_start_receipt
+  - settlement_opened_before_persisted_decision_freeze_receipt
+  - candidate_identity_rank_tier_or_frozen_decision_changes_after_settlement_join
+  - candidate_or_settlement_missing_extra_duplicate_dropped_or_invalid_row
+  - existing_output_overwrite_partial_performance_output_or_poststart_retry
+  - missing_mismatched_or_preferred_logical_replica_projection
+  - training_inference_refit_recalibration_network_api_credential_free_form_or_workload_subprocess_production_buy_order_or_notification
+  - any_claim_of_global_exactly_once_rollback_resistance_durable_remote_authority_or_os_sandbox
+  - result_used_for_score_shadow_adoption_promotion_production_or_buy
+  - any_claim_of_cross_route_single_use_global_question_family_consumption_or_independent_strict_evidence_without_prior_offline_exposure_binding
 
 registered_nonpromotion_diagnostic_hard_blockers:
   - activation_or_cutover_receipt_missing

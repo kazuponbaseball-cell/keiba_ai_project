@@ -1,0 +1,280 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://keiba-ai.local/schemas/registered_nonpromotion_offline_policy_v1.schema.json",
+  "title": "Registered non-promotion offline diagnostic policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "gate_kind", "gate_contract_version", "implementation_layer",
+    "implementation_status", "authority", "execution_status", "repository",
+    "base_branch", "activation_contract", "schema_paths", "source_recipe",
+    "source_inputs", "projection_contract", "run_approval", "lifecycle", "cross_route_contract", "execution_contract",
+    "evidence_contract", "result_contract", "safety"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "gate_kind": {"const": "registered_nonpromotion_offline_diagnostic_v1"},
+    "gate_contract_version": {"type": "integer", "const": 1},
+    "implementation_layer": {"const": "LOCAL_HASH_BOUND_OFFLINE_EXECUTOR"},
+    "implementation_status": {"const": "IMPLEMENTED_CONDITIONAL_ON_CONTAINING_COMMIT_HUMAN_MERGE"},
+    "authority": {"const": false},
+    "execution_status": {"const": "HUMAN_MERGE_AND_RUN_APPROVAL_REQUIRED"},
+    "repository": {"const": "kazuponbaseball-cell/keiba_ai_project"},
+    "base_branch": {"const": "main"},
+    "activation_contract": {
+      "const": {
+        "containing_commit_must_be_human_merged_to_main": true,
+        "github_read_only_containing_commit_verification_required": true,
+        "run_scope_implementation_commit_must_equal_verified_current_main": true,
+        "human_merge_metadata_machine_verified": false,
+        "human_merge_remains_procedural_prerequisite": true,
+        "human_main_merge_activates_gate_availability": true,
+        "human_main_merge_is_run_approval": false,
+        "branch_ci_ready_review_or_chat_is_gate_availability": false,
+        "external_g2_required": false,
+        "repository_or_local_artifact_is_authority": false,
+        "single_use_policy": "ONE_ACCEPTED_EXECUTION",
+        "single_use_enforcement": "BEST_EFFORT_LOCAL_EXCLUSIVE_RECEIPT",
+        "global_replay_proof": false,
+        "rollback_resistant": false,
+        "durable_remote_ledger": false,
+        "network_isolation": "APPLICATION_LEVEL_NOT_OS_SANDBOX"
+      }
+    },
+    "schema_paths": {
+      "const": {
+        "policy": "research/schemas/registered_nonpromotion_offline_policy_v1.schema.json",
+        "run_scope": "research/schemas/registered_nonpromotion_offline_run_scope_v1.schema.json",
+        "approval_evidence": "research/schemas/registered_nonpromotion_offline_approval_evidence_v1.schema.json",
+        "result": "research/schemas/registered_nonpromotion_offline_result_v1.schema.json"
+      }
+    },
+    "source_recipe": {
+      "const": {
+        "source_gate_kind": "registered_nonpromotion_diagnostic_v1",
+        "source_policy_path": "research/REGISTERED_NONPROMOTION_DIAGNOSTIC_V1.json",
+        "recipe_id": "historical_ai_duplicate_gate_impact_v1",
+        "recipe_version": 1,
+        "recipe_path": "research/diagnostic_recipes/historical_ai_duplicate_gate_impact_v1.json",
+        "canonical_recipe_sha256": "3754b796ba6dcb3f3c0f084641411e5e3decce0c8d934a0a294976f66caab292",
+        "source_formula_fingerprint_sha256": "67b0d3e5b92166a10b3077bff03e107c9db071b310f60f43b8758ce316eda878",
+        "question_family_sha256": "a9555c0fe36f57b924822ed8d718ba6d2b150140feb4607d7749e300151318d7",
+        "eligibility_ast_sha256": "09383c64cca20fa5a7a8fcfb9f76f1bf7feeb5e8b76744a90e4aa954b9ba0c5f",
+        "tier": "B_REGISTERED_HISTORICAL_IMPACT",
+        "source_authority_class": "B_LOCAL_HASHED",
+        "ordinary_strategy_score": {
+          "recorded_total": 46, "threshold": 75, "threshold_met": false,
+          "status": "BLOCKED_SCORE", "score_credit": 0,
+          "threshold_override_allowed": false
+        }
+      }
+    },
+    "source_inputs": {
+      "const": [
+        {
+          "role": "diagnostic_master",
+          "path": "outputs/analysis/umaren_wide_rebuild_v1/wide_diagnostic_master_v1/wide_diagnostic_master_v1.csv",
+          "expected_sha256": "697142b64e8052b212731dc0319ccafb7f61ac29dbc46f67385f9ae050129de9"
+        },
+        {
+          "role": "p_action_artifact",
+          "path": "outputs/analysis/umaren_wide_rebuild_v1/m1c_action_calibration_offset_v1/m1c_action_calibration_offset_oos_predictions.csv",
+          "expected_sha256": "34f56b5a61261bd9b6cfd38797b65bd88415d0778d98cef29eebfbe2f09e513c"
+        },
+        {
+          "role": "official_payoff_source",
+          "path": "data/processed/target/wide_payoffs.csv",
+          "expected_sha256": "b94b0c0ea2ce4424d70432f7d070a9083d01850876a710432ec5b98538070d83"
+        }
+      ]
+    },
+    "projection_contract": {
+      "const": {
+        "materialization_authority": "HUMAN_MERGED_EXACT_FIXED_PROJECTION_ONLY",
+        "materialization_may_not_compute_decisions_or_metrics": true,
+        "materialization_may_not_compute_roi": true,
+        "materialization_may_not_compute_thresholds_or_variants": true,
+        "raw_source_bytes_may_contain_forbidden_columns": true,
+        "raw_source_open_requires_exact_hash_match": true,
+        "preaccess_raw_provenance_revalidation_required": true,
+        "preaccess_raw_provenance_revalidation_may_compute_decisions_or_metrics": false,
+        "runner_code_opens_raw_sources_after_exclusive_start_receipt": false,
+        "raw_source_filesystem_capability_isolation_claimed": false,
+        "official_payoff_allowed_projection_columns": ["race_id", "horse_a", "horse_b", "wide_pay"],
+        "raw_source_allowed_projection_columns": {
+          "diagnostic_master": ["candidate_generated", "eligible_race", "fold", "horse_a", "horse_b", "p_action_C0_offset", "race_date", "race_id", "top1_pair_key", "top1_wide_prob", "venue_code"],
+          "p_action_artifact": ["fold", "p_action_C0_offset", "race_id", "top1_pair_key", "top1_wide_prob"],
+          "official_payoff_source": ["horse_a", "horse_b", "race_id", "wide_pay"]
+        },
+        "candidate_cross_source_equality_columns": ["fold", "p_action_C0_offset", "race_id", "top1_pair_key", "top1_wide_prob"],
+        "candidate_cross_source_equality_required_for_all_3746_rows": true,
+        "p_action_lineage_formula": "sigmoid(logit(p)+0.130654047367905)",
+        "p_action_numeric_semantics": "IEEE754_BINARY64_FROM_UTF8_DECIMAL",
+        "p_action_absolute_tolerance": "1e-12",
+        "p_action_lineage_check_required_for_all_3746_rows": true,
+        "candidate_key_formula": "f'{min(int(horse_a),int(horse_b))}-{max(int(horse_a),int(horse_b))}'",
+        "candidate_horse_numbers_distinct_positive_integers": true,
+        "candidate_identity_check_required_for_all_3746_rows": true,
+        "forbidden_fields_may_not_be_selected_or_converted_to_typed_semantic_values_used_persisted_exposed_or_influence_output": true,
+        "csv_header_and_record_tokenization_for_allowlisted_extraction_allowed": true,
+        "decision_and_run_phases_mount_raw_sources": false,
+        "materialized_projections_contain_market_fields": false,
+        "candidate_projection_path": "outputs/research/registered_nonpromotion_offline_materialized/historical_ai_duplicate_gate_impact_v1/candidate_projection.jsonl",
+        "settlement_projection_path": "outputs/research/registered_nonpromotion_offline_materialized/historical_ai_duplicate_gate_impact_v1/settlement_projection.jsonl",
+        "candidate_projection_must_be_sealed_before_settlement_projection_open": true,
+        "candidate_and_settlement_projection_must_be_distinct": true,
+        "projection_format": "UTF8_LF_STRICT_JSONL",
+        "race_count": 3746,
+        "materialization_manifest_path": "outputs/research/registered_nonpromotion_offline_materialized/historical_ai_duplicate_gate_impact_v1/materialization_manifest.json",
+        "materialization_manifest_required": true,
+        "materializer_usecols_attestation_required": true
+      }
+    },
+    "run_approval": {
+      "const": {
+        "keyword": "APPROVED_OFFLINE_NONPROMOTION_DIAGNOSTIC_RUN",
+        "comment_count": 1,
+        "run_scope_must_be_sealed_before_comment": true,
+        "allowlisted_github_user_required": true,
+        "github_actor_type": "User",
+        "automation_actor_allowed": false,
+        "edited_comment_allowed": false,
+        "exact_body_required": true,
+        "comment_global_consumption_guaranteed": false
+      }
+    },
+    "lifecycle": {
+      "const": {
+        "states": ["RNOD_RUN_SCOPE_FROZEN", "RNOD_RUN_APPROVAL_REQUIRED", "RNOD_APPROVED", "RNOD_RUNNING", "RNOD_RESULT_SEALED", "RNOD_COMPLETED", "INVALID"],
+        "allowed_transitions": {
+          "RNOD_RUN_SCOPE_FROZEN": ["INVALID", "RNOD_RUN_APPROVAL_REQUIRED"],
+          "RNOD_RUN_APPROVAL_REQUIRED": ["INVALID", "RNOD_APPROVED"],
+          "RNOD_APPROVED": ["INVALID", "RNOD_RUNNING"],
+          "RNOD_RUNNING": ["INVALID", "RNOD_RESULT_SEALED"],
+          "RNOD_RESULT_SEALED": ["INVALID", "RNOD_COMPLETED"],
+          "RNOD_COMPLETED": [],
+          "INVALID": []
+        },
+        "protected_content_access_failure_before_start": "BLOCKED_PREACCESS",
+        "blocked_preaccess_consumes_run": false,
+        "exclusive_start_receipt_required_before_candidate_open": true,
+        "failure_after_exclusive_start_receipt": "INVALID_AFTER_START_NO_RETRY",
+        "preparing_state_exists": false,
+        "shadow_or_ack_state_exists": false,
+        "skip_self_transition_terminal_resurrection_or_retry_allowed": false
+      }
+    },
+    "cross_route_contract": {
+      "const": {
+        "strict_route_independent_and_unmodified": true,
+        "cross_route_duplicate_execution_technically_prevented": false,
+        "cross_route_single_use_guaranteed": false,
+        "offline_result_is_global_question_family_consumption": false,
+        "later_strict_result_may_not_claim_independent_evidence_without_binding_prior_offline_exposure": true
+      }
+    },
+    "execution_contract": {
+      "const": {
+        "runner_template_id": "REGISTERED_NONPROMOTION_OFFLINE_EXECUTOR_V1",
+        "structured_argv": ["registered_nonpromotion_offline_runner_v1", "execute_offline_registered_diagnostic"],
+        "shell_interpretation": false,
+        "free_form_argv_allowed": false,
+        "exact_recipe_count": 1,
+        "exact_arm_count": 2,
+        "exact_registered_transform_count": 1,
+        "registered_transform_id": "REMOVE_RAW_P_GATE_FAMILY",
+        "race_count": 3746,
+        "fold_counts": {"fold2": 1661, "fold3": 1653, "fold4": 432},
+        "decision_freeze_before_settlement_access": true,
+        "master_candidate_usecols_only_before_freeze": true,
+        "p_action_cross_check_before_freeze": true,
+        "materialization_authority": "HUMAN_MERGED_EXACT_FIXED_PROJECTION_ONLY",
+        "materialization_may_not_compute_decisions_or_metrics": true,
+        "materialization_may_not_compute_roi": true,
+        "materialization_may_not_compute_thresholds_or_variants": true,
+        "fixed_output_root": "outputs/research/registered_nonpromotion_offline/historical_ai_duplicate_gate_impact_v1",
+        "run_scope_artifact_directory": "outputs/research/registered_nonpromotion_offline_scopes",
+        "run_scope_artifact_filename_rule": "<run_scope_digest>.run.json",
+        "run_scope_serialization": "UTF8_LF_CANONICAL_JSON",
+        "run_scope_overwrite_allowed": false,
+        "fresh_output_root_required": true,
+        "overwrite_allowed": false,
+        "retry_count": 0,
+        "threshold_search_count": 0,
+        "refit_count": 0,
+        "recalibration_count": 0,
+        "python_minor_versions": ["3.11", "3.12"],
+        "numpy_version": "2.4.3",
+        "replica_mode": "LOGICAL_SAME_PROCESS_SHARED_SEALED_INPUT_BYTES",
+        "replica_ids": ["clean_a", "clean_b"],
+        "attempt_count_per_replica": 1,
+        "semantic_equality_required": true,
+        "preferred_replica_selection_allowed": false,
+        "result_publish_requires_both_projection_digests_match": true,
+        "clean_process_or_os_isolation_claimed": false
+      }
+    },
+    "evidence_contract": {
+      "const": {
+        "evidence_purpose_class": "DIAGNOSTIC_NONPROMOTION",
+        "source_authority_class": "B_LOCAL_HASHED",
+        "reused_development_oos": true,
+        "strict_t3_rows": 0,
+        "confirmatory": false,
+        "promotion_eligible": false,
+        "score_credit": 0,
+        "shadow_transition_supported": false,
+        "production_transition_supported": false
+      }
+    },
+    "result_contract": {
+      "const": {
+        "evidence_purpose_class": "DIAGNOSTIC_NONPROMOTION",
+        "source_authority_class": "B_LOCAL_HASHED",
+        "reused_development_oos": true,
+        "strict_t3_rows": 0,
+        "confirmatory": false,
+        "promotion_eligible": false,
+        "score_credit": 0,
+        "shadow_transition_supported": false,
+        "production_transition_supported": false,
+        "allowed_outcomes": ["NO_DECISION_EFFECT", "DIRECTIONAL_EFFECT", "INVALID"],
+        "completed_result_schema_outcomes": ["NO_DECISION_EFFECT", "DIRECTIONAL_EFFECT"],
+        "invalid_failure_artifact_contains_performance": false,
+        "single_use_policy": "ONE_ACCEPTED_EXECUTION",
+        "single_use_enforcement": "BEST_EFFORT_LOCAL_EXCLUSIVE_RECEIPT",
+        "global_replay_proof": false,
+        "rollback_resistant": false,
+        "durable_remote_ledger": false,
+        "network_isolation": "APPLICATION_LEVEL_NOT_OS_SANDBOX",
+        "formal_buy": false,
+        "send_order": false,
+        "stake": 0
+      }
+    },
+    "safety": {
+      "const": {
+        "automatic_execution": false,
+        "automatic_github_approval": false,
+        "odds_price_popularity_or_market_access": false,
+        "training": false,
+        "model_inference": false,
+        "recalibration": false,
+        "threshold_search": false,
+        "workload_network_access": false,
+        "workload_external_api_calls": false,
+        "workload_credential_access": false,
+        "fixed_read_only_git_control_plane_subprocess_allowed": true,
+        "free_form_or_workload_subprocess_allowed": false,
+        "purchase_path_access": false,
+        "production_change": false,
+        "shadow_transition": false,
+        "notification_side_effects": false,
+        "order_side_effects": false,
+        "formal_buy": false,
+        "send_order": false,
+        "stake": 0
+      }
+    }
+  }
+}

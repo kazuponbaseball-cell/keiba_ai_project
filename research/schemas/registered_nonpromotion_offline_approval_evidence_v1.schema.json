@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://keiba-ai.local/schemas/registered_nonpromotion_offline_approval_evidence_v1.schema.json",
+  "title": "Registered non-promotion offline diagnostic approval evidence v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "gate_kind", "run_scope_digest", "verification_checkpoint",
+    "original_evidence_digest", "github_trust", "runtime_materials", "ordinary_registry",
+    "comment", "limitations", "implementation_current_main_ancestry_verified",
+    "authority", "local_offline_permission",
+    "global_uniqueness_guaranteed", "formal_buy", "send_order", "stake",
+    "evidence_digest"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "gate_kind": {"const": "registered_nonpromotion_offline_diagnostic_v1"},
+    "run_scope_digest": {"$ref": "#/definitions/sha256"},
+    "verification_checkpoint": {
+      "enum": ["INITIAL_APPROVAL", "BEFORE_CANDIDATE_OPEN", "BEFORE_RESULT_PUBLISH"]
+    },
+    "original_evidence_digest": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/definitions/sha256"}
+      ]
+    },
+    "github_trust": {"$ref": "#/definitions/github_trust"},
+    "runtime_materials": {"$ref": "#/definitions/runtime_materials"},
+    "ordinary_registry": {"$ref": "#/definitions/ordinary_registry"},
+    "comment": {"$ref": "#/definitions/comment"},
+    "limitations": {"$ref": "#/definitions/limitations"},
+    "implementation_current_main_ancestry_verified": {"const": true},
+    "authority": {"const": false},
+    "local_offline_permission": {"const": true},
+    "global_uniqueness_guaranteed": {"const": false},
+    "formal_buy": {"const": false},
+    "send_order": {"const": false},
+    "stake": {"type": "integer", "const": 0},
+    "evidence_digest": {"$ref": "#/definitions/sha256"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"verification_checkpoint": {"const": "INITIAL_APPROVAL"}}},
+      "then": {"properties": {"original_evidence_digest": {"type": "null"}}},
+      "else": {"properties": {"original_evidence_digest": {"$ref": "#/definitions/sha256"}}}
+    }
+  ],
+  "definitions": {
+    "sha256": {"type": "string", "pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+    "git_sha": {"type": "string", "pattern": "^(?!0{40}$)[0-9a-f]{40}$"},
+    "utc_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    },
+    "github_trust": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_full_name", "base_branch", "verified_current_main_sha",
+        "verified_base_commit", "compare_url", "compare_status", "merge_base_sha",
+        "approvers_blob_sha", "approvers_content_sha256", "verification_time"
+      ],
+      "properties": {
+        "repository_full_name": {"const": "kazuponbaseball-cell/keiba_ai_project"},
+        "base_branch": {"const": "main"},
+        "verified_current_main_sha": {"$ref": "#/definitions/git_sha"},
+        "verified_base_commit": {"$ref": "#/definitions/git_sha"},
+        "compare_url": {"type": "string", "pattern": "^https://api\\.github\\.com/repos/kazuponbaseball-cell/keiba_ai_project/compare/[0-9a-f]{40}\\.\\.\\.[0-9a-f]{40}$"},
+        "compare_status": {"enum": ["ahead", "identical"]},
+        "merge_base_sha": {"$ref": "#/definitions/git_sha"},
+        "approvers_blob_sha": {"$ref": "#/definitions/git_sha"},
+        "approvers_content_sha256": {"$ref": "#/definitions/sha256"},
+        "verification_time": {"$ref": "#/definitions/utc_timestamp"}
+      }
+    },
+    "runtime_material": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "ref", "blob_sha", "content_sha256"],
+      "properties": {
+        "path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9_.\u002f-]+$"},
+        "ref": {"$ref": "#/definitions/git_sha"},
+        "blob_sha": {"$ref": "#/definitions/git_sha"},
+        "content_sha256": {"$ref": "#/definitions/sha256"}
+      }
+    },
+    "runtime_materials": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["run_scope_base_commit", "materials", "schema_bundle_sha256", "evidence_digest"],
+      "properties": {
+        "run_scope_base_commit": {"$ref": "#/definitions/git_sha"},
+        "materials": {
+          "type": "array", "minItems": 14, "maxItems": 14, "uniqueItems": true,
+          "items": {"$ref": "#/definitions/runtime_material"}
+        },
+        "schema_bundle_sha256": {"$ref": "#/definitions/sha256"},
+        "evidence_digest": {"$ref": "#/definitions/sha256"}
+      }
+    },
+    "ordinary_registry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "ref", "blob_sha", "content_sha256", "scanned_nonblank_line_count", "used_grant_comment_id_count", "target_comment_id", "target_comment_id_unused"],
+      "properties": {
+        "path": {"const": "research/REGISTRY.jsonl"},
+        "ref": {"$ref": "#/definitions/git_sha"},
+        "blob_sha": {"$ref": "#/definitions/git_sha"},
+        "content_sha256": {"$ref": "#/definitions/sha256"},
+        "scanned_nonblank_line_count": {"type": "integer", "minimum": 0},
+        "used_grant_comment_id_count": {"type": "integer", "minimum": 0},
+        "target_comment_id": {"type": "integer", "minimum": 1},
+        "target_comment_id_unused": {"const": true}
+      }
+    },
+    "comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approval_type", "approval_digest", "repository", "issue_number", "comment_id", "url", "author", "author_type", "body", "body_sha256", "created_at", "updated_at"],
+      "properties": {
+        "approval_type": {"const": "APPROVED_OFFLINE_NONPROMOTION_DIAGNOSTIC_RUN"},
+        "approval_digest": {"$ref": "#/definitions/sha256"},
+        "repository": {"const": "kazuponbaseball-cell/keiba_ai_project"},
+        "issue_number": {"type": "integer", "minimum": 1},
+        "comment_id": {"type": "integer", "minimum": 1},
+        "url": {"type": "string", "pattern": "^https://github\\.com/kazuponbaseball-cell/keiba_ai_project/(?:issues|pull)/[1-9][0-9]*#issuecomment-[1-9][0-9]*$"},
+        "author": {"type": "string", "pattern": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$"},
+        "author_type": {"const": "User"},
+        "body": {"type": "string", "pattern": "^APPROVED_OFFLINE_NONPROMOTION_DIAGNOSTIC_RUN [0-9a-f]{64}$"},
+        "body_sha256": {"$ref": "#/definitions/sha256"},
+        "created_at": {"$ref": "#/definitions/utc_timestamp"},
+        "updated_at": {"$ref": "#/definitions/utc_timestamp"}
+      }
+    },
+    "limitations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["single_use_policy", "single_use_enforcement", "global_replay_proof", "rollback_resistant", "durable_remote_ledger", "network_isolation"],
+      "properties": {
+        "single_use_policy": {"const": "ONE_ACCEPTED_EXECUTION"},
+        "single_use_enforcement": {"const": "BEST_EFFORT_LOCAL_EXCLUSIVE_RECEIPT"},
+        "global_replay_proof": {"const": false},
+        "rollback_resistant": {"const": false},
+        "durable_remote_ledger": {"const": false},
+        "network_isolation": {"const": "APPLICATION_LEVEL_NOT_OS_SANDBOX"}
+      }
+    }
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://keiba-ai.local/schemas/registered_nonpromotion_offline_result_v1.schema.json",
+  "title": "Registered non-promotion offline diagnostic result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "gate_kind", "lifecycle_state", "run_scope_digest",
+    "semantic_subject_digest", "exact_subject_digest", "recipe_id", "recipe_version",
+    "recipe_digest", "approval_evidence_digest", "source_bindings_digest",
+    "projection_bindings_digest", "decision_freeze_receipt_digest",
+    "scientific_projection", "scientific_projection_digest", "computed_outcome",
+    "replica_mode", "replica_attempt_count", "replica_scientific_projection_digests",
+    "replica_semantic_equality",
+    "authority", "single_use_policy", "single_use_enforcement", "global_replay_proof",
+    "rollback_resistant", "durable_remote_ledger", "network_isolation",
+    "evidence_purpose_class", "source_authority_class", "reused_development_oos",
+    "strict_t3_rows", "confirmatory", "promotion_eligible", "score_credit",
+    "shadow_transition_supported", "production_transition_supported", "formal_buy",
+    "send_order", "stake", "result_digest"
+  ],
+  "properties": {
+    "schema_version": {"type": "integer", "const": 1},
+    "gate_kind": {"const": "registered_nonpromotion_offline_diagnostic_v1"},
+    "lifecycle_state": {"const": "RNOD_COMPLETED"},
+    "run_scope_digest": {"$ref": "#/definitions/sha256"},
+    "semantic_subject_digest": {"$ref": "#/definitions/sha256"},
+    "exact_subject_digest": {"$ref": "#/definitions/sha256"},
+    "recipe_id": {"const": "historical_ai_duplicate_gate_impact_v1"},
+    "recipe_version": {"type": "integer", "const": 1},
+    "recipe_digest": {"const": "3754b796ba6dcb3f3c0f084641411e5e3decce0c8d934a0a294976f66caab292"},
+    "approval_evidence_digest": {"$ref": "#/definitions/sha256"},
+    "source_bindings_digest": {"$ref": "#/definitions/sha256"},
+    "projection_bindings_digest": {"$ref": "#/definitions/sha256"},
+    "decision_freeze_receipt_digest": {"$ref": "#/definitions/sha256"},
+    "scientific_projection": {"$ref": "#/definitions/scientific_projection"},
+    "scientific_projection_digest": {"$ref": "#/definitions/sha256"},
+    "computed_outcome": {"enum": ["NO_DECISION_EFFECT", "DIRECTIONAL_EFFECT"]},
+    "replica_mode": {"const": "LOGICAL_SAME_PROCESS_SHARED_SEALED_INPUT_BYTES"},
+    "replica_attempt_count": {"type": "integer", "const": 1},
+    "replica_scientific_projection_digests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["clean_a", "clean_b"],
+      "properties": {
+        "clean_a": {"$ref": "#/definitions/sha256"},
+        "clean_b": {"$ref": "#/definitions/sha256"}
+      }
+    },
+    "replica_semantic_equality": {"const": true},
+    "authority": {"const": false},
+    "single_use_policy": {"const": "ONE_ACCEPTED_EXECUTION"},
+    "single_use_enforcement": {"const": "BEST_EFFORT_LOCAL_EXCLUSIVE_RECEIPT"},
+    "global_replay_proof": {"const": false},
+    "rollback_resistant": {"const": false},
+    "durable_remote_ledger": {"const": false},
+    "network_isolation": {"const": "APPLICATION_LEVEL_NOT_OS_SANDBOX"},
+    "evidence_purpose_class": {"const": "DIAGNOSTIC_NONPROMOTION"},
+    "source_authority_class": {"const": "B_LOCAL_HASHED"},
+    "reused_development_oos": {"const": true},
+    "strict_t3_rows": {"type": "integer", "const": 0},
+    "confirmatory": {"const": false},
+    "promotion_eligible": {"const": false},
+    "score_credit": {"type": "integer", "const": 0},
+    "shadow_transition_supported": {"const": false},
+    "production_transition_supported": {"const": false},
+    "formal_buy": {"const": false},
+    "send_order": {"const": false},
+    "stake": {"type": "integer", "const": 0},
+    "result_digest": {"$ref": "#/definitions/sha256"}
+  },
+  "definitions": {
+    "sha256": {"type": "string", "pattern": "^(?!0{64}$)[0-9a-f]{64}$"},
+    "nonnegative_integer": {"type": "integer", "minimum": 0},
+    "number_or_null": {"oneOf": [{"type": "number"}, {"type": "null"}]},
+    "arm_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["arm", "bet_count", "hit_count", "stake_denominator_yen", "return_yen", "profit_yen", "roi_percent"],
+      "properties": {
+        "arm": {"enum": ["D0", "D1"]},
+        "bet_count": {"$ref": "#/definitions/nonnegative_integer"},
+        "hit_count": {"$ref": "#/definitions/nonnegative_integer"},
+        "stake_denominator_yen": {"type": "number", "minimum": 0},
+        "return_yen": {"type": "number", "minimum": 0},
+        "profit_yen": {"type": "number"},
+        "roi_percent": {"$ref": "#/definitions/number_or_null"}
+      }
+    },
+    "metric_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["enrolled_race_count", "d0", "d1", "sum_delta_profit_yen", "mean_delta_profit_yen_per_enrolled_race", "decision_disagreement_count"],
+      "properties": {
+        "enrolled_race_count": {"type": "integer", "const": 3746},
+        "d0": {"$ref": "#/definitions/arm_summary"},
+        "d1": {"$ref": "#/definitions/arm_summary"},
+        "sum_delta_profit_yen": {"type": "number"},
+        "mean_delta_profit_yen_per_enrolled_race": {"type": "number"},
+        "decision_disagreement_count": {"$ref": "#/definitions/nonnegative_integer"}
+      }
+    },
+    "sensitivity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["common_top1_return_zeroed", "common_top3_return_zeroed", "common_2000_yen_winsor", "top1_race_ids", "top3_race_ids"],
+      "properties": {
+        "common_top1_return_zeroed": {"$ref": "#/definitions/metric_projection"},
+        "common_top3_return_zeroed": {"$ref": "#/definitions/metric_projection"},
+        "common_2000_yen_winsor": {"$ref": "#/definitions/metric_projection"},
+        "top1_race_ids": {
+          "type": "array", "minItems": 1, "maxItems": 1, "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[0-9]{16}$"}
+        },
+        "top3_race_ids": {
+          "type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[0-9]{16}$"}
+        }
+      }
+    },
+    "bootstrap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["cluster_count", "replicates", "seed", "rng", "mean", "one_sided_95_lower_bound", "distribution_digest"],
+      "properties": {
+        "cluster_count": {"type": "integer", "minimum": 1},
+        "replicates": {"type": "integer", "const": 100000},
+        "seed": {"type": "integer", "const": 20260814},
+        "rng": {"const": "numpy.random.Generator(PCG64)"},
+        "mean": {"type": "number"},
+        "one_sided_95_lower_bound": {"type": "number"},
+        "distribution_digest": {"$ref": "#/definitions/sha256"}
+      }
+    },
+    "scientific_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["primary", "sensitivity", "bootstrap", "candidate_projection_digest", "decision_vector_digest", "settlement_projection_digest", "paired_rows_digest", "contract_status"],
+      "properties": {
+        "primary": {"$ref": "#/definitions/metric_projection"},
+        "sensitivity": {"$ref": "#/definitions/sensitivity"},
+        "bootstrap": {"$ref": "#/definitions/bootstrap"},
+        "candidate_projection_digest": {"$ref": "#/definitions/sha256"},
+        "decision_vector_digest": {"$ref": "#/definitions/sha256"},
+        "settlement_projection_digest": {"$ref": "#/definitions/sha256"},
+        "paired_rows_digest": {"$ref": "#/definitions/sha256"},
+        "contract_status": {"const": "VALID"}
+      }
+    }
+  }
+}
