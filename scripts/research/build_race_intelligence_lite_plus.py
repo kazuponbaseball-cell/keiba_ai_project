@@ -58,6 +58,11 @@ FORBIDDEN_KEY_PATTERNS = (
     re.compile(r"(^|_)ai_(score|rank)($|_)"),
     re.compile(r"(^|_)(slow|middle|fast)_(ai_)?(score|rank)($|_)"),
     re.compile(r"(^|_)(win|place|top3)_prob(ability)?($|_)"),
+    re.compile(
+        r"(^|_)(lead(?:_dependency)?|queue(?:_pressure)?|position|expected_position|"
+        r"forward(?:_propensity)?|conflict|scenario)_(prob|probability|score|rank)($|_)"
+    ),
+    re.compile(r"(^|_)(prob|probability|score|rank|ranking)($|_)"),
     re.compile(r"(^|_)(odds|popularity|market|payoff|roi|ev|mispricing)($|_)"),
     re.compile(r"(^|_)(buy|ticket|purchase|champion|notification|order)_"),
     re.compile(r"^(buy|ticket|purchase|champion|notification|order)$"),
@@ -71,7 +76,8 @@ NEGATIVE_ATTESTATION_KEYS = {
     "market_fields_extracted",
     "market_data_used",
     "display_order_rule",
-}
+    "direct_horse_score_edit",
+} | set(SAFETY)
 
 ENTRY_ALLOWED_COLUMNS = {
     "target_date", "manifest_leg", "win5_role", "race_id", "race_name", "venue",
@@ -88,7 +94,7 @@ HISTORY_ALLOWED_COLUMNS = {
     "target_horse_name", "draw_status", "entry_stage", "history_row_type",
     "history_run_present", "history_race_id", "race_date", "venue_code", "venue",
     "surface", "distance_m", "jv_track_code", "track_code", "inner_outer",
-    "course_setting", "competition_domain", "finish_position", "corner1", "corner2",
+    "course_setting", "competition_domain", "field_size", "finish_position", "corner1", "corner2",
     "corner3", "corner4", "final_3f_sec", "finish_gap_sec", "ra_joined",
     "ra_source_file", "ra_source_line_no", "route_base_key", "route_id",
     "route_match_level", "route_context_complete", "missing_components", "pre_target_flag",
@@ -144,6 +150,87 @@ COMPARISON_COLUMNS = (
     "horse_no", "horse_name", "role", "ability_band", "demand_fit",
     "early_burden_fit", "corner_fit", "finish_fit", "condition", "best_scenario",
     "win_path_short", "lose_path_short", "confidence",
+)
+
+# Queue proxy v0.2 uses a separate schema so the committed v1 JSON/HTML remain
+# byte-reproducible.  The v1 constants above are intentionally unchanged.
+OBSERVATION_TOP_V2_KEYS = OBSERVATION_TOP_KEYS | {"queue_proxy_version"}
+OBSERVATION_RACE_V2_KEYS = (
+    OBSERVATION_RACE_KEYS - {"queue_pace_points"} | {"queue_pressure_map"}
+)
+ROLE_POSITION_V2_KEYS = {
+    "all_recent_role", "target_context_role", "normalized_position_proxy",
+    "role_range", "position_flexibility", "forward_propensity",
+    "lead_dependency_evidence", "launch_speed", "first_observed_position",
+    "early_position_retention", "first_turn_position_cost", "pressure_rivals",
+    "inside_neighbor_context", "outside_neighbor_context",
+    "expected_position_band_proxy", "queue_confidence", "queue_notes", "status",
+}
+TARGET_CONTEXT_ROLE_KEYS = {
+    "value", "selected_layer", "layer_evidence_count", "evidence_count",
+    "status", "confidence", "note", "missing_reason",
+}
+TARGET_CONTEXT_LAYER_KEYS = {
+    "same_surface_distance_200", "same_surface_distance_400", "same_surface",
+    "all_recent_fallback",
+}
+FIRST_OBSERVED_POSITION_KEYS = {
+    "median_absolute_position", "minimum_absolute_position",
+    "maximum_absolute_position", "observed_positions", "evidence_count",
+    "status", "confidence", "note", "missing_reason",
+}
+NORMALIZED_POSITION_KEYS = {
+    "median_position_percentile", "minimum_position_percentile",
+    "maximum_position_percentile", "observed_percentiles", "evidence_count",
+    "field_size_missing_count", "status", "confidence", "note", "missing_reason",
+}
+FORWARD_PROPENSITY_KEYS = {
+    "observed_lead_rate", "observed_front4_rate",
+    "observed_front_quartile_rate", "context_lead_rate", "context_front_rate",
+    "evidence_count", "context_evidence_count", "normalized_evidence_count",
+    "classification", "status", "confidence", "note", "missing_reason",
+}
+OBSERVED_RATE_KEYS = {
+    "value", "numerator", "denominator", "status", "missing_reason", "note",
+}
+LEAD_DEPENDENCY_KEYS = {
+    "lead_run_count", "nonlead_run_count", "lead_good_finish_count",
+    "nonlead_good_finish_count", "lead_valid_finish_count",
+    "nonlead_valid_finish_count", "missing_finish_count",
+    "can_rate_evidence_count", "dependency_status", "evidence_count", "status",
+    "confidence", "rule_version", "note", "missing_reason",
+}
+PRESSURE_RIVAL_KEYS = {"horse_no", "horse_name", "conflict_level", "reason"}
+PAIRWISE_MATRIX_KEYS = {"direction", "eligibility_rule", "pairs"}
+PAIRWISE_PRESSURE_KEYS = {
+    "horse_a", "horse_b", "a_role_range", "b_role_range",
+    "a_forward_propensity", "b_forward_propensity", "relative_draw",
+    "first_turn_burden", "conflict_level", "reason", "confidence",
+}
+PAIR_HORSE_KEYS = {"horse_no", "horse_name"}
+QUEUE_PRESSURE_KEYS = {
+    "forward_candidate_count", "strong_forward_candidate_count",
+    "lead_dependency_possible_count", "can_rate_observed_count",
+    "high_conflict_pair_count", "medium_conflict_pair_count",
+    "first_turn_high_cost_horses", "queue_pressure_level",
+    "queue_pressure_confidence", "eligible_pair_count",
+    "role_known_horse_count", "normalized_position_horse_count",
+    "normalized_position_coverage_rate", "queue_confidence_rule",
+    "pairwise_pressure_matrix", "pace_conversion", "human_scenario_relation",
+    "status", "rule_version",
+}
+QUEUE_LEVEL_VALUES = {"HIGH", "MEDIUM", "LOW", "UNCERTAIN"}
+FORWARD_CLASS_VALUES = {"strong_forward", "forward", "limited", "unobserved"}
+DEPENDENCY_STATUS_VALUES = {
+    "dependency_possible", "can_rate_observed", "mixed", "insufficient_evidence",
+}
+CONFLICT_LEVEL_VALUES = {"high", "medium", "low", "unobserved"}
+QUEUE_COVERAGE_THRESHOLD = 0.8
+COMPARISON_COLUMNS_V2 = (
+    "horse_no", "horse_name", "role", "role_range",
+    "expected_position_band_proxy", "ability_band", "demand_fit",
+    "early_burden_fit", "corner_fit", "finish_fit", "condition",
+    "best_scenario", "win_path_short", "lose_path_short", "confidence",
 )
 
 TRAIT_LABELS = {
@@ -272,16 +359,30 @@ def reject_forbidden_recursive(value: Any, source_name: str, path: str = "$") ->
     if isinstance(value, Mapping):
         reject_forbidden_keys((str(key) for key in value), f"{source_name}:{path}")
         for key, child in value.items():
-            if key in {"stake", "formal_buy", "send_order", "market_data_used"}:
-                expected = 0 if key == "stake" else False
-                if path != "$.safety" or child != expected:
+            if key in SAFETY:
+                expected = SAFETY[key]
+                type_ok = type(child) is int if key == "stake" else type(child) is bool
+                if path != "$.safety" or not type_ok or child != expected:
                     raise LitePlusError(f"safety attestation outside fixed safety block: {source_name}:{path}.{key}")
+            if key == "direct_horse_score_edit":
+                if path != "$.safety" or type(child) is not bool or child is not False:
+                    raise LitePlusError(f"freeze safety attestation differs: {source_name}:{path}.{key}")
             if key == "market_fields_extracted" and (source_name != "official_snapshot" or path != "$" or child is not False):
                 raise LitePlusError(f"official market attestation differs: {source_name}:{path}.{key}")
             reject_forbidden_recursive(child, source_name, f"{path}.{key}")
     elif isinstance(value, list):
         for index, child in enumerate(value):
             reject_forbidden_recursive(child, source_name, f"{path}[{index}]")
+
+
+def validate_safety_object(value: Any, source_name: str) -> None:
+    if not isinstance(value, Mapping) or set(value) != set(SAFETY):
+        raise LitePlusError(f"safety constants differ: {source_name}")
+    for key, expected in SAFETY.items():
+        actual = value[key]
+        expected_type = int if key == "stake" else bool
+        if type(actual) is not expected_type or actual != expected:
+            raise LitePlusError(f"safety constant differs: {source_name}.{key}")
 
 
 def require_exact_keys(value: Mapping[str, Any], expected: set[str], source_name: str) -> None:
@@ -619,6 +720,445 @@ def role_profile(runs: Sequence[Mapping[str, str]]) -> dict[str, Any]:
         "confidence": confidence,
         "sample_roles": [role for role, _ in samples],
     }
+
+
+def first_observed_position(run: Mapping[str, Any]) -> int | None:
+    corners = corner_positions(run)
+    return corners[0] if corners else None
+
+
+def observed_rate(hits: int, denominator: int) -> float | None:
+    """Return a transparent historical ratio, never a current-race probability."""
+
+    return round(hits / denominator, 6) if denominator else None
+
+
+def observed_rate_record(hits: int, denominator: int, note: str, missing_reason: str) -> dict[str, Any]:
+    """Describe a historical ratio while preserving its own missingness."""
+
+    return {
+        "value": observed_rate(hits, denominator),
+        "numerator": hits,
+        "denominator": denominator,
+        "status": "derived" if denominator else "unobserved",
+        "missing_reason": "" if denominator else missing_reason,
+        "note": note + "。履歴の単純観測率であり、今回の位置取り確率ではない",
+    }
+
+
+def role_evidence_from_profile(profile: Mapping[str, Any], note: str) -> dict[str, Any]:
+    if profile["base_role"] == "unobserved":
+        return unobserved("最初に観測可能な角位置がない", note)
+    return evidence(
+        profile["base_role"], status="proxy", evidence_count=profile["evidence_count"],
+        confidence=profile["confidence"], route_match_level="unclassified", note=note,
+    )
+
+
+def target_context_profile(
+    runs: Sequence[Mapping[str, Any]], target: Mapping[str, Any]
+) -> tuple[dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+    """Select the narrowest role-evidence layer, then at most five recent runs."""
+
+    target_surface = normalize_surface(str(target["surface"]))
+    target_distance = int(target["distance_m"])
+    recent = [dict(run) for run in runs]
+
+    def matching(*, max_delta: int | None = None, same_surface: bool = True) -> list[dict[str, Any]]:
+        selected: list[dict[str, Any]] = []
+        for run in recent:
+            if first_observed_position(run) is None:
+                continue
+            if same_surface and normalize_surface(str(run.get("surface", ""))) != target_surface:
+                continue
+            if max_delta is not None:
+                distance_m = as_int(run.get("distance_m"))
+                if distance_m is None or abs(distance_m - target_distance) > max_delta:
+                    continue
+            selected.append(run)
+        return selected
+
+    layers = {
+        "same_surface_distance_200": matching(max_delta=200),
+        "same_surface_distance_400": matching(max_delta=400),
+        "same_surface": matching(),
+        "all_recent_fallback": [
+            dict(run) for run in recent[:5] if first_observed_position(run) is not None
+        ],
+    }
+    counts = {key: len(value) for key, value in layers.items()}
+    selected_layer = "unobserved"
+    selected_runs: list[dict[str, Any]] = []
+    for layer in (
+        "same_surface_distance_200", "same_surface_distance_400",
+        "same_surface", "all_recent_fallback",
+    ):
+        if layers[layer]:
+            selected_layer = layer
+            selected_runs = layers[layer][:5]
+            break
+    profile = role_profile(selected_runs)
+    if not selected_runs:
+        block = {
+            "value": "unobserved",
+            "selected_layer": "unobserved",
+            "layer_evidence_count": counts,
+            "evidence_count": 0,
+            "status": "unobserved",
+            "confidence": "unobserved",
+            "note": "同surface・距離帯を優先し、最後にall-recentへfallbackする固定規則",
+            "missing_reason": "全priority層で最初の角位置証拠がない",
+        }
+    else:
+        block = {
+            "value": profile["base_role"],
+            "selected_layer": selected_layer,
+            "layer_evidence_count": counts,
+            "evidence_count": profile["evidence_count"],
+            "status": "proxy",
+            "confidence": profile["confidence"],
+            "note": (
+                "priority: same surface ±200m > ±400m > same surface > all recent; "
+                "各層は角位置既知走を数え、選択層の直近最大5走を使用"
+            ),
+            "missing_reason": "",
+        }
+    return block, profile, selected_runs
+
+
+def first_position_summary(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    positions = [
+        value for value in (first_observed_position(run) for run in runs) if value is not None
+    ]
+    if not positions:
+        return {
+            "median_absolute_position": None,
+            "minimum_absolute_position": None,
+            "maximum_absolute_position": None,
+            "observed_positions": [],
+            "evidence_count": 0,
+            "status": "unobserved",
+            "confidence": "unobserved",
+            "note": "launch/start accelerationではなく、最初に観測可能な角位置",
+            "missing_reason": "角位置証拠がない",
+        }
+    median = statistics.median(positions)
+    return {
+        "median_absolute_position": median,
+        "minimum_absolute_position": min(positions),
+        "maximum_absolute_position": max(positions),
+        "observed_positions": positions,
+        "evidence_count": len(positions),
+        "status": "derived",
+        "confidence": confidence_from_count(len(positions)),
+        "note": "launch/start accelerationではなく、選択context走の最初に観測可能な角位置",
+        "missing_reason": "",
+    }
+
+
+def normalized_position_summary(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    percentiles: list[float] = []
+    position_count = 0
+    missing_field_size = 0
+    for run in runs:
+        position = first_observed_position(run)
+        if position is None:
+            continue
+        position_count += 1
+        field_size = as_int(run.get("field_size"))
+        if field_size is None or field_size < 1 or position > field_size:
+            missing_field_size += 1
+            continue
+        percentiles.append(round((position - 1) / max(field_size - 1, 1), 6))
+    if not percentiles:
+        return {
+            "median_position_percentile": None,
+            "minimum_position_percentile": None,
+            "maximum_position_percentile": None,
+            "observed_percentiles": [],
+            "evidence_count": 0,
+            "field_size_missing_count": missing_field_size,
+            "status": "unobserved",
+            "confidence": "unobserved",
+            "note": "formula=(first_corner_position-1)/max(field_size-1,1); field_sizeを推測しない",
+            "missing_reason": "選択context履歴に検証可能なfield_sizeがない",
+        }
+    return {
+        "median_position_percentile": round(float(statistics.median(percentiles)), 6),
+        "minimum_position_percentile": min(percentiles),
+        "maximum_position_percentile": max(percentiles),
+        "observed_percentiles": percentiles,
+        "evidence_count": len(percentiles),
+        "field_size_missing_count": position_count - len(percentiles),
+        "status": "derived",
+        "confidence": confidence_from_count(len(percentiles)),
+        "note": "formula=(first_corner_position-1)/max(field_size-1,1); target頭数や角位置からfield_sizeを推測しない",
+        "missing_reason": "",
+    }
+
+
+def role_range_evidence(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    roles = [
+        role_band(value)
+        for value in (first_observed_position(run) for run in runs)
+        if value is not None
+    ]
+    if not roles:
+        return unobserved("role rangeを作る角位置証拠がない")
+    order = {role: index for index, role in enumerate(ROLE_VALUES[:-1])}
+    indexes = [order[role] for role in roles]
+    lower = ROLE_VALUES[min(indexes)]
+    upper = ROLE_VALUES[max(indexes)]
+    median_index = int(math.floor(float(statistics.median(indexes)) + 0.5))
+    median_role = ROLE_VALUES[median_index]
+    value = lower if lower == upper else f"{lower}-{upper}"
+    return evidence(
+        value, status="proxy", evidence_count=len(roles),
+        confidence=confidence_from_count(len(roles)), route_match_level="unclassified",
+        note=f"選択contextのrole中央値={median_role}、観測variation={lower}..{upper}",
+    )
+
+
+def forward_propensity_block(
+    all_recent_runs: Sequence[Mapping[str, Any]], context_runs: Sequence[Mapping[str, Any]]
+) -> dict[str, Any]:
+    all_positions = [
+        value for value in (first_observed_position(run) for run in all_recent_runs[:5])
+        if value is not None
+    ]
+    context_positions = [
+        value for value in (first_observed_position(run) for run in context_runs)
+        if value is not None
+    ]
+    normalized: list[float] = []
+    for run in all_recent_runs[:5]:
+        position = first_observed_position(run)
+        field_size = as_int(run.get("field_size"))
+        if position is None or field_size is None or field_size < 1 or position > field_size:
+            continue
+        normalized.append((position - 1) / max(field_size - 1, 1))
+    observed_lead = observed_rate(sum(value == 1 for value in all_positions), len(all_positions))
+    observed_front4 = observed_rate(sum(value <= 4 for value in all_positions), len(all_positions))
+    observed_quartile = observed_rate(sum(value <= 0.25 for value in normalized), len(normalized))
+    context_lead = observed_rate(sum(value == 1 for value in context_positions), len(context_positions))
+    context_front = observed_rate(sum(value <= 4 for value in context_positions), len(context_positions))
+    if not all_positions and not context_positions:
+        classification = "unobserved"
+        status = "unobserved"
+        missing_reason = "最初の角位置証拠がない"
+    elif (
+        len(context_positions) >= 2
+        and ((context_lead or 0.0) >= 0.5 or (context_front or 0.0) >= 0.75)
+    ) or (len(all_positions) >= 3 and (observed_lead or 0.0) >= 0.5):
+        classification = "strong_forward"
+        status = "proxy"
+        missing_reason = ""
+    elif (context_front or 0.0) >= 0.4 or (observed_front4 or 0.0) >= 0.4:
+        classification = "forward"
+        status = "proxy"
+        missing_reason = ""
+    else:
+        classification = "limited"
+        status = "proxy"
+        missing_reason = ""
+    return {
+        "observed_lead_rate": observed_rate_record(
+            sum(value == 1 for value in all_positions), len(all_positions),
+            "all-recent最大5走の最初の観測角が1番手だった比率",
+            "all-recentに最初の角位置証拠がない",
+        ),
+        "observed_front4_rate": observed_rate_record(
+            sum(value <= 4 for value in all_positions), len(all_positions),
+            "all-recent最大5走の最初の観測角が4番手以内だった比率",
+            "all-recentに最初の角位置証拠がない",
+        ),
+        "observed_front_quartile_rate": observed_rate_record(
+            sum(value <= 0.25 for value in normalized), len(normalized),
+            "field_size確認済み走の正規化位置が前25%以内だった比率",
+            "履歴に検証可能なfield_sizeがなく、頭数比を算出できない",
+        ),
+        "context_lead_rate": observed_rate_record(
+            sum(value == 1 for value in context_positions), len(context_positions),
+            "target-context選択層で最初の観測角が1番手だった比率",
+            "target-context選択層に最初の角位置証拠がない",
+        ),
+        "context_front_rate": observed_rate_record(
+            sum(value <= 4 for value in context_positions), len(context_positions),
+            "target-context選択層で最初の観測角が4番手以内だった比率",
+            "target-context選択層に最初の角位置証拠がない",
+        ),
+        "evidence_count": len(all_positions),
+        "context_evidence_count": len(context_positions),
+        "normalized_evidence_count": len(normalized),
+        "classification": classification,
+        "status": status,
+        "confidence": confidence_from_count(max(len(all_positions), len(context_positions))),
+        "note": (
+            "直近/target-contextの単純観測比率。今回のハナ・位置取り確率ではない。"
+            "strongはcontext>=2かつlead>=0.5/front4>=0.75、またはrecent>=3かつlead>=0.5; "
+            "forwardはcontext/recent front4>=0.4"
+        ),
+        "missing_reason": missing_reason,
+    }
+
+
+def lead_dependency_block(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    samples: list[tuple[int, int | None]] = []
+    for run in runs[:5]:
+        position = first_observed_position(run)
+        if position is not None:
+            samples.append((position, valid_finish_position(run.get("finish_position"))))
+    lead_count = sum(position == 1 for position, _ in samples)
+    nonlead_count = sum(position > 1 for position, _ in samples)
+    lead_valid = sum(position == 1 and finish is not None for position, finish in samples)
+    nonlead_valid = sum(position > 1 and finish is not None for position, finish in samples)
+    missing_finish = sum(finish is None for _, finish in samples)
+    lead_good = sum(position == 1 and finish is not None and finish <= 3 for position, finish in samples)
+    nonlead_good = sum(position > 1 and finish is not None and finish <= 3 for position, finish in samples)
+    can_rate = sum(position >= 3 and finish is not None and finish <= 3 for position, finish in samples)
+    if lead_good and nonlead_good:
+        dependency_status = "mixed"
+    elif can_rate:
+        dependency_status = "can_rate_observed"
+    elif (
+        len(samples) >= 2 and lead_count >= 2 and lead_count / len(samples) >= 0.5
+        and lead_good >= 1 and nonlead_count >= 1 and nonlead_valid == nonlead_count
+        and not nonlead_good
+    ):
+        dependency_status = "dependency_possible"
+    elif lead_count and nonlead_count:
+        dependency_status = "mixed"
+    else:
+        dependency_status = "insufficient_evidence"
+    return {
+        "lead_run_count": lead_count,
+        "nonlead_run_count": nonlead_count,
+        "lead_good_finish_count": lead_good,
+        "nonlead_good_finish_count": nonlead_good,
+        "lead_valid_finish_count": lead_valid,
+        "nonlead_valid_finish_count": nonlead_valid,
+        "missing_finish_count": missing_finish,
+        "can_rate_evidence_count": can_rate,
+        "dependency_status": dependency_status,
+        "evidence_count": len(samples),
+        "status": "proxy" if samples else "unobserved",
+        "confidence": confidence_from_count(len(samples)),
+        "rule_version": "lead_dependency_evidence_v0.2",
+        "note": (
+            "直近最大5走。good finishはvalid finish<=3の未補正観測、can-rateは最初の角位置>=3かつ<=3着。"
+            "dependency_possibleはlead>=2・lead比率>=0.5・lead好走>=1に加え、nonlead走>=1の"
+            "着順が全てvalidかつnonlead好走なしを要求。欠損着順を失敗証拠にせず、need_leadへ変換しない"
+        ),
+        "missing_reason": "角位置証拠がない" if not samples else "",
+    }
+
+
+def early_position_retention_block(runs: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    comparisons: list[bool] = []
+    for run in runs:
+        corners = corner_positions(run)
+        if len(corners) >= 2:
+            comparisons.append(corners[-1] <= corners[0] + 2)
+    if not comparisons:
+        return unobserved("最初と最後の角位置を比較できる走がない")
+    hits = sum(comparisons)
+    return evidence(
+        f"retained {hits}/{len(comparisons)} observed runs",
+        status="derived", evidence_count=len(comparisons),
+        confidence=confidence_from_count(len(comparisons)), route_match_level="unclassified",
+        note="最初の観測角から最後の観測角まで順位低下が2以内。速度・launchの測定ではない",
+    )
+
+
+def first_turn_run_class(card: Mapping[str, Any]) -> str:
+    # Only start-to-merge/first-turn lines are eligible.  Straight and slope
+    # distances elsewhere in the audited route card must not leak into this
+    # qualitative burden class.
+    eligible_lines = [
+        str(line) for line in card.get("static_route", [])
+        if any(token in str(line) for token in ("合流", "1コーナーまで", "3コーナーまで"))
+    ]
+    route_text = " ".join(eligible_lines)
+    if any(word in route_text for word in ("約200mで本線へ合流", "約240mと短", "までが短")):
+        return "short"
+    if any(word in route_text for word in ("500m以上", "約400m")):
+        return "long"
+    return "unobserved"
+
+
+def draw_band(frame_no: int, maximum_frame_no: int) -> str:
+    if frame_no <= 2:
+        return "inside"
+    if frame_no >= max(maximum_frame_no - 1, 1):
+        return "outside"
+    return "middle"
+
+
+def first_turn_position_cost_block(
+    *, frame_no: int, maximum_frame_no: int, card: Mapping[str, Any],
+    forward_classification: str,
+) -> dict[str, Any]:
+    run_class = first_turn_run_class(card)
+    band = draw_band(frame_no, maximum_frame_no)
+    is_forward = forward_classification in {"forward", "strong_forward"}
+    if run_class == "unobserved":
+        return unobserved(
+            "route cardに初角までの長短を安全に分類できる記述がない",
+            f"draw={band}; forward={forward_classification}",
+        )
+    if run_class == "short" and band == "outside" and is_forward:
+        value = "high"
+    elif run_class == "short" and (band == "outside" or is_forward):
+        value = "medium"
+    elif run_class == "long":
+        value = "low"
+    else:
+        value = "low"
+    return evidence(
+        value, status="proxy", evidence_count=1,
+        confidence="medium", route_match_level="partial",
+        note=(
+            f"route first-turn class={run_class}, draw band={band}, forward={forward_classification}. "
+            "定性cost候補であり、launch speed・進路・実走距離は未観測"
+        ),
+    )
+
+
+def expected_position_band_block(
+    role_range: Mapping[str, Any], dependency: Mapping[str, Any],
+    position_cost: Mapping[str, Any], forward_classification: str = "unobserved",
+    position_flexibility: str = "unobserved", high_conflict_count: int = 0,
+    medium_conflict_count: int = 0,
+) -> dict[str, Any]:
+    if role_range["status"] == "unobserved":
+        return unobserved("target-context role rangeが未観測")
+    value = str(role_range["value"]).replace("-", "/")
+    if dependency["dependency_status"] == "can_rate_observed" and value in {
+        "lead", "lead/front", "front",
+    }:
+        value = "front/stalking"
+    elif (position_cost["value"] == "high" or high_conflict_count or medium_conflict_count) and value == "lead":
+        value = "lead/front"
+    elif (position_cost["value"] == "high" or high_conflict_count or medium_conflict_count) and value == "front":
+        value = "front/stalking"
+    elif position_flexibility in {"high", "medium"} and value == "lead":
+        value = "lead/front"
+    elif position_flexibility in {"high", "medium"} and value == "front":
+        value = "front/stalking"
+    return evidence(
+        value, status="proxy", evidence_count=role_range["evidence_count"],
+        confidence=(
+            "low" if position_cost["status"] == "unobserved" or high_conflict_count or medium_conflict_count
+            else role_range["confidence"]
+        ),
+        route_match_level="partial",
+        note=(
+            "target-context role range、role flexibility、forward propensity、draw/first-turn cost、"
+            f"pairwise conflict(high={high_conflict_count}, medium={medium_conflict_count})から作る説明帯。"
+            f"forward={forward_classification}, flexibility={position_flexibility}。"
+            "着順・位置確率・正式隊列予測ではない"
+        ),
+    )
 
 
 def finish_band(position: float | int | None) -> str:
@@ -1106,6 +1646,401 @@ def attach_queue_context(horses: list[dict[str, Any]]) -> None:
         role["queue_notes"] = notes
 
 
+def build_horse_v02(
+    runner: Mapping[str, Any],
+    history_rows: Sequence[Mapping[str, str]],
+    readiness: Mapping[str, str],
+    route_coverage: Mapping[str, str],
+    target: Mapping[str, Any],
+    card: Mapping[str, Any],
+) -> dict[str, Any]:
+    runs = observed_runs(history_rows)
+    all_recent_profile = role_profile(runs)
+    context_block, context_profile, context_runs = target_context_profile(runs, target)
+    working_profile = context_profile if context_profile["base_role"] != "unobserved" else all_recent_profile
+    role_range = role_range_evidence(context_runs if context_runs else runs[:5])
+    forward = forward_propensity_block(runs, context_runs)
+    dependency = lead_dependency_block(runs)
+    first_position = first_position_summary(context_runs if context_runs else runs[:5])
+    normalized_position = normalized_position_summary(context_runs if context_runs else runs[:5])
+    retention = early_position_retention_block(context_runs if context_runs else runs[:5])
+    position_cost = first_turn_position_cost_block(
+        frame_no=int(runner["frame_no"]), maximum_frame_no=int(target["maximum_frame_no"]),
+        card=card, forward_classification=forward["classification"],
+    )
+    expected_band = expected_position_band_block(
+        role_range, dependency, position_cost, forward["classification"],
+        working_profile["position_flexibility"],
+    )
+    ability = ability_block(runs)
+    pace_traits, course_traits = build_traits(runs, working_profile, target)
+    if pace_traits["early_positioning"]["status"] != "unobserved":
+        pace_traits["early_positioning"]["note"] = (
+            "target-context優先層の最初に観測された角位置を絶対位置帯へ変換。"
+            "launch speedではなく、field_size未接続時は頭数補正なし"
+        )
+    transfers = build_transfer_evidence(runs, target)
+    last_date = date.fromisoformat(runs[0]["race_date"]) if runs else None
+    rest_days = (TARGET_DATE - last_date).days if last_date else None
+    condition = {
+        "workout_relative": unobserved("対象馬as-of調教join未実行。全体source coverageを個体値へ転用しない"),
+        "condition_trend": unobserved("状態を直接示す対象日付付き個体データがない"),
+        "rest_pattern": evidence(
+            f"最終出走から{rest_days}日", status="derived", evidence_count=1,
+            confidence="high", route_match_level="unclassified", note=f"最終観測日 {last_date.isoformat()}",
+        ) if last_date else unobserved("target前の実走がない"),
+        "fatigue_rebound_proxy": unobserved("疲労・反動を定義する個体時系列proxyが未承認"),
+        "state_confidence": "low" if last_date else "unobserved",
+    }
+    paths = build_paths(working_profile, card, pace_traits)
+    evidence_states = sorted({
+        item["status"]
+        for item in walk_evidence({
+            "role": {
+                "all_recent": role_evidence_from_profile(
+                    all_recent_profile,
+                    "v1互換: 直近最大5走の最初に観測された角位置の絶対位置帯",
+                ),
+                "role_range": role_range,
+                "launch_speed": unobserved(
+                    "200m start speed/発馬反応を入力していない",
+                    "最初の角位置からstart accelerationを逆算しない",
+                ),
+                "retention": retention,
+                "position_cost": position_cost,
+                "expected_band": expected_band,
+            },
+            "ability": ability,
+            "pace_role_traits": pace_traits,
+            "course_shape_traits": course_traits,
+            "condition": condition,
+            "transfer_evidence": transfers,
+        })
+    })
+    role_status = "proxy" if context_block["status"] != "unobserved" else "unobserved"
+    return {
+        "display_order": runner["horse_no"],
+        "horse_id": runner["horse_id"],
+        "basics": {
+            "horse_name": runner["horse_name"],
+            "frame_no": runner["frame_no"],
+            "horse_no": runner["horse_no"],
+            "jockey": runner["jockey"],
+            "trainer": runner["trainer"],
+            "trainer_affiliation": runner["trainer_affiliation"],
+            "sex": runner["sex"],
+            "age": runner["age"],
+            "coat_color": runner["coat_color"],
+            "assigned_weight": runner["assigned_weight"],
+            "entry_status": runner["entry_status"],
+        },
+        "role_position": {
+            "all_recent_role": role_evidence_from_profile(
+                all_recent_profile,
+                "v1互換: 直近最大5走の最初に観測された角位置の絶対位置帯",
+            ),
+            "target_context_role": context_block,
+            "normalized_position_proxy": normalized_position,
+            "role_range": role_range,
+            "position_flexibility": working_profile["position_flexibility"],
+            "forward_propensity": forward,
+            "lead_dependency_evidence": dependency,
+            "launch_speed": unobserved(
+                "200m start speed/発馬反応を入力していない",
+                "first observed corner positionをstart accelerationと呼ばない",
+            ),
+            "first_observed_position": first_position,
+            "early_position_retention": retention,
+            "first_turn_position_cost": position_cost,
+            "pressure_rivals": [],
+            "inside_neighbor_context": "後でQueue Pressure Mapから付与",
+            "outside_neighbor_context": "後でQueue Pressure Mapから付与",
+            "expected_position_band_proxy": expected_band,
+            "queue_confidence": forward["confidence"],
+            "queue_notes": [],
+            "status": role_status,
+        },
+        "ability": ability,
+        "pace_role_traits": pace_traits,
+        "course_shape_traits": course_traits,
+        "condition": condition,
+        "transfer_evidence": transfers,
+        "scenario_sensitivity": scenario_sensitivity(),
+        "paths": paths,
+        "uncertainty": {
+            "evidence_states": evidence_states,
+            "missing_reason": "launch speed、過去field_size、対象個体調教、個体別lap、traffic、凍結済みS/M/F responseが未接続",
+            "confidence": "low" if runs else "unobserved",
+            "history_coverage_confidence": confidence_from_count(len(runs)),
+            "what_remains_unclear": "実発馬、当日状態、馬場、風、騎手判断、競合時の譲り方、実走経路、相手関係補正",
+            "route_match_level": "partial" if runs else "unobserved",
+            "history_evidence_count": len(runs),
+            "ra_joined_history_race_count": as_int(readiness.get("ra_joined_history_race_count")) or 0,
+            "route_coverage_status": route_coverage.get("route_coverage_status", "unobserved"),
+            "exact_route_blocker": route_coverage.get("exact_route_blocker", "unobserved"),
+        },
+    }
+
+
+def role_range_tokens(value: str) -> set[str]:
+    if value == "unobserved":
+        return set()
+    endpoints = value.split("-")
+    ordered = list(ROLE_VALUES[:-1])
+    if len(endpoints) == 1 and endpoints[0] in ordered:
+        return {endpoints[0]}
+    if len(endpoints) != 2 or any(endpoint not in ordered for endpoint in endpoints):
+        return set()
+    start, end = (ordered.index(endpoint) for endpoint in endpoints)
+    lower, upper = sorted((start, end))
+    return set(ordered[lower:upper + 1])
+
+
+def pairwise_pressure(horse_a: Mapping[str, Any], horse_b: Mapping[str, Any], card: Mapping[str, Any]) -> dict[str, Any]:
+    basics_a = horse_a["basics"]
+    basics_b = horse_b["basics"]
+    role_a = horse_a["role_position"]
+    role_b = horse_b["role_position"]
+    forward_a = role_a["forward_propensity"]["classification"]
+    forward_b = role_b["forward_propensity"]["classification"]
+    tokens_a = role_range_tokens(str(role_a["role_range"]["value"]))
+    tokens_b = role_range_tokens(str(role_b["role_range"]["value"]))
+    early_roles = {"lead", "front"}
+    overlap = bool(tokens_a & tokens_b & early_roles)
+    can_rate_a = role_a["lead_dependency_evidence"]["can_rate_evidence_count"] > 0
+    can_rate_b = role_b["lead_dependency_evidence"]["can_rate_evidence_count"] > 0
+    dependency_a = role_a["lead_dependency_evidence"]["dependency_status"] == "dependency_possible"
+    dependency_b = role_b["lead_dependency_evidence"]["dependency_status"] == "dependency_possible"
+    a_is_forward = forward_a in {"forward", "strong_forward"}
+    b_is_forward = forward_b in {"forward", "strong_forward"}
+    run_class = first_turn_run_class(card)
+    if not tokens_a or not tokens_b:
+        conflict = "unobserved"
+        reason = "少なくとも一方のtarget-context role rangeが未観測で競合帯を比較できない"
+    elif a_is_forward and b_is_forward:
+        if (
+            forward_a == forward_b == "strong_forward" and overlap
+            and dependency_a and dependency_b and not (can_rate_a or can_rate_b)
+            and run_class == "short"
+        ):
+            conflict = "high"
+            reason = (
+                "双方strong forwardでlead/front帯が重なり、双方にvalid nonlead outcomeを伴う"
+                "dependency_possibleの肯定証拠があり、短い初角区間で位置主張が重なる"
+            )
+        elif overlap:
+            conflict = "medium"
+            reason = "双方forwardで初期role帯が重なる"
+        else:
+            conflict = "low"
+            reason = "双方にforward観測はあるが、観測role rangeの重なりが限定的"
+        if conflict == "high" and (can_rate_a or can_rate_b):
+            conflict = "medium"
+            reason += "。片方以上にcan-rate好走証拠がありhighから抑制"
+        elif conflict == "medium" and can_rate_a and can_rate_b:
+            conflict = "low"
+            reason += "。双方にcan-rate好走証拠あり"
+        elif conflict == "medium" and (can_rate_a or can_rate_b):
+            reason += "。片方にcan-rate好走証拠あり"
+    else:
+        other_tokens = tokens_b if a_is_forward else tokens_a
+        other_can_rate = can_rate_b if a_is_forward else can_rate_a
+        if other_tokens & early_roles and not other_can_rate:
+            conflict = "medium"
+            reason = "片方はforward観測、もう片方もlead/front帯を取り得るが強度証拠は限定的"
+        else:
+            conflict = "low"
+            reason = "片方だけがforward候補、またはもう片方に控える/後方帯の観測証拠がある"
+    cost_a = role_a["first_turn_position_cost"]["value"]
+    cost_b = role_b["first_turn_position_cost"]["value"]
+    relative_draw = (
+        f"A={basics_a['horse_no']}番はB={basics_b['horse_no']}番より"
+        f"{int(basics_b['horse_no']) - int(basics_a['horse_no'])}つ内"
+    )
+    return {
+        "horse_a": {"horse_no": basics_a["horse_no"], "horse_name": basics_a["horse_name"]},
+        "horse_b": {"horse_no": basics_b["horse_no"], "horse_name": basics_b["horse_name"]},
+        "a_role_range": role_a["role_range"]["value"],
+        "b_role_range": role_b["role_range"]["value"],
+        "a_forward_propensity": forward_a,
+        "b_forward_propensity": forward_b,
+        "relative_draw": relative_draw,
+        "first_turn_burden": f"route={run_class}; A cost={cost_a}; B cost={cost_b}",
+        "conflict_level": conflict,
+        "reason": reason + "。A/Bの優劣・ハナ取得は判定しない",
+        "confidence": (
+            "unobserved" if conflict == "unobserved" else
+            "low" if min(role_a["role_range"]["evidence_count"], role_b["role_range"]["evidence_count"]) < 2 else
+            "medium"
+        ),
+    }
+
+
+def queue_pressure_level_value(
+    *, known_count: int, total_count: int, high_count: int, medium_count: int,
+    forward_count: int, strong_count: int, dependency_count: int,
+) -> str:
+    if total_count <= 0 or known_count < total_count * 0.5:
+        return "UNCERTAIN"
+    if high_count >= 2 or (high_count >= 1 and strong_count >= 3) or (
+        strong_count >= 3 and dependency_count >= 2
+    ):
+        return "HIGH"
+    if high_count >= 1 or medium_count >= 3 or forward_count >= 4:
+        return "MEDIUM"
+    return "LOW"
+
+
+def queue_pressure_confidence_value(
+    *, known_count: int, normalized_horse_count: int, total_count: int,
+) -> str:
+    """Confidence is capped low until both horse-level coverages reach 80%."""
+
+    if total_count <= 0:
+        return "unobserved"
+    required = math.ceil(total_count * QUEUE_COVERAGE_THRESHOLD)
+    return "medium" if known_count >= required and normalized_horse_count >= required else "low"
+
+
+def build_queue_pressure_map(horses: list[dict[str, Any]], card: Mapping[str, Any]) -> dict[str, Any]:
+    ordered = sorted(horses, key=lambda horse: int(horse["basics"]["horse_no"]))
+    pairs: list[dict[str, Any]] = []
+    for index, horse_a in enumerate(ordered):
+        for horse_b in ordered[index + 1:]:
+            classes = {
+                horse_a["role_position"]["forward_propensity"]["classification"],
+                horse_b["role_position"]["forward_propensity"]["classification"],
+            }
+            if not classes & {"forward", "strong_forward"}:
+                continue
+            pairs.append(pairwise_pressure(horse_a, horse_b, card))
+    pairs.sort(key=lambda pair: (int(pair["horse_a"]["horse_no"]), int(pair["horse_b"]["horse_no"])))
+    rival_map: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    high_by_horse: Counter[int] = Counter()
+    medium_by_horse: Counter[int] = Counter()
+    for pair in pairs:
+        if pair["conflict_level"] not in {"high", "medium"}:
+            continue
+        a_no = int(pair["horse_a"]["horse_no"])
+        b_no = int(pair["horse_b"]["horse_no"])
+        rival_map[a_no].append({
+            "horse_no": b_no, "horse_name": pair["horse_b"]["horse_name"],
+            "conflict_level": pair["conflict_level"], "reason": pair["reason"],
+        })
+        rival_map[b_no].append({
+            "horse_no": a_no, "horse_name": pair["horse_a"]["horse_name"],
+            "conflict_level": pair["conflict_level"], "reason": pair["reason"],
+        })
+        if pair["conflict_level"] == "high":
+            high_by_horse[a_no] += 1
+            high_by_horse[b_no] += 1
+        elif pair["conflict_level"] == "medium":
+            medium_by_horse[a_no] += 1
+            medium_by_horse[b_no] += 1
+    for index, horse in enumerate(ordered):
+        role = horse["role_position"]
+        horse_no = int(horse["basics"]["horse_no"])
+        role["pressure_rivals"] = sorted(rival_map[horse_no], key=lambda item: int(item["horse_no"]))
+        inside = ordered[index - 1] if index else None
+        outside = ordered[index + 1] if index + 1 < len(ordered) else None
+        role["inside_neighbor_context"] = (
+            f"{inside['basics']['horse_no']} {inside['basics']['horse_name']} / "
+            f"{inside['role_position']['target_context_role']['value']}"
+            if inside else "最内側（内隣なし）"
+        )
+        role["outside_neighbor_context"] = (
+            f"{outside['basics']['horse_no']} {outside['basics']['horse_name']} / "
+            f"{outside['role_position']['target_context_role']['value']}"
+            if outside else "最外側（外隣なし）"
+        )
+        notes: list[str] = []
+        if role["pressure_rivals"]:
+            high_count = sum(item["conflict_level"] == "high" for item in role["pressure_rivals"])
+            medium_count = sum(item["conflict_level"] == "medium" for item in role["pressure_rivals"])
+            notes.append(f"pairwise conflict: high {high_count} / medium {medium_count}")
+        else:
+            notes.append("high/medium pairwise conflictは観測proxy上なし")
+        if role["first_turn_position_cost"]["value"] == "high":
+            notes.append("短い初角・外枠・forward観測が重なるhigh cost candidate")
+        if role["lead_dependency_evidence"]["dependency_status"] == "dependency_possible":
+            notes.append("lead dependencyはpossible止まり。need_leadとは断定しない")
+        if role["lead_dependency_evidence"]["can_rate_evidence_count"]:
+            notes.append("can-rate好走証拠あり。控える選択肢の観測材料")
+        role["queue_notes"] = notes
+        role["expected_position_band_proxy"] = expected_position_band_block(
+            role["role_range"], role["lead_dependency_evidence"],
+            role["first_turn_position_cost"], role["forward_propensity"]["classification"],
+            role["position_flexibility"], high_by_horse[horse_no], medium_by_horse[horse_no],
+        )
+    forward_count = sum(
+        horse["role_position"]["forward_propensity"]["classification"] in {"forward", "strong_forward"}
+        for horse in ordered
+    )
+    strong_count = sum(
+        horse["role_position"]["forward_propensity"]["classification"] == "strong_forward"
+        for horse in ordered
+    )
+    dependency_count = sum(
+        horse["role_position"]["lead_dependency_evidence"]["dependency_status"] == "dependency_possible"
+        for horse in ordered
+    )
+    can_rate_count = sum(
+        horse["role_position"]["lead_dependency_evidence"]["can_rate_evidence_count"] > 0
+        for horse in ordered
+    )
+    high_count = sum(pair["conflict_level"] == "high" for pair in pairs)
+    medium_count = sum(pair["conflict_level"] == "medium" for pair in pairs)
+    known_count = sum(
+        horse["role_position"]["forward_propensity"]["classification"] != "unobserved"
+        for horse in ordered
+    )
+    normalized_horse_count = sum(
+        horse["role_position"]["forward_propensity"]["normalized_evidence_count"] > 0
+        for horse in ordered
+    )
+    level = queue_pressure_level_value(
+        known_count=known_count, total_count=len(ordered), high_count=high_count,
+        medium_count=medium_count, forward_count=forward_count,
+        strong_count=strong_count, dependency_count=dependency_count,
+    )
+    high_cost_horses = [
+        {"horse_no": horse["basics"]["horse_no"], "horse_name": horse["basics"]["horse_name"]}
+        for horse in ordered
+        if horse["role_position"]["first_turn_position_cost"]["value"] == "high"
+    ]
+    return {
+        "forward_candidate_count": forward_count,
+        "strong_forward_candidate_count": strong_count,
+        "lead_dependency_possible_count": dependency_count,
+        "can_rate_observed_count": can_rate_count,
+        "high_conflict_pair_count": high_count,
+        "medium_conflict_pair_count": medium_count,
+        "first_turn_high_cost_horses": high_cost_horses,
+        "queue_pressure_level": level,
+        "queue_pressure_confidence": queue_pressure_confidence_value(
+            known_count=known_count, normalized_horse_count=normalized_horse_count,
+            total_count=len(ordered),
+        ),
+        "role_known_horse_count": known_count,
+        "normalized_position_horse_count": normalized_horse_count,
+        "normalized_position_coverage_rate": observed_rate(normalized_horse_count, len(ordered)),
+        "queue_confidence_rule": (
+            "medium only when role-known and normalized-position horse coverage are both >= 0.8; "
+            "otherwise low; launch speed remains unobserved"
+        ),
+        "eligible_pair_count": len(pairs),
+        "pairwise_pressure_matrix": {
+            "direction": "undirected canonical upper triangle; horse_a.horse_no < horse_b.horse_no",
+            "eligibility_rule": "at least one horse has forward or strong_forward observed-ratio classification",
+            "pairs": pairs,
+        },
+        "pace_conversion": "Queue Pressure HIGH != FAST; no automatic SLOW/MIDDLE/FAST conversion",
+        "human_scenario_relation": "observation input only; Human Scenario is never changed automatically",
+        "status": "proxy",
+        "rule_version": "queue_pressure_map_v0.2",
+    }
+
+
 def route_summary(card: Mapping[str, Any]) -> dict[str, Any]:
     route_lines = list(card["static_route"])
     segments = list(card["segments"])
@@ -1183,6 +2118,39 @@ def comparison_row(horse: Mapping[str, Any], card: Mapping[str, Any]) -> dict[st
         "ability_band": horse["ability"]["ability_band"],
         "demand_fit": demand_fit,
         "early_burden_fit": burden,
+        "corner_fit": str(corner["value"]),
+        "finish_fit": str(finish["value"]),
+        "condition": "未観測",
+        "best_scenario": "未観測",
+        "win_path_short": horse["paths"]["win_path"],
+        "lose_path_short": horse["paths"]["lose_path"],
+        "confidence": horse["uncertainty"]["confidence"],
+    }
+
+
+def comparison_row_v02(horse: Mapping[str, Any], card: Mapping[str, Any]) -> dict[str, str]:
+    basics = horse["basics"]
+    role = str(horse["role_position"]["target_context_role"]["value"])
+    role_range = str(horse["role_position"]["role_range"]["value"])
+    expected = str(horse["role_position"]["expected_position_band_proxy"]["value"])
+    position_cost = horse["role_position"]["first_turn_position_cost"]
+    corner = horse["course_shape_traits"]["corner_speed_maintenance"]
+    finish = horse["pace_role_traits"]["late_retention"]
+    requirements = short_requirements(card, role)
+    observed_requirements = [
+        trait for trait in requirements
+        if trait in horse["pace_role_traits"] and horse["pace_role_traits"][trait]["status"] != "unobserved"
+        or trait in horse["course_shape_traits"] and horse["course_shape_traits"][trait]["status"] != "unobserved"
+    ]
+    return {
+        "horse_no": str(basics["horse_no"]),
+        "horse_name": basics["horse_name"],
+        "role": role,
+        "role_range": role_range,
+        "expected_position_band_proxy": expected,
+        "ability_band": horse["ability"]["ability_band"],
+        "demand_fit": "一部証拠" if observed_requirements else "未観測",
+        "early_burden_fit": str(position_cost["value"]),
         "corner_fit": str(corner["value"]),
         "finish_fit": str(finish["value"]),
         "condition": "未観測",
@@ -1400,6 +2368,198 @@ def build_observation(
     return result
 
 
+def build_observation_v02(
+    *,
+    targets_manifest: Mapping[str, Any],
+    route_cards: Mapping[str, Any],
+    targets: Sequence[Mapping[str, str]],
+    entries: Sequence[Mapping[str, str]],
+    history: Sequence[Mapping[str, str]],
+    coverage: Sequence[Mapping[str, str]],
+    readiness: Sequence[Mapping[str, str]],
+    route_coverage: Sequence[Mapping[str, str]],
+    official_snapshot: Mapping[str, Any],
+    generated_at_jst: str,
+) -> dict[str, Any]:
+    """Build Queue proxy v0.2 without mutating the frozen v1 build path."""
+
+    validate_target_manifest_schema(targets_manifest)
+    validate_route_cards_schema(route_cards)
+    if targets_manifest.get("selection_mode") != "race_name_only":
+        raise LitePlusError("target manifest must use race_name_only")
+    if len(targets) != 5 or len(route_cards.get("cards", [])) != 5:
+        raise LitePlusError("exactly five targets and route cards are required")
+    validate_columns(entries, ENTRY_ALLOWED_COLUMNS, "entries")
+    validate_columns(history, HISTORY_ALLOWED_COLUMNS, "history")
+    validate_columns(targets, TARGET_ALLOWED_COLUMNS, "targets")
+    validate_columns(coverage, COVERAGE_ALLOWED_COLUMNS, "coverage")
+    validate_columns(readiness, READINESS_ALLOWED_COLUMNS, "readiness")
+    validate_columns(route_coverage, ROUTE_COVERAGE_ALLOWED_COLUMNS, "route_coverage")
+    for name, rows in (("targets", targets), ("entries", entries), ("history", history),
+                       ("coverage", coverage), ("readiness", readiness),
+                       ("route_coverage", route_coverage)):
+        validate_safety_rows(rows, name)
+    if any(str(row.get("historical_market_columns_included", "")).lower() != "false" for row in history):
+        raise LitePlusError("history source must certify historical market columns excluded")
+    if any(str(row.get("draw_dependent_features_used", "")).lower() != "false" for row in history):
+        raise LitePlusError("history source unexpectedly used draw-dependent features")
+    if any(str(row.get("future_or_post_target_flag", "")).lower() != "false" for row in history):
+        raise LitePlusError("future/post-target history detected")
+    validate_official_snapshot_schema(official_snapshot)
+    if official_snapshot.get("runner_count") != 70:
+        raise LitePlusError("official snapshot must contain all 70 runners")
+    validate_cross_source_universe(
+        targets_manifest, route_cards, targets, entries, history, coverage,
+        readiness, route_coverage, official_snapshot,
+    )
+
+    timestamp = parse_iso_datetime(generated_at_jst).isoformat(timespec="seconds")
+    if parse_iso_datetime(timestamp) < parse_iso_datetime(str(official_snapshot["fetched_at_jst"])):
+        raise LitePlusError("observation generation time precedes official entry capture")
+    official = flatten_official(official_snapshot)
+    declared = {(row["race_id"], row["horse_id"]): row for row in entries}
+    if set(official) != set(declared):
+        raise LitePlusError("official and declared runner universes differ")
+    history_by_horse: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
+    for row in history:
+        history_by_horse[(row["target_race_id"], row["target_horse_id"])].append(dict(row))
+    readiness_map = {(row["target_race_id"], row["target_horse_id"]): row for row in readiness}
+    route_map = {(row["target_race_id"], row["target_horse_id"]): row for row in route_coverage}
+    coverage_map = {row["target_race_id"]: row for row in coverage}
+    card_map = {int(card["leg"]): card for card in route_cards["cards"]}
+
+    races: list[dict[str, Any]] = []
+    for target in sorted(targets, key=lambda row: int(row["manifest_leg"])):
+        leg = int(target["manifest_leg"])
+        race_id = target["race_id"]
+        card = card_map[leg]
+        cov = coverage_map[race_id]
+        runner_rows = [official[key] for key in official if key[0] == race_id]
+        runner_rows.sort(key=lambda row: int(row["horse_no"]))
+        target_context = {
+            "venue": target["venue"],
+            "surface": normalize_surface(target["surface_manifest"]),
+            "distance_m": int(target["distance_m"]),
+            "post_time_jst": target["post_time_jst"],
+            "maximum_frame_no": max(int(runner["frame_no"]) for runner in runner_rows),
+        }
+        horses = [
+            build_horse_v02(
+                runner,
+                history_by_horse[(race_id, runner["horse_id"])],
+                readiness_map[(race_id, runner["horse_id"])],
+                route_map[(race_id, runner["horse_id"])],
+                target_context,
+                card,
+            )
+            for runner in runner_rows
+        ]
+        queue_map = build_queue_pressure_map(horses, card)
+        flexible_names = [
+            horse["basics"]["horse_name"] for horse in horses
+            if horse["role_position"]["position_flexibility"] in {"high", "medium"}
+        ]
+        comparison = [comparison_row_v02(horse, card) for horse in horses]
+        races.append({
+            "leg": leg,
+            "win5_role": target["win5_role"],
+            "race_id": race_id,
+            "race_name": target["race_name"],
+            "track": target["venue"],
+            "race_no": int(target["race_no"]),
+            "surface": normalize_surface(target["surface_manifest"]),
+            "distance_m": int(target["distance_m"]),
+            "post_time_jst": target["post_time_jst"],
+            "runner_count": len(horses),
+            "official_entry_url": target["official_entry_url"],
+            "draw_status": "confirmed",
+            "meeting_day": card["current_context"].get("meeting"),
+            "course_change": card["current_context"].get("course_change"),
+            "track_condition": unobserved("開催当日のJRA馬場状態をfreeze前に人が記録"),
+            "day_bias": unobserved("日曜前半レースの観測前"),
+            "wind": unobserved("当日風向・風速を接続していない"),
+            "course_structure": route_summary(card),
+            "geometry_status": cov["full_curve_geometry_status"],
+            "route_match_level": "partial",
+            "same_condition_evidence": {
+                "exact_count": int(cov["certified_exact_races"]),
+                "partial_count": int(cov["partial_candidate_races"]),
+                "similar_count": int(cov["certified_similar_races"]),
+                "status": "partial",
+                "exact_caveat": cov["exact_evaluation_status"],
+                "similar_caveat": cov["similar_status"],
+                "population_definition": cov["history_population_definition"],
+            },
+            "ra_lap_join_coverage": {
+                "joined": int(cov["ra_lap_joined_races"]),
+                "denominator": int(cov["ra_lap_join_denominator"]),
+                "rate": float(cov["ra_lap_join_rate"]),
+                "status": "observed",
+                "note": "race-level RA join。個体別sectionalではない",
+            },
+            "role_classification_coverage": {
+                "known_runner_rows": int(cov["role_known_runner_rows"]),
+                "denominator": int(cov["role_runner_denominator"]),
+                "rate": float(cov["role_determination_rate"]),
+                "status": "proxy",
+                "note": "history route populationの位置role coverage。個体roleは角位置proxy",
+            },
+            "historical_pace_tendency": {
+                "slow_middle_fast": unobserved("独立S/M/F taxonomy未凍結。Queueから変換しない"),
+                "legacy_shape_distribution": unobserved(
+                    "market-excluded recovery coverageには分布列がなく、件数だけから構成比を作らない",
+                    "旧taxonomyのlabel coverageはあるが、分布はLite+入力に未収録",
+                ),
+                "front_pressure": unobserved("pressure duration thresholdはNOT_ACTIVATED"),
+                "finish_environment": evidence(
+                    card["segments"][-1]["focus"], status="proxy", evidence_count=1,
+                    confidence="medium", route_match_level="partial",
+                    note="route requirement cardの最終segment。過去finish分類ではない",
+                ),
+            },
+            "queue_pressure_map": queue_map,
+            "human_scenario": race_human_template({"post_time_jst": target["post_time_jst"]}),
+            "favorite_collapse": {
+                "likely_favorite_or_main_danger_horse": "未入力（市場人気を自動取得しない）",
+                "what_fails": "人が指定したmain danger horseの役割前提・位置確保・終盤残存の崩れをfreeze理由に記入",
+                "race_state_change": "Queue pressureとpace scenarioを分離し、競合後の控え・中盤relaxationも検討",
+                "who_benefits": "役割柔軟性proxyあり（公式馬番順・非順位）: " + ("、".join(flexible_names) if flexible_names else "未観測"),
+                "confidence": "low",
+                "caveat": "favorite/popularity/odds未使用。推薦ではなく崩壊時の構造観測欄",
+            },
+            "notes_for_post_race_review": "HTMLのpost-race review欄へ別記。pre-race freezeは上書きしない",
+            "comparison_columns": list(COMPARISON_COLUMNS_V2),
+            "comparison": comparison,
+            "horses": horses,
+        })
+
+    result = {
+        "schema_version": "race_intelligence_lite_plus_sunday_observation_queue_v0_2",
+        "queue_proxy_version": "0.2",
+        "title": "Race Intelligence Lite+ Sunday Observation View — Queue Pressure Map v0.2",
+        "target_date": TARGET_DATE.isoformat(),
+        "generated_at_jst": timestamp,
+        "display_order_rule": "race leg then official horse_no; not a rank",
+        "safety": dict(SAFETY),
+        "data_contract": {
+            "evidence_status": sorted(STATUS_VALUES),
+            "route_match_level": sorted(ROUTE_MATCH_VALUES),
+            "confidence": sorted(CONFIDENCE_VALUES),
+            "scenario_sensitivity": sorted(SENSITIVITY_VALUES),
+            "missingness_rule": "unobserved is never coerced to neutral or zero",
+            "observed_rate_rule": "historical numerator/denominator only; never current-race probability",
+            "position_rule": "first observed corner position is not launch speed",
+            "queue_rule": "Queue Pressure HIGH != FAST; no automatic pace or Human Scenario conversion",
+            "formal_model_connection": False,
+        },
+        "race_count": len(races),
+        "runner_count": sum(race["runner_count"] for race in races),
+        "races": races,
+    }
+    validate_observation_v02(result)
+    return result
+
+
 def walk_evidence(value: Any) -> Iterable[dict[str, Any]]:
     if isinstance(value, dict):
         if {"value", "status", "route_match_level", "evidence_count", "confidence", "note", "missing_reason"} <= set(value):
@@ -1414,8 +2574,7 @@ def walk_evidence(value: Any) -> Iterable[dict[str, Any]]:
 def validate_observation(data: Mapping[str, Any]) -> None:
     require_exact_keys(data, OBSERVATION_TOP_KEYS, "observation")
     reject_forbidden_recursive(data, "observation")
-    if data.get("safety") != SAFETY:
-        raise LitePlusError("safety constants differ")
+    validate_safety_object(data.get("safety"), "observation.safety")
     races = data.get("races", [])
     if len(races) != 5 or data.get("race_count") != 5:
         raise LitePlusError("observation must contain five races")
@@ -1479,6 +2638,340 @@ def validate_observation(data: Mapping[str, Any]) -> None:
             raise LitePlusError("invalid route match vocabulary")
         if item["status"] == "unobserved" and not item["missing_reason"]:
             raise LitePlusError("unobserved evidence without missing reason")
+
+
+def validate_observed_rate_record(value: Any, context: str) -> None:
+    if not isinstance(value, Mapping):
+        raise LitePlusError(f"observed rate record must be an object: {context}")
+    require_exact_keys(value, OBSERVED_RATE_KEYS, context)
+    numerator = value["numerator"]
+    denominator = value["denominator"]
+    if type(numerator) is not int or type(denominator) is not int:
+        raise LitePlusError(f"observed rate counts must be integers: {context}")
+    if numerator < 0 or denominator < 0 or numerator > denominator:
+        raise LitePlusError(f"observed rate counts invalid: {context}")
+    if denominator == 0:
+        if value["value"] is not None or value["status"] != "unobserved" or not value["missing_reason"]:
+            raise LitePlusError(f"missing observed rate is not explicit: {context}")
+    else:
+        expected = round(numerator / denominator, 6)
+        if type(value["value"]) not in {int, float} or abs(float(value["value"]) - expected) > 1e-9:
+            raise LitePlusError(f"observed rate does not match numerator/denominator: {context}")
+        if value["status"] != "derived" or value["missing_reason"]:
+            raise LitePlusError(f"observed rate status invalid: {context}")
+    if "確率ではない" not in str(value["note"]):
+        raise LitePlusError(f"observed rate probability caveat missing: {context}")
+
+
+def validate_observation_v02(data: Mapping[str, Any]) -> None:
+    require_exact_keys(data, OBSERVATION_TOP_V2_KEYS, "observation_v02")
+    reject_forbidden_recursive(data, "observation_v02")
+    if data.get("schema_version") != "race_intelligence_lite_plus_sunday_observation_queue_v0_2":
+        raise LitePlusError("Queue v0.2 schema version differs")
+    if data.get("queue_proxy_version") != "0.2":
+        raise LitePlusError("Queue proxy version differs")
+    validate_safety_object(data.get("safety"), "observation_v02.safety")
+    if data.get("data_contract", {}).get("formal_model_connection") is not False:
+        raise LitePlusError("Queue proxy must not connect to a formal model")
+    races = data.get("races", [])
+    if not isinstance(races, list) or len(races) != 5 or data.get("race_count") != 5:
+        raise LitePlusError("Queue v0.2 observation must contain five races")
+    if [race.get("leg") for race in races] != [1, 2, 3, 4, 5]:
+        raise LitePlusError("Queue v0.2 races must remain in WIN5 leg order")
+    if sum(len(race.get("horses", [])) for race in races) != 70 or data.get("runner_count") != 70:
+        raise LitePlusError("Queue v0.2 observation must contain all 70 horse cards")
+
+    horse_keys: set[tuple[str, str]] = set()
+    for race_index, race in enumerate(races):
+        context = f"observation_v02.races[{race_index}]"
+        require_exact_keys(race, OBSERVATION_RACE_V2_KEYS, context)
+        horses = race["horses"]
+        comparison = race["comparison"]
+        if len(horses) != race["runner_count"] or len(comparison) != len(horses):
+            raise LitePlusError(f"Queue card/comparison parity failed: {race['race_id']}")
+        if tuple(race["comparison_columns"]) != COMPARISON_COLUMNS_V2:
+            raise LitePlusError(f"Queue comparison columns invalid: {race['race_id']}")
+        for row_index, row in enumerate(comparison):
+            require_exact_keys(row, set(COMPARISON_COLUMNS_V2), f"{context}.comparison[{row_index}]")
+        numbers = [int(horse["basics"]["horse_no"]) for horse in horses]
+        if numbers != sorted(numbers) or len(numbers) != len(set(numbers)):
+            raise LitePlusError(f"official horse number order invalid: {race['race_id']}")
+
+        horse_by_no: dict[int, Mapping[str, Any]] = {}
+        for horse_index, horse in enumerate(horses):
+            horse_context = f"{context}.horses[{horse_index}]"
+            require_exact_keys(horse, OBSERVATION_HORSE_KEYS, horse_context)
+            require_exact_keys(horse["basics"], BASICS_KEYS, horse_context + ".basics")
+            require_exact_keys(horse["role_position"], ROLE_POSITION_V2_KEYS, horse_context + ".role_position")
+            require_exact_keys(horse["ability"], ABILITY_KEYS, horse_context + ".ability")
+            require_exact_keys(horse["pace_role_traits"], PACE_TRAIT_KEYS, horse_context + ".pace_role_traits")
+            require_exact_keys(horse["course_shape_traits"], COURSE_TRAIT_KEYS, horse_context + ".course_shape_traits")
+            require_exact_keys(horse["condition"], CONDITION_KEYS, horse_context + ".condition")
+            require_exact_keys(horse["paths"], PATH_KEYS, horse_context + ".paths")
+            require_exact_keys(horse["uncertainty"], UNCERTAINTY_KEYS, horse_context + ".uncertainty")
+            key = (race["race_id"], horse["horse_id"])
+            if key in horse_keys:
+                raise LitePlusError(f"duplicate horse card: {key}")
+            horse_keys.add(key)
+            horse_no = int(horse["basics"]["horse_no"])
+            horse_by_no[horse_no] = horse
+            if horse["display_order"] != horse["basics"]["horse_no"]:
+                raise LitePlusError(f"horse display order differs from official horse_no: {key}")
+            if len(horse["transfer_evidence"]) > 3:
+                raise LitePlusError(f"too many transfer races: {key}")
+            for transfer_index, transfer in enumerate(horse["transfer_evidence"]):
+                require_exact_keys(transfer, TRANSFER_KEYS, horse_context + f".transfer_evidence[{transfer_index}]")
+                if date.fromisoformat(transfer["date"]) >= TARGET_DATE:
+                    raise LitePlusError(f"post-target transfer evidence: {key}")
+            if set(horse["scenario_sensitivity"]) != set(SCENARIO_VALUES):
+                raise LitePlusError(f"scenario sensitivity keys invalid: {key}")
+            for scenario, item in horse["scenario_sensitivity"].items():
+                require_exact_keys(item, SCENARIO_SENSITIVITY_KEYS, horse_context + f".scenario_sensitivity.{scenario}")
+                if item["assessment"] not in SENSITIVITY_VALUES:
+                    raise LitePlusError(f"scenario sensitivity value invalid: {key}")
+
+            role = horse["role_position"]
+            all_recent = role["all_recent_role"]
+            if all_recent["value"] not in set(ROLE_VALUES) | {"未観測"}:
+                raise LitePlusError(f"all-recent role vocabulary invalid: {key}")
+            target_role = role["target_context_role"]
+            require_exact_keys(target_role, TARGET_CONTEXT_ROLE_KEYS, horse_context + ".target_context_role")
+            require_exact_keys(target_role["layer_evidence_count"], TARGET_CONTEXT_LAYER_KEYS,
+                               horse_context + ".target_context_role.layer_evidence_count")
+            if target_role["value"] not in ROLE_VALUES:
+                raise LitePlusError(f"target-context role vocabulary invalid: {key}")
+            if target_role["selected_layer"] not in TARGET_CONTEXT_LAYER_KEYS | {"unobserved"}:
+                raise LitePlusError(f"target-context selected layer invalid: {key}")
+            if any(type(count) is not int or count < 0 for count in target_role["layer_evidence_count"].values()):
+                raise LitePlusError(f"target-context layer count invalid: {key}")
+            if type(target_role["evidence_count"]) is not int or not 0 <= target_role["evidence_count"] <= 5:
+                raise LitePlusError(f"target-context evidence count invalid: {key}")
+
+            first_position = role["first_observed_position"]
+            require_exact_keys(first_position, FIRST_OBSERVED_POSITION_KEYS, horse_context + ".first_observed_position")
+            if first_position["evidence_count"] != len(first_position["observed_positions"]):
+                raise LitePlusError(f"first-position evidence count differs: {key}")
+            if first_position["evidence_count"] and first_position["status"] != "derived":
+                raise LitePlusError(f"first-position aggregate must be derived: {key}")
+            if any(type(position) is not int or position < 1 for position in first_position["observed_positions"]):
+                raise LitePlusError(f"first-position observation invalid: {key}")
+
+            normalized = role["normalized_position_proxy"]
+            require_exact_keys(normalized, NORMALIZED_POSITION_KEYS, horse_context + ".normalized_position_proxy")
+            if normalized["evidence_count"] != len(normalized["observed_percentiles"]):
+                raise LitePlusError(f"normalized-position evidence count differs: {key}")
+            if any(type(value) not in {int, float} or not 0 <= float(value) <= 1 for value in normalized["observed_percentiles"]):
+                raise LitePlusError(f"normalized position outside [0,1]: {key}")
+            if normalized["evidence_count"] == 0:
+                if normalized["status"] != "unobserved" or not normalized["missing_reason"]:
+                    raise LitePlusError(f"missing field_size does not fail closed: {key}")
+
+            forward = role["forward_propensity"]
+            require_exact_keys(forward, FORWARD_PROPENSITY_KEYS, horse_context + ".forward_propensity")
+            for rate_name in ("observed_lead_rate", "observed_front4_rate",
+                              "observed_front_quartile_rate", "context_lead_rate", "context_front_rate"):
+                validate_observed_rate_record(forward[rate_name], horse_context + f".forward_propensity.{rate_name}")
+            if forward["classification"] not in FORWARD_CLASS_VALUES:
+                raise LitePlusError(f"forward propensity vocabulary invalid: {key}")
+            if forward["observed_lead_rate"]["denominator"] != forward["evidence_count"]:
+                raise LitePlusError(f"all-recent forward denominator differs: {key}")
+            if forward["observed_front4_rate"]["denominator"] != forward["evidence_count"]:
+                raise LitePlusError(f"front4 denominator differs: {key}")
+            if forward["observed_front_quartile_rate"]["denominator"] != forward["normalized_evidence_count"]:
+                raise LitePlusError(f"normalized denominator differs: {key}")
+            if forward["context_lead_rate"]["denominator"] != forward["context_evidence_count"]:
+                raise LitePlusError(f"context lead denominator differs: {key}")
+            if forward["context_front_rate"]["denominator"] != forward["context_evidence_count"]:
+                raise LitePlusError(f"context front denominator differs: {key}")
+
+            dependency = role["lead_dependency_evidence"]
+            require_exact_keys(dependency, LEAD_DEPENDENCY_KEYS, horse_context + ".lead_dependency_evidence")
+            if dependency["dependency_status"] not in DEPENDENCY_STATUS_VALUES:
+                raise LitePlusError(f"lead dependency vocabulary invalid: {key}")
+            if dependency["lead_run_count"] + dependency["nonlead_run_count"] != dependency["evidence_count"]:
+                raise LitePlusError(f"lead dependency counts do not reconcile: {key}")
+            if (
+                not 0 <= dependency["lead_valid_finish_count"] <= dependency["lead_run_count"]
+                or not 0 <= dependency["nonlead_valid_finish_count"] <= dependency["nonlead_run_count"]
+                or dependency["missing_finish_count"] != dependency["evidence_count"]
+                - dependency["lead_valid_finish_count"] - dependency["nonlead_valid_finish_count"]
+            ):
+                raise LitePlusError(f"lead dependency finish coverage differs: {key}")
+            if dependency["can_rate_evidence_count"] > dependency["nonlead_good_finish_count"]:
+                raise LitePlusError(f"can-rate count exceeds nonlead good finishes: {key}")
+            if "need_lead" in role:
+                raise LitePlusError(f"Queue v0.2 must not emit need_lead: {key}")
+            if dependency["dependency_status"] == "dependency_possible" and dependency["can_rate_evidence_count"]:
+                raise LitePlusError(f"dependency_possible conflicts with can-rate evidence: {key}")
+            if dependency["dependency_status"] == "dependency_possible" and not (
+                dependency["lead_run_count"] >= 2
+                and dependency["lead_good_finish_count"] >= 1
+                and dependency["nonlead_run_count"] >= 1
+                and dependency["nonlead_valid_finish_count"] == dependency["nonlead_run_count"]
+                and dependency["nonlead_good_finish_count"] == 0
+            ):
+                raise LitePlusError(f"dependency_possible lacks positive outcome coverage: {key}")
+            launch = role["launch_speed"]
+            if launch["status"] != "unobserved" or launch["value"] != "未観測":
+                raise LitePlusError(f"launch speed must remain unobserved: {key}")
+            position_cost = role["first_turn_position_cost"]
+            if position_cost["value"] not in {"high", "medium", "low", "未観測"}:
+                raise LitePlusError(f"first-turn position cost invalid: {key}")
+            if not str(role["expected_position_band_proxy"]["value"]).strip():
+                raise LitePlusError(f"expected position band missing: {key}")
+            for rival_index, rival in enumerate(role["pressure_rivals"]):
+                require_exact_keys(rival, PRESSURE_RIVAL_KEYS, horse_context + f".pressure_rivals[{rival_index}]")
+                if int(rival["horse_no"]) == horse_no or rival["conflict_level"] not in {"high", "medium"}:
+                    raise LitePlusError(f"pressure rival invalid: {key}")
+
+        queue = race["queue_pressure_map"]
+        require_exact_keys(queue, QUEUE_PRESSURE_KEYS, context + ".queue_pressure_map")
+        if queue["queue_pressure_level"] not in QUEUE_LEVEL_VALUES:
+            raise LitePlusError(f"Queue pressure level invalid: {race['race_id']}")
+        if queue["queue_pressure_confidence"] not in CONFIDENCE_VALUES:
+            raise LitePlusError(f"Queue confidence invalid: {race['race_id']}")
+        if "HIGH != FAST" not in queue["pace_conversion"] or "no automatic" not in queue["pace_conversion"]:
+            raise LitePlusError(f"Queue-to-pace conversion guard missing: {race['race_id']}")
+        if "never changed automatically" not in queue["human_scenario_relation"]:
+            raise LitePlusError(f"Queue-to-Human-Scenario guard missing: {race['race_id']}")
+        if race["human_scenario"] != race_human_template({"post_time_jst": race["post_time_jst"]}):
+            raise LitePlusError(f"Queue proxy automatically changed Human Scenario: {race['race_id']}")
+        matrix = queue["pairwise_pressure_matrix"]
+        require_exact_keys(matrix, PAIRWISE_MATRIX_KEYS, context + ".pairwise_pressure_matrix")
+        pairs = matrix["pairs"]
+        if queue["eligible_pair_count"] != len(pairs):
+            raise LitePlusError(f"eligible pair count differs: {race['race_id']}")
+        seen_pairs: set[tuple[int, int]] = set()
+        expected_rivals: dict[int, set[tuple[int, str]]] = defaultdict(set)
+        for pair_index, pair in enumerate(pairs):
+            pair_context = context + f".pairwise_pressure_matrix.pairs[{pair_index}]"
+            require_exact_keys(pair, PAIRWISE_PRESSURE_KEYS, pair_context)
+            require_exact_keys(pair["horse_a"], PAIR_HORSE_KEYS, pair_context + ".horse_a")
+            require_exact_keys(pair["horse_b"], PAIR_HORSE_KEYS, pair_context + ".horse_b")
+            a_no = int(pair["horse_a"]["horse_no"])
+            b_no = int(pair["horse_b"]["horse_no"])
+            pair_key = (a_no, b_no)
+            if a_no >= b_no or pair_key in seen_pairs or a_no not in horse_by_no or b_no not in horse_by_no:
+                raise LitePlusError(f"pair direction/self/duplicate invalid: {race['race_id']} {pair_key}")
+            seen_pairs.add(pair_key)
+            if pair["conflict_level"] not in CONFLICT_LEVEL_VALUES or not str(pair["reason"]).strip():
+                raise LitePlusError(f"pair conflict/reason invalid: {race['race_id']} {pair_key}")
+            a_horse = horse_by_no[a_no]
+            b_horse = horse_by_no[b_no]
+            a_role = a_horse["role_position"]
+            b_role = b_horse["role_position"]
+            if pair["horse_a"]["horse_name"] != a_horse["basics"]["horse_name"]:
+                raise LitePlusError(f"pair horse A identity differs: {race['race_id']} {pair_key}")
+            if pair["horse_b"]["horse_name"] != b_horse["basics"]["horse_name"]:
+                raise LitePlusError(f"pair horse B identity differs: {race['race_id']} {pair_key}")
+            if pair["a_role_range"] != a_role["role_range"]["value"] or pair["b_role_range"] != b_role["role_range"]["value"]:
+                raise LitePlusError(f"pair role projection differs: {race['race_id']} {pair_key}")
+            if (
+                pair["a_forward_propensity"] != a_role["forward_propensity"]["classification"]
+                or pair["b_forward_propensity"] != b_role["forward_propensity"]["classification"]
+            ):
+                raise LitePlusError(f"pair forward projection differs: {race['race_id']} {pair_key}")
+            expected_draw = f"A={a_no}番はB={b_no}番より{b_no - a_no}つ内"
+            if pair["relative_draw"] != expected_draw:
+                raise LitePlusError(f"pair relative draw differs: {race['race_id']} {pair_key}")
+            cost_projection = (
+                f"A cost={a_role['first_turn_position_cost']['value']}; "
+                f"B cost={b_role['first_turn_position_cost']['value']}"
+            )
+            if cost_projection not in pair["first_turn_burden"]:
+                raise LitePlusError(f"pair first-turn cost projection differs: {race['race_id']} {pair_key}")
+            if pair["conflict_level"] in {"high", "medium"}:
+                expected_rivals[a_no].add((b_no, pair["conflict_level"]))
+                expected_rivals[b_no].add((a_no, pair["conflict_level"]))
+        ordered_numbers = sorted(horse_by_no)
+        expected_pair_keys: set[tuple[int, int]] = set()
+        for number_index, a_no in enumerate(ordered_numbers):
+            for b_no in ordered_numbers[number_index + 1:]:
+                classes = {
+                    horse_by_no[a_no]["role_position"]["forward_propensity"]["classification"],
+                    horse_by_no[b_no]["role_position"]["forward_propensity"]["classification"],
+                }
+                if classes & {"forward", "strong_forward"}:
+                    expected_pair_keys.add((a_no, b_no))
+        if seen_pairs != expected_pair_keys:
+            raise LitePlusError(f"eligible pair set is incomplete or overbroad: {race['race_id']}")
+        if queue["high_conflict_pair_count"] != sum(pair["conflict_level"] == "high" for pair in pairs):
+            raise LitePlusError(f"high conflict pair count differs: {race['race_id']}")
+        if queue["medium_conflict_pair_count"] != sum(pair["conflict_level"] == "medium" for pair in pairs):
+            raise LitePlusError(f"medium conflict pair count differs: {race['race_id']}")
+        for horse_no, horse in horse_by_no.items():
+            actual_rivals = {
+                (int(rival["horse_no"]), rival["conflict_level"])
+                for rival in horse["role_position"]["pressure_rivals"]
+            }
+            if actual_rivals != expected_rivals[horse_no]:
+                raise LitePlusError(f"pairwise rival symmetry differs: {race['race_id']} {horse_no}")
+        classifications = [horse["role_position"]["forward_propensity"]["classification"] for horse in horses]
+        if queue["forward_candidate_count"] != sum(value in {"forward", "strong_forward"} for value in classifications):
+            raise LitePlusError(f"forward count differs: {race['race_id']}")
+        if queue["strong_forward_candidate_count"] != sum(value == "strong_forward" for value in classifications):
+            raise LitePlusError(f"strong-forward count differs: {race['race_id']}")
+        dependencies = [horse["role_position"]["lead_dependency_evidence"] for horse in horses]
+        if queue["lead_dependency_possible_count"] != sum(item["dependency_status"] == "dependency_possible" for item in dependencies):
+            raise LitePlusError(f"dependency count differs: {race['race_id']}")
+        if queue["can_rate_observed_count"] != sum(item["can_rate_evidence_count"] > 0 for item in dependencies):
+            raise LitePlusError(f"can-rate count differs: {race['race_id']}")
+        known_count = sum(value != "unobserved" for value in classifications)
+        normalized_horse_count = sum(
+            horse["role_position"]["forward_propensity"]["normalized_evidence_count"] > 0
+            for horse in horses
+        )
+        if queue["role_known_horse_count"] != known_count:
+            raise LitePlusError(f"role-known horse count differs: {race['race_id']}")
+        if queue["normalized_position_horse_count"] != normalized_horse_count:
+            raise LitePlusError(f"normalized-position horse count differs: {race['race_id']}")
+        expected_normalized_rate = observed_rate(normalized_horse_count, len(horses))
+        if queue["normalized_position_coverage_rate"] != expected_normalized_rate:
+            raise LitePlusError(f"normalized-position coverage rate differs: {race['race_id']}")
+        expected_level = queue_pressure_level_value(
+            known_count=known_count, total_count=len(horses),
+            high_count=queue["high_conflict_pair_count"],
+            medium_count=queue["medium_conflict_pair_count"],
+            forward_count=queue["forward_candidate_count"],
+            strong_count=queue["strong_forward_candidate_count"],
+            dependency_count=queue["lead_dependency_possible_count"],
+        )
+        if queue["queue_pressure_level"] != expected_level:
+            raise LitePlusError(f"Queue pressure level does not match fixed rule: {race['race_id']}")
+        expected_confidence = queue_pressure_confidence_value(
+            known_count=known_count, normalized_horse_count=normalized_horse_count,
+            total_count=len(horses),
+        )
+        if queue["queue_pressure_confidence"] != expected_confidence:
+            raise LitePlusError(f"Queue pressure confidence does not match coverage: {race['race_id']}")
+        if ">= 0.8" not in queue["queue_confidence_rule"]:
+            raise LitePlusError(f"Queue confidence rule is not explicit: {race['race_id']}")
+        for index, item in enumerate(queue["first_turn_high_cost_horses"]):
+            require_exact_keys(item, PAIR_HORSE_KEYS, context + f".first_turn_high_cost_horses[{index}]")
+        expected_high_cost = [
+            {"horse_no": horse["basics"]["horse_no"], "horse_name": horse["basics"]["horse_name"]}
+            for horse in horses if horse["role_position"]["first_turn_position_cost"]["value"] == "high"
+        ]
+        if queue["first_turn_high_cost_horses"] != expected_high_cost:
+            raise LitePlusError(f"first-turn high-cost list differs: {race['race_id']}")
+
+    for item in walk_evidence(data):
+        require_exact_keys(item, EVIDENCE_KEYS, "observation_v02.evidence")
+        if item["status"] not in STATUS_VALUES or item["confidence"] not in CONFIDENCE_VALUES:
+            raise LitePlusError("invalid Queue v0.2 evidence vocabulary")
+        if item["route_match_level"] not in ROUTE_MATCH_VALUES:
+            raise LitePlusError("invalid Queue v0.2 route match vocabulary")
+        if item["status"] == "unobserved" and not item["missing_reason"]:
+            raise LitePlusError("unobserved Queue v0.2 evidence without missing reason")
+
+
+def validate_observation_any(data: Mapping[str, Any]) -> None:
+    if data.get("schema_version") == "race_intelligence_lite_plus_sunday_observation_v1":
+        validate_observation(data)
+    elif data.get("schema_version") == "race_intelligence_lite_plus_sunday_observation_queue_v0_2":
+        validate_observation_v02(data)
+    else:
+        raise LitePlusError("unsupported observation schema version")
 
 
 def esc(value: Any) -> str:
@@ -1690,11 +3183,220 @@ def render_race(race: Mapping[str, Any]) -> str:
 </article>'''
 
 
+def render_observed_rate(label: str, item: Mapping[str, Any]) -> str:
+    value = "unobserved" if item["value"] is None else f'{item["value"]:.3f}'
+    details = item["note"]
+    if item["missing_reason"]:
+        details += " / missing: " + item["missing_reason"]
+    return (
+        '<div class="rate-item">'
+        f'<div class="evidence-label">{esc(label)}</div>'
+        f'<div class="evidence-value">{esc(value)}</div>'
+        f'<div class="badges"><span class="badge status-{esc(item["status"])}">{esc(item["status"])}</span>'
+        f'<span class="badge">{esc(item["numerator"])}/{esc(item["denominator"])}</span></div>'
+        f'<div class="evidence-note">{esc(details)}</div></div>'
+    )
+
+
+def render_horse_v02(horse: Mapping[str, Any]) -> str:
+    basics = horse["basics"]
+    role = horse["role_position"]
+    ability = horse["ability"]
+    target_role = role["target_context_role"]
+    forward = role["forward_propensity"]
+    dependency = role["lead_dependency_evidence"]
+    first_position = role["first_observed_position"]
+    normalized = role["normalized_position_proxy"]
+    pressure = "、".join(
+        f'{item["horse_no"]} {item["horse_name"]}({item["conflict_level"]})'
+        for item in role["pressure_rivals"]
+    ) or "high/medium conflictなし（proxy上）"
+    layers = " / ".join(
+        f'{key}={target_role["layer_evidence_count"][key]}'
+        for key in ("same_surface_distance_200", "same_surface_distance_400", "same_surface", "all_recent_fallback")
+    )
+    rates = "".join(
+        render_observed_rate(label, forward[key])
+        for key, label in (
+            ("observed_lead_rate", "observed lead rate"),
+            ("observed_front4_rate", "observed front4 rate"),
+            ("observed_front_quartile_rate", "observed front-quartile rate"),
+            ("context_lead_rate", "context lead rate"),
+            ("context_front_rate", "context front4 rate"),
+        )
+    )
+    ability_items = "".join(
+        render_evidence_item(label, ability[key])
+        for key, label in (("recent_standard", "recent standard"), ("demonstrated_upper", "demonstrated upper"),
+                           ("lower_band", "lower band"), ("repeatability", "repeatability"))
+    )
+    normalized_value = (
+        "unobserved" if normalized["median_position_percentile"] is None
+        else f'{normalized["median_position_percentile"]:.3f}'
+    )
+    first_value = (
+        "unobserved" if first_position["median_absolute_position"] is None
+        else str(first_position["median_absolute_position"])
+    )
+    return f'''
+<details class="horse-card role-v02" id="horse-{esc(horse['horse_id'])}">
+  <summary>
+    <span class="horse-number frame-{esc(basics['frame_no'])}">{esc(basics['horse_no'])}</span>
+    <span class="horse-title"><b>{esc(basics['horse_name'])}</b><small>{esc(basics['sex'])}{esc(basics['age'])} / {esc(basics['assigned_weight'])}kg / {esc(basics['jockey'])}</small></span>
+    <span class="summary-chip">context {esc(target_role['value'])}</span>
+    <span class="summary-chip">band {esc(role['expected_position_band_proxy']['value'])}</span>
+    <span class="summary-chip">conf {esc(horse['uncertainty']['confidence'])}</span>
+  </summary>
+  <div class="horse-body">
+    <section><h4>Basics</h4><div class="facts">
+      <span>枠 {esc(basics['frame_no'])}</span><span>馬番 {esc(basics['horse_no'])}</span>
+      <span>騎手 {esc(basics['jockey'])}</span><span>調教師 {esc(basics['trainer'])} ({esc(basics['trainer_affiliation'])})</span>
+      <span>{esc(basics['sex'])}{esc(basics['age'])} / {esc(basics['coat_color'])}</span><span>斤量 {esc(basics['assigned_weight'])}kg</span>
+    </div></section>
+    <section><h4>Role / Position v0.2</h4>
+      <div class="evidence-grid">
+        {render_evidence_item('all recent role', role['all_recent_role'])}
+        <div class="evidence-item"><div class="evidence-label">target context role</div><div class="evidence-value">{esc(target_role['value'])}</div>
+          <div class="badges"><span class="badge status-{esc(target_role['status'])}">{esc(target_role['status'])}</span><span class="badge">layer {esc(target_role['selected_layer'])}</span><span class="badge">n={esc(target_role['evidence_count'])}</span><span class="badge">conf {esc(target_role['confidence'])}</span></div>
+          <div class="evidence-note">{esc(target_role['note'])} / {esc(layers)}{(' / missing: ' + esc(target_role['missing_reason'])) if target_role['missing_reason'] else ''}</div></div>
+        {render_evidence_item('role range', role['role_range'])}
+        {render_evidence_item('launch speed', role['launch_speed'])}
+        <div class="evidence-item"><div class="evidence-label">first observed position</div><div class="evidence-value">median {esc(first_value)}</div>
+          <div class="badges"><span class="badge status-{esc(first_position['status'])}">{esc(first_position['status'])}</span><span class="badge">n={esc(first_position['evidence_count'])}</span><span class="badge">conf {esc(first_position['confidence'])}</span></div>
+          <div class="evidence-note">range {esc(first_position['minimum_absolute_position'])}–{esc(first_position['maximum_absolute_position'])}; {esc(first_position['note'])}{(' / missing: ' + esc(first_position['missing_reason'])) if first_position['missing_reason'] else ''}</div></div>
+        <div class="evidence-item"><div class="evidence-label">normalized position proxy</div><div class="evidence-value">median {esc(normalized_value)}</div>
+          <div class="badges"><span class="badge status-{esc(normalized['status'])}">{esc(normalized['status'])}</span><span class="badge">n={esc(normalized['evidence_count'])}</span><span class="badge">field-size missing={esc(normalized['field_size_missing_count'])}</span></div>
+          <div class="evidence-note">{esc(normalized['note'])}{(' / missing: ' + esc(normalized['missing_reason'])) if normalized['missing_reason'] else ''}</div></div>
+        {render_evidence_item('early position retention', role['early_position_retention'])}
+        {render_evidence_item('first-turn position cost', role['first_turn_position_cost'])}
+        {render_evidence_item('expected position band proxy', role['expected_position_band_proxy'])}
+      </div>
+      <h5>Forward Propensity — historical observed rates ≠ current-race probability</h5>
+      <div class="rate-grid">{rates}</div>
+      <p><b>classification:</b> {esc(forward['classification'])} / <b>confidence:</b> {esc(forward['confidence'])}. {esc(forward['note'])}</p>
+      <h5>Lead Dependency Evidence</h5><div class="facts">
+        <span>lead runs {esc(dependency['lead_run_count'])}</span><span>nonlead runs {esc(dependency['nonlead_run_count'])}</span>
+        <span>lead good {esc(dependency['lead_good_finish_count'])}</span><span>nonlead good {esc(dependency['nonlead_good_finish_count'])}</span>
+        <span>can-rate evidence {esc(dependency['can_rate_evidence_count'])}</span><span>status {esc(dependency['dependency_status'])}</span>
+      </div><p>{esc(dependency['note'])}</p>
+      <p><b>pressure rivals:</b> {esc(pressure)}</p>
+      <p><b>内隣:</b> {esc(role['inside_neighbor_context'])} / <b>外隣:</b> {esc(role['outside_neighbor_context'])}</p>
+      <ul>{''.join(f'<li>{esc(note)}</li>' for note in role['queue_notes'])}</ul>
+    </section>
+    <section><h4>Ability <small>過去着順帯。順位主張ではありません</small></h4><div class="evidence-grid">{ability_items}</div></section>
+    <section><h4>Pace / Role Traits</h4>{render_trait_grid(horse['pace_role_traits'])}</section>
+    <section><h4>Course / Shape Traits</h4>{render_trait_grid(horse['course_shape_traits'])}</section>
+    <section><h4>Condition</h4><div class="evidence-grid">
+      {render_evidence_item('workout relative', horse['condition']['workout_relative'])}
+      {render_evidence_item('condition trend', horse['condition']['condition_trend'])}
+      {render_evidence_item('rest pattern', horse['condition']['rest_pattern'])}
+      {render_evidence_item('fatigue rebound proxy', horse['condition']['fatigue_rebound_proxy'])}
+    </div><p>state confidence: <b>{esc(horse['condition']['state_confidence'])}</b></p></section>
+    <section><h4>Transfer Evidence <small>最大3走</small></h4>{render_transfer(horse['transfer_evidence'])}</section>
+    <section><h4>Scenario Sensitivity</h4>{render_sensitivity(horse['scenario_sensitivity'])}</section>
+    <section class="paths"><h4>Win / Lose Path</h4>
+      <div><b>win path</b><p>{esc(horse['paths']['win_path'])}</p></div><div><b>lose path</b><p>{esc(horse['paths']['lose_path'])}</p></div>
+      <div><b>favorite-collapse replacement</b><p>{esc(horse['paths']['favorite_collapse_replacement_path'])}</p></div><div><b>fragility</b><p>{esc(horse['paths']['fragility_note'])}</p></div>
+    </section>
+    <section class="uncertainty"><h4>Uncertainty</h4>
+      <p><b>states:</b> {esc(', '.join(horse['uncertainty']['evidence_states']))} / <b>route:</b> {esc(horse['uncertainty']['route_match_level'])} / <b>overall confidence:</b> {esc(horse['uncertainty']['confidence'])}</p>
+      <p><b>missing:</b> {esc(horse['uncertainty']['missing_reason'])}</p><p><b>remains unclear:</b> {esc(horse['uncertainty']['what_remains_unclear'])}</p>
+    </section>
+  </div>
+</details>'''
+
+
+def render_queue_pressure_map(queue: Mapping[str, Any]) -> str:
+    high_cost = "、".join(
+        f'{item["horse_no"]}番 {item["horse_name"]}' for item in queue["first_turn_high_cost_horses"]
+    ) or "なし（proxy上）"
+    metrics = (
+        ("Forward candidates", queue["forward_candidate_count"]),
+        ("Strong forward", queue["strong_forward_candidate_count"]),
+        ("Dependency possible", queue["lead_dependency_possible_count"]),
+        ("Can-rate observed", queue["can_rate_observed_count"]),
+        ("High conflict pairs", queue["high_conflict_pair_count"]),
+        ("Medium conflict pairs", queue["medium_conflict_pair_count"]),
+        ("Role-known horses", queue["role_known_horse_count"]),
+        ("Normalized horses", queue["normalized_position_horse_count"]),
+        ("Queue pressure", queue["queue_pressure_level"]),
+        ("Confidence", queue["queue_pressure_confidence"].upper()),
+    )
+    metric_html = "".join(
+        f'<div><span>{esc(label)}</span><b>{esc(value)}</b></div>' for label, value in metrics
+    )
+    rows = "".join(
+        '<tr>'
+        f'<td>{esc(pair["horse_a"]["horse_no"])} {esc(pair["horse_a"]["horse_name"])}</td>'
+        f'<td>{esc(pair["horse_b"]["horse_no"])} {esc(pair["horse_b"]["horse_name"])}</td>'
+        f'<td><span class="conflict conflict-{esc(pair["conflict_level"])}">{esc(pair["conflict_level"])}</span></td>'
+        f'<td>{esc(pair["reason"])}</td></tr>'
+        for pair in queue["pairwise_pressure_matrix"]["pairs"]
+    ) or '<tr><td colspan="4">eligible pairなし</td></tr>'
+    return f'''
+<div class="queue-metrics">{metric_html}</div>
+<p><b>First-turn high cost:</b> {esc(high_cost)}</p>
+<div class="queue-warning">Queue Pressure HIGH ≠ FAST</div>
+<p>{esc(queue['pace_conversion'])} / {esc(queue['human_scenario_relation'])}</p>
+<p><b>Confidence rule:</b> {esc(queue['queue_confidence_rule'])} / normalized coverage {esc(queue['normalized_position_coverage_rate'])}</p>
+<div class="table-wrap"><table class="pairwise-table"><thead><tr><th>A</th><th>B</th><th>conflict</th><th>why</th></tr></thead><tbody>{rows}</tbody></table></div>'''
+
+
+def render_race_v02(race: Mapping[str, Any]) -> str:
+    course = race["course_structure"]
+    same = race["same_condition_evidence"]
+    ra = race["ra_lap_join_coverage"]
+    role_coverage = race["role_classification_coverage"]
+    legacy = race["historical_pace_tendency"]["legacy_shape_distribution"]
+    scenario_options = '<option value="">選択してください</option><option>SLOW</option><option>MIDDLE</option><option>FAST</option>'
+    confidence_options = '<option value="">選択してください</option><option>high</option><option>medium</option><option>low</option>'
+    horses = "".join(render_horse_v02(horse) for horse in race["horses"])
+    return f'''
+<article class="race" id="race-{esc(race['leg'])}" data-race-id="{esc(race['race_id'])}" data-post-time="{esc(race['human_scenario']['post_time_jst'])}">
+  <header class="race-header"><div><span class="leg">WIN{esc(race['leg'])}</span><h2>{esc(race['track'])}{esc(race['race_no'])}R {esc(race['race_name'])}</h2></div>
+    <div class="race-meta">{esc(race['surface'])} {esc(race['distance_m'])}m · {esc(race['post_time_jst'])} · {esc(race['runner_count'])}頭</div></header>
+  <section class="race-board">
+    <div class="panel span-2"><h3>Course Structure</h3>{render_evidence_item('course geometry summary', course['summary'])}{render_evidence_item('first-corner burden', course['first_corner_burden'])}{render_evidence_item('slope / straight / corner', course['slope_straight_corner'])}
+      <p><b>meeting:</b> {esc(race['meeting_day'])} / <b>course change:</b> {esc(race['course_change'])} / <b>geometry:</b> {esc(race['geometry_status'])}</p></div>
+    <div class="panel"><h3>Same-condition Evidence</h3><div class="count-grid"><div><b>{esc(same['exact_count'])}</b><span>Exact*</span></div><div><b>{esc(same['partial_count'])}</b><span>Partial</span></div><div><b>{esc(same['similar_count'])}</b><span>Similar*</span></div></div>
+      <p class="caveat">*Exact 0はversion未判定、Similar 0はmetric未凍結。</p><p>RA lap join: <b>{esc(ra['joined'])}/{esc(ra['denominator'])}</b> ({esc(ra['status'])})</p><p>role coverage: <b>{esc(role_coverage['known_runner_rows'])}/{esc(role_coverage['denominator'])}</b> ({esc(role_coverage['status'])})</p></div>
+    <div class="panel"><h3>Pace / Finish Environment</h3>{render_evidence_item('historical S/M/F', race['historical_pace_tendency']['slow_middle_fast'])}{render_evidence_item('legacy mixed shape', legacy)}{render_evidence_item('front pressure', race['historical_pace_tendency']['front_pressure'])}{render_evidence_item('finish environment', race['historical_pace_tendency']['finish_environment'])}</div>
+    <div class="panel span-2 queue-panel"><h3>Queue Pressure Map</h3><p class="caveat">Forward candidateは観測率分類であり、BUY candidate・正式隊列予測ではありません。</p>{render_queue_pressure_map(race['queue_pressure_map'])}</div>
+    <div class="panel span-2"><h3>Race-day Missingness</h3><div class="evidence-grid">{render_evidence_item('track condition', race['track_condition'])}{render_evidence_item('day bias', race['day_bias'])}{render_evidence_item('wind', race['wind'])}</div></div>
+    <div class="panel span-2 collapse"><h3>Favorite Collapse — Human designation only</h3><p><b>likely favorite / main danger:</b> {esc(race['favorite_collapse']['likely_favorite_or_main_danger_horse'])}</p><p><b>what fails:</b> {esc(race['favorite_collapse']['what_fails'])}</p><p><b>race state change:</b> {esc(race['favorite_collapse']['race_state_change'])}</p><p><b>who benefits:</b> {esc(race['favorite_collapse']['who_benefits'])}</p><p><b>confidence:</b> {esc(race['favorite_collapse']['confidence'])} / {esc(race['favorite_collapse']['caveat'])}</p></div>
+  </section>
+  <section class="freeze-block"><div class="freeze-title"><h3>Human Scenario / Pre-race Freeze</h3><span class="unfrozen">UNFROZEN</span></div>
+    <p>Queue Pressureは観測材料だけです。Human Scenarioを自動変更しません。Queue HIGH / Human MIDDLEも理由を残して選択できます。</p>
+    <div class="form-grid"><label>Main scenario<select data-freeze-field="main_scenario">{scenario_options}</select></label><label>Confidence<select data-freeze-field="confidence">{confidence_options}</select></label>
+      <label class="wide">Alternative scenario(s)<input data-freeze-field="alternative_scenarios" placeholder="例: FAST, SLOW"></label><label class="wide">Reason<textarea data-freeze-field="reason" rows="3" placeholder="Queueとpaceを分け、観測根拠と反証条件を記録"></textarea></label>
+      <label>Likely favorite / main danger (human)<input data-freeze-field="main_danger_horse" placeholder="任意。人気自動取得なし"></label><label>Freeze timestamp<input value="CLIが付与" readonly></label>
+      <label class="wide">Race-day notes<textarea data-freeze-field="race_day_notes" rows="3" placeholder="馬場・風・取消・当日bias"></textarea></label><label class="wide post-review">Post-race review (別artifact)<textarea data-review-field="review" rows="3" placeholder="pre-race freezeを変更しない"></textarea></label></div>
+  </section>
+  <section><div class="section-heading"><h3>全頭比較テーブル</h3><span>公式馬番順 / non-ranking</span></div>{render_comparison(race)}</section>
+  <section><div class="section-heading"><h3>Horse Cards — 全{esc(race['runner_count'])}頭</h3><span>クリックで展開</span></div>{horses}</section>
+</article>'''
+
+
 CSS = r'''
 :root{--bg:#0b1213;--panel:#121d1e;--panel2:#172526;--ink:#edf5f0;--muted:#9eb1ab;--line:#2a3e3c;--mint:#86d6b1;--amber:#f2c66d;--red:#ef8d7e;--blue:#8ebed4}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 15% 0,#18302b 0,#0b1213 35%);color:var(--ink);font-family:Inter,"Noto Sans JP","Yu Gothic UI",sans-serif;line-height:1.65}
 a{color:var(--mint)}.shell{max-width:1540px;margin:auto;padding:24px}.hero{border:1px solid #315349;border-radius:24px;padding:30px;background:linear-gradient(135deg,rgba(28,69,56,.95),rgba(11,18,19,.95));box-shadow:0 24px 70px #0008}.eyebrow{color:var(--mint);font-weight:800;letter-spacing:.12em;text-transform:uppercase}.hero h1{font-size:clamp(30px,5vw,64px);line-height:1.05;margin:.2em 0}.hero p{max-width:900px;color:#d3e3dc}.safety-strip{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}.safety-strip span{border:1px solid #87d6b177;color:#c9f1df;padding:6px 11px;border-radius:999px;font-size:13px;font-weight:700}.freeze-warning{margin:20px 0;padding:16px 20px;border:1px solid #d19f44;background:#3a2b11;border-radius:14px;color:#ffe2a6;font-weight:700}.nav{display:flex;gap:8px;overflow:auto;position:sticky;top:0;z-index:20;background:#0b1213ee;padding:12px 0}.nav a{white-space:nowrap;text-decoration:none;background:var(--panel);border:1px solid var(--line);padding:8px 13px;border-radius:10px}.race{margin:38px 0 70px}.race-header{display:flex;align-items:end;justify-content:space-between;gap:18px;border-bottom:2px solid var(--mint);padding:0 2px 14px}.race-header h2{margin:4px 0 0;font-size:clamp(25px,3vw,40px)}.leg{color:var(--mint);font-weight:900;letter-spacing:.14em}.race-meta{color:var(--muted);font-weight:700}.race-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}.panel h3,.freeze-block h3{margin-top:0}.span-2{grid-column:span 2}.count-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.count-grid div{background:#0c1516;border-radius:12px;padding:13px;text-align:center}.count-grid b{display:block;font-size:28px}.count-grid span{color:var(--muted)}.caveat,.missing{color:var(--amber)}.evidence-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:9px}.evidence-item{padding:11px;background:#0d1718;border:1px solid #223435;border-radius:10px}.evidence-label{text-transform:uppercase;font-size:11px;letter-spacing:.08em;color:var(--muted)}.evidence-value{font-weight:750;margin:4px 0}.badges{display:flex;gap:4px;flex-wrap:wrap}.badge{font-size:10px;border:1px solid var(--line);border-radius:999px;padding:2px 6px;color:var(--muted)}.status-observed{color:var(--mint);border-color:#4e9d7a}.status-derived{color:var(--blue);border-color:#487f98}.status-proxy{color:var(--amber);border-color:#a67b31}.status-unobserved{color:var(--red);border-color:#9b4f45}.evidence-note{font-size:11px;color:var(--muted);margin-top:7px}.freeze-block{background:linear-gradient(135deg,#252210,#171a17);border:1px solid #9e7c38;border-radius:18px;padding:20px;margin:18px 0}.freeze-title,.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.unfrozen{background:#6a4818;color:#ffe0a0;border-radius:999px;padding:5px 10px;font-size:12px;font-weight:900}.form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.form-grid label{display:flex;flex-direction:column;gap:5px;color:#d8e2de;font-size:13px;font-weight:700}.form-grid .wide{grid-column:span 2}.form-grid input,.form-grid select,.form-grid textarea{width:100%;border-radius:9px;border:1px solid #495c57;background:#0b1213;color:var(--ink);padding:10px;font:inherit}.post-review{border-top:1px dashed #5c6c68;padding-top:12px}.action-bar{position:sticky;bottom:12px;z-index:30;display:flex;gap:10px;justify-content:center;margin:28px auto;padding:10px;border-radius:16px;background:#0b1213e8;border:1px solid var(--line);width:max-content;max-width:100%}.action-bar button{border:0;border-radius:10px;padding:11px 16px;background:var(--mint);color:#082018;font-weight:900;cursor:pointer}.action-bar button.secondary{background:#263838;color:var(--ink)}.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:14px}.compare-table,.detail-table{border-collapse:collapse;width:100%;min-width:1250px;background:var(--panel)}th,td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left;font-size:12px}th{position:sticky;top:0;background:#1c2c2b;color:var(--mint);z-index:2}.horse-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:9px 0;overflow:hidden}.horse-card summary{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;list-style:none}.horse-card summary::-webkit-details-marker{display:none}.horse-card[open]{border-color:#4f786b}.horse-number{display:grid;place-items:center;width:38px;height:38px;border-radius:8px;background:#dde5e2;color:#07100e;font-size:20px;font-weight:900}.horse-title{display:flex;flex-direction:column;min-width:230px;flex:1}.horse-title b{font-size:17px}.horse-title small{color:var(--muted)}.summary-chip{border:1px solid var(--line);padding:4px 8px;border-radius:999px;font-size:11px;color:var(--muted)}.horse-body{padding:0 16px 18px}.horse-body section{border-top:1px solid var(--line);padding-top:13px;margin-top:13px}.horse-body h4{margin:0 0 10px;color:var(--mint);font-size:17px}.horse-body h4 small{color:var(--muted);font-weight:400}.facts{display:flex;gap:8px;flex-wrap:wrap}.facts span{background:#0d1718;border-radius:8px;padding:6px 9px}.scenario-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.scenario-card{display:flex;flex-direction:column;background:#0d1718;border-radius:10px;padding:12px}.scenario-card span{color:var(--red);font-weight:800}.scenario-card small{color:var(--muted)}.paths{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.paths h4{grid-column:span 2}.paths>div{background:#0d1718;border-radius:10px;padding:12px}.uncertainty{background:#231c16;padding:14px!important;border-radius:12px}.method{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;margin-top:40px}.footer{color:var(--muted);padding:30px 0;text-align:center}
 @media(max-width:820px){.shell{padding:13px}.race-header{align-items:start;flex-direction:column}.race-board{grid-template-columns:1fr}.span-2{grid-column:span 1}.form-grid{grid-template-columns:1fr}.form-grid .wide{grid-column:span 1}.summary-chip{display:none}.horse-title{min-width:0}.paths{grid-template-columns:1fr}.paths h4{grid-column:span 1}.scenario-grid{grid-template-columns:1fr}.action-bar{width:100%;overflow:auto;justify-content:flex-start}}
+'''
+
+CSS_V02_APPEND = r'''
+.queue-panel{border-color:#6c9f8e;background:linear-gradient(145deg,#142724,#111b1c);min-width:0}
+.queue-metrics{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px;margin:12px 0}
+.queue-metrics>div{display:flex;flex-direction:column;background:#0b1516;border:1px solid #29423f;border-radius:10px;padding:11px}
+.queue-metrics span{font-size:11px;color:var(--muted)}.queue-metrics b{font-size:24px;color:var(--mint)}
+.queue-warning{font-size:clamp(20px,3vw,32px);font-weight:950;color:#111;background:var(--amber);border-radius:12px;padding:12px 16px;text-align:center;letter-spacing:.03em}
+.pairwise-table{border-collapse:collapse;width:100%;min-width:760px;background:var(--panel)}
+.conflict{display:inline-block;border-radius:999px;padding:2px 8px;font-weight:900}.conflict-high{background:#71392f;color:#ffd0c7}.conflict-medium{background:#5c481f;color:#ffe1a1}.conflict-low{background:#1f493c;color:#bfe8d7}.conflict-unobserved{background:#3c4141;color:#d1d7d5}
+.rate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.rate-item{padding:11px;background:#0d1718;border:1px solid #223435;border-radius:10px}
+.role-v02 h5{color:#d5e7df;margin:18px 0 8px}.role-v02 .summary-chip:nth-last-child(2){color:var(--mint);border-color:#4f786b}
+.queue-panel .table-wrap,.role-v02 .table-wrap{min-width:0;max-width:100%;width:100%}.role-v02 .evidence-note{overflow-wrap:anywhere}
+.method{min-width:0;overflow-wrap:anywhere}.method code{word-break:break-all}
+@media(max-width:820px){.race-board{grid-template-columns:minmax(0,1fr)}.race,.panel,.horse-card,.horse-body{min-width:0}.queue-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 '''
 
 
@@ -1793,6 +3495,47 @@ def render_html(data: Mapping[str, Any], observation_sha256: str) -> str:
 </main><script>{JS}</script></body></html>'''
 
 
+def render_html_v02(data: Mapping[str, Any], observation_sha256: str) -> str:
+    validate_observation_v02(data)
+    nav = "".join(
+        f'<a href="#race-{race["leg"]}">WIN{race["leg"]} {esc(race["race_name"])}</a>'
+        for race in data["races"]
+    )
+    races = "".join(render_race_v02(race) for race in data["races"])
+    safety = "".join(
+        f'<span>{label}</span>' for label in (
+            "Observation-only", "No AI rank", "No probability", "No odds / no stake",
+            "No BUY / no order", "Pre-race freeze required",
+        )
+    )
+    return f'''<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{esc(data['title'])}</title><style>{CSS}{CSS_V02_APPEND}</style></head>
+<body data-observation-sha256="{esc(observation_sha256)}"><main class="shell">
+<header class="hero"><div class="eyebrow">Sunday · 2026.08.23 · all 70 runners · Queue proxy v0.2</div>
+<h1>Race Intelligence<br>Lite+ <small>Queue Pressure Map</small></h1>
+<p>今回の位置帯・競合・控えられる観測証拠を読むobservation-only proxy。公式馬番順で表示し、正式隊列、ハナ確率、順位、勝率、市場評価は生成しません。</p>
+<div class="safety-strip">{safety}</div></header>
+<div class="freeze-warning">Human Scenarioは未凍結です。Queue Pressureは自動でpaceへ変換されません。全5レースを人が記入し、最初の発走前にCLI freezeしてください。</div>
+<nav class="nav">{nav}</nav>{races}
+<section class="method"><h2>Evidence boundary</h2>
+<p><b>observed</b> は入力事実、<b>derived</b> は透明な集計、<b>proxy</b> は代替観測、<b>unobserved</b> は欠損です。欠損をneutralや0へ埋めません。</p>
+<p>Historical observed rates ≠ current-race probability. 過去field_sizeは未接続のため、正規化位置とfront-quartile率は推測せずunobservedです。</p>
+<p><b>Queue Pressure HIGH ≠ FAST</b>。Human Scenarioとは独立し、正式model feature、BUY、注文へ接続しません。</p>
+<p>生成: {esc(data['generated_at_jst'])} / observation SHA-256: <code>{esc(observation_sha256)}</code></p></section>
+<div class="action-bar"><button type="button" onclick="collectFreeze()">Human Freeze入力JSONをexport</button><button type="button" class="secondary" onclick="collectReview()">Post-race reviewを別export</button><button type="button" class="secondary" onclick="expandAll(true)">全カード展開</button><button type="button" class="secondary" onclick="expandAll(false)">閉じる</button></div>
+<footer class="footer">Race Intelligence Lite+ Queue proxy v0.2 · read-only observation artifact · no trading hooks</footer>
+</main><script>{JS}</script></body></html>'''
+
+
+def render_observation_html(data: Mapping[str, Any], observation_sha256: str) -> str:
+    if data.get("schema_version") == "race_intelligence_lite_plus_sunday_observation_v1":
+        return render_html(data, observation_sha256)
+    if data.get("schema_version") == "race_intelligence_lite_plus_sunday_observation_queue_v0_2":
+        return render_html_v02(data, observation_sha256)
+    raise LitePlusError("unsupported observation schema version")
+
+
 def provenance_path(path: Path) -> str:
     resolved = path.resolve()
     normalized = resolved.as_posix()
@@ -1872,7 +3615,10 @@ def validate_human_freeze(value: Mapping[str, Any], observation: Mapping[str, An
     if not isinstance(safety, Mapping):
         raise LitePlusError("human freeze safety must be an object")
     require_exact_keys(safety, FREEZE_SAFETY_KEYS, "human_freeze.safety")
-    if safety != {"direct_horse_score_edit": False, "ranking_claims": False, "probability_claims": False}:
+    expected_freeze_safety = {
+        "direct_horse_score_edit": False, "ranking_claims": False, "probability_claims": False,
+    }
+    if any(type(safety.get(key)) is not bool for key in expected_freeze_safety) or safety != expected_freeze_safety:
         raise LitePlusError("human freeze safety constants differ")
     race_map = {race["race_id"]: race for race in observation["races"]}
     overrides = value.get("overrides", [])
@@ -1909,7 +3655,7 @@ def freeze_human_scenario(
     now_jst: datetime | None = None,
 ) -> dict[str, Any]:
     observation = read_json(observation_path)
-    validate_observation(observation)
+    validate_observation_any(observation)
     human = read_json(human_path)
     if now_jst is None:
         now_jst = datetime.now(JST)
@@ -1985,7 +3731,7 @@ def command_build(args: argparse.Namespace) -> None:
     manifest_sha = sha256_path(paths["target_race_name_manifest"])
     if any(row.get("manifest_sha256") != manifest_sha for row in targets):
         raise LitePlusError("resolved targets are not bound to the supplied race-name manifest SHA-256")
-    data = build_observation(
+    data = build_observation_v02(
         targets_manifest=targets_manifest, route_cards=route_cards, targets=targets,
         entries=entries, history=history, coverage=coverage, readiness=readiness,
         route_coverage=route_coverage, official_snapshot=official,
@@ -2004,7 +3750,7 @@ def command_build(args: argparse.Namespace) -> None:
     write_text(data_path, data_bytes.decode("utf-8"))
     data_sha = sha256_bytes(data_bytes)
     canonical_data = json.loads(data_bytes.decode("utf-8"))
-    write_text(html_path, render_html(canonical_data, data_sha))
+    write_text(html_path, render_observation_html(canonical_data, data_sha))
     write_json(template_path, human_template(canonical_data, data_sha))
     source_manifest = build_source_manifest(paths, official, args.generated_at_jst)
     source_manifest["outputs"] = {
@@ -2023,10 +3769,10 @@ def command_verify(args: argparse.Namespace) -> None:
     official_path = Path(args.official_entries)
     template_path = Path(args.freeze_template)
     data = read_json(observation_path)
-    validate_observation(data)
+    validate_observation_any(data)
     data_sha = sha256_bytes(canonical_json_bytes(data))
     html_text = html_path.read_text(encoding="utf-8")
-    expected_html = render_html(data, data_sha)
+    expected_html = render_observation_html(data, data_sha)
     if html_text != expected_html:
         raise LitePlusError("HTML is not the deterministic render of the observation JSON")
     manifest = read_json(source_manifest_path)
@@ -2034,8 +3780,7 @@ def command_verify(args: argparse.Namespace) -> None:
     reject_forbidden_recursive(manifest, "source_manifest")
     if manifest.get("schema_version") != "race_intelligence_lite_plus_source_manifest_v1":
         raise LitePlusError("source manifest schema version differs")
-    if manifest.get("safety") != SAFETY:
-        raise LitePlusError("source manifest safety constants differ")
+    validate_safety_object(manifest.get("safety"), "source_manifest.safety")
     records = manifest.get("allowlisted_sources")
     if not isinstance(records, list) or len(records) != 9:
         raise LitePlusError("source manifest must contain nine allowlisted source records")
