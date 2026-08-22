@@ -289,6 +289,21 @@ serializer、state validator、非権限object compiler、synthetic-only governa
 - legacy ROI run scope v1は`execution_kind`をcanonical digestへ含めないため、
   real-data `RUNNING`をfail-closeする。real-data再開にはkindとcapabilityをdigestへ
   固定するversioned ROI run contractの別governance変更が必要である。
+- `ordinary_real_data_run_v3`はlegacy v2を変更しない別schemaである。version fieldなしは
+  legacy v2、exact v3だけをv3へdispatchし、未知versionはfail-closeする。v3はexecution kind、
+  finite capability profile、execution commit、input/environment/structured argv、read/write
+  allowlist、fresh output root、output sealをdigestへ固定する。
+- v3 governance PRのmergeだけでは実データ権限を与えない。actual row accessにはexact v3 scopeへ
+  別の未使用`APPROVED_TO_RUN`、Prepare/Run承認の再検証、human-merged current-main
+  `RUNNING` event、execution receipt、metadata-only catalog preflight、fresh rootとphase allowlistの
+  全成立を必要とする。branch上のpending eventをauthorityにしない。
+- EXP-034 input canonicalizationとEXP-033 model/OOS/inferenceは別profile、別scope、別output root、
+  別result manifestとする。EXP-034 profileへtraining/validation/calibration/outer OOS/inferenceを
+  与えず、production、Champion、candidate/value policy、BUY、notification、order、nonzero stake、
+  merge/promotion capabilityは全profileで常にfalseとする。
+- execution receipt自体のauthority flagはfalseを維持し、実効row/write authorityはexact phase argvを
+  再観測したbroker判定だけとする。EXP-034 outputをEXP-033が消費する前に、receipt/result/artifact
+  digestを固定したpost-run attestationを別のhuman-reviewed PRでGitHub mainへmergeしなければならない。
 
 ### APPROVED_FOR_SHADOW
 

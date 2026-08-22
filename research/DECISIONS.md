@@ -506,3 +506,42 @@ shared G2はglobal/subject head CAS、全terminal/nonterminal subject headとgra
 remote compareを必須とする。authenticated external monotonic checkpoint/witnessによりbackup restore、rollback、fork、
 stale headを検出し、検出時はlaneを停止して新規leaseを発行しない。local file、SQLite、worktree、branch、process
 memoryをauthority fallbackにしない。
+
+## D-029 — ordinary real-data runを別versionのcanonical contractへ束縛する
+
+- Decision: `ORDINARY_REAL_DATA_RUN_V3_SEPARATE_VERSION_HUMAN_ACTIVATED`
+- Evidence: D-024 + human-owned Draft governance implementation
+
+D-024のfail-closeを維持したまま、`ordinary_real_data_run_v3`をlegacy run scope v2とは
+別schemaとして追加する。v2の`RUN_FIELDS`、normalizer、canonical bytes、digest、writer semantics、
+既存Registry eventを変更・再解釈せず、version fieldのないscopeはv2、exact v3だけをv3へdispatchし、
+未知・null・case違いのversionは停止する。legacy scopeからのreal-data `RUNNING`は引き続き拒否する。
+
+v3 digestはexecution kind、有限capability profile、execution commit、code/config/input/fold/
+runner/environmentのhash、structured argv、interpreter、cwd、locale/timezone、network、read/write
+allowlist、fresh output root、budget、source cutoff/as-of、phase plan、output seal、安全flagを固定する。
+EXP-034用profileはinput canonicalizationに必要なread/write/sealだけを許し、train、validation、
+calibration、outer OOS、target inferenceを許可しない。EXP-033用profileは、別runで生成・sealされた
+EXP-034 artifactをinputとしてexact hash-bindし、receipt/result/artifact digestを束縛したpost-run
+attestationが別のhuman-reviewed PRでGitHub mainへmergeされるまで消費を拒否する。将来出力のcontent hashをplaceholderとして
+事前登録せず、EXP-034 scopeはplanned-output contractを固定し、生成hashはimmutable result manifestへ
+記録する。
+
+`real_data`という値だけでは権限を生成しない。row/blob access前のpreflightはsigned/hash-bound
+catalog metadataだけを扱い、source release、manifest digest、count、source-time coverage、revocation、
+runner/date/race-set、phase capabilityを検査する。actual row mountは、exact v3 scopeへの未使用
+`APPROVED_TO_RUN`、Prepare/Run承認の再検証、human-merged current-main `RUNNING` event、execution
+receipt、fresh output root、read/write allowlistの全検査後に限る。branch上のpending event、scope、
+comment、PR mergeだけをauthorityとして扱わない。
+receipt内のauthority flagもfalseを維持し、実効trueはexact phase argv、worktree、environment、live
+GitHub authority、receipt、access pathを再検証したbrokerの一時的decisionとしてだけ導出する。
+
+outputはprofile別のfresh rootへappend-only/immutableにsealし、success/failure、partial artifacts、
+file hash、count、code/config/input/environment/run digest、generated-at/as-ofをresult manifestへ固定する。
+partial/crash outputはconsumer不適格であり、既存rootの上書き、EXP-033/034 rootの混用、production、
+Champion、candidate/value policy、BUY、notification、order、nonzero stake、merge/promotionを常に拒否する。
+
+このdecisionを含むgovernance implementationは実データを読まず、schema、compiler、dispatcher、
+verifier、metadata-only preflight、seal contract、synthetic testだけを追加する。発効には当該Draft PRの
+人間reviewとmainへの人間mergeが必要である。mergeはcontract capabilityだけを追加し、EXP-034または
+EXP-033のproposal、run scope、run approval、RUNNING receipt、実行権限を生成しない。
