@@ -24,7 +24,7 @@ from scope_contract import (  # noqa: E402
     SCORE_WEIGHTS,
     canonical_digest,
     load_frozen_proposal,
-    load_frozen_run_scope,
+    normalize_proposal_scope,
     proposal_score_total,
     strict_json_load,
     strict_json_loads,
@@ -49,6 +49,7 @@ from github_approval import (  # noqa: E402
     COMMENT_EVIDENCE_FIELDS,
     DEFAULT_BASE_BRANCH,
     DEFAULT_REPOSITORY,
+    GITHUB_API_URL,
     GitHubApprovalProvider,
     GitHubRestApprovalProvider,
     fetch_github_file_at_commit,
@@ -58,6 +59,12 @@ from github_approval import (  # noqa: E402
     verify_github_file_at_commit,
     verify_github_main_head_unchanged,
     verify_github_trust,
+)
+from ordinary_real_data_run_contract_v3 import (  # noqa: E402
+    RUN_SCOPE_SCHEMA_VERSION as ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION,
+    hash_bound_repository_paths,
+    load_frozen_ordinary_run_scope,
+    verify_ordinary_real_data_run_materials,
 )
 
 
@@ -117,6 +124,96 @@ def normalize_status(value: str) -> str:
 
 def resolve_from_root(root: Path, value: Path) -> Path:
     return value if value.is_absolute() else root / value
+
+
+def canonical_execution_kind(cli_value: str) -> str:
+    """Translate the stable CLI spelling to the v3 canonical spelling."""
+
+    if cli_value == "real-data":
+        return "real_data"
+    return cli_value
+
+
+def load_versioned_ordinary_run_scope(
+    root: Path,
+    path: Path,
+    proposal_scope: dict[str, Any],
+) -> tuple[dict[str, Any], str, str]:
+    """Dispatch an ordinary run scope without reinterpreting legacy v2 bytes."""
+
+    version, run_scope, digest = load_frozen_ordinary_run_scope(
+        root,
+        path,
+        proposal_scope,
+    )
+    return run_scope, digest, version
+
+
+def require_unedited_v3_approval(
+    evidence: dict[str, Any],
+    *,
+    expected_type: str,
+) -> None:
+    """A v3 grant must have never been edited, including before verification."""
+
+    if evidence.get("approval_type") != expected_type:
+        raise ValueError("v3 approval evidence has the wrong approval type; fail-close")
+    if evidence.get("created_at") != evidence.get("updated_at"):
+        raise ValueError(
+            f"v3 {expected_type} comment must be unedited "
+            "(created_at must equal updated_at); fail-close"
+        )
+
+
+def verify_execution_commit_on_current_main(
+    *,
+    provider: GitHubApprovalProvider,
+    repository: str,
+    execution_commit: str,
+    current_main: str,
+) -> None:
+    """Require the exact v3 execution commit to be an ancestor of GitHub main."""
+
+    try:
+        comparison = provider.compare_commits(
+            repository,
+            execution_commit,
+            current_main,
+        )
+    except Exception as exc:
+        raise ValueError(
+            "GitHub execution-commit ancestry verification unavailable; fail-close: "
+            f"{exc}"
+        ) from exc
+    if not isinstance(comparison, dict):
+        raise ValueError("GitHub execution-commit comparison is invalid; fail-close")
+    status = comparison.get("status")
+    if status not in {"ahead", "identical"}:
+        raise ValueError(
+            "v3 execution commit is not an ancestor of GitHub current main; "
+            "fail-close"
+        )
+    base = comparison.get("base_commit")
+    merge_base = comparison.get("merge_base_commit")
+    if (
+        not isinstance(base, dict)
+        or base.get("sha") != execution_commit
+        or not isinstance(merge_base, dict)
+        or merge_base.get("sha") != execution_commit
+    ):
+        raise ValueError(
+            "v3 execution commit is not the GitHub current-main merge base; fail-close"
+        )
+    expected_url = (
+        f"{GITHUB_API_URL}/repos/{DEFAULT_REPOSITORY}/compare/"
+        f"{execution_commit}...{current_main}"
+    )
+    if comparison.get("url") != expected_url:
+        raise ValueError("GitHub execution-commit compare URL mismatch; fail-close")
+    if status == "identical" and execution_commit != current_main:
+        raise ValueError("GitHub identical execution comparison SHA mismatch; fail-close")
+    if status == "ahead" and execution_commit == current_main:
+        raise ValueError("GitHub ahead execution comparison SHA mismatch; fail-close")
 
 
 @contextmanager
@@ -416,15 +513,58 @@ def validate_registry_event_chains(events: list[dict[str, Any]]) -> None:
         latest_by_experiment[experiment_id] = event
 
 
-def contains_unbound_legacy_real_data_running(events: list[dict[str, Any]]) -> bool:
-    """Detect v2 real-data RUNNING history that predates execution-kind binding."""
+def contains_unbound_legacy_real_data_running(
+    events: list[dict[str, Any]],
+    *,
+    root: Path | None = None,
+    proposal_scope: dict[str, Any] | None = None,
+) -> bool:
+    """Detect real-data RUNNING history not bound by an intact exact-v3 scope."""
 
-    return any(
-        event.get("schema_version") == 2
-        and normalize_status(str(event.get("status", ""))) == "running"
-        and event.get("execution_kind") == "real-data"
-        for event in events
-    )
+    for event in events:
+        if not (
+            event.get("schema_version") == 2
+            and normalize_status(str(event.get("status", ""))) == "running"
+            and event.get("execution_kind") == "real-data"
+        ):
+            continue
+        path_value = event.get("run_scope_file")
+        event_experiment_id = event.get("experiment_id")
+        if (
+            root is None
+            or proposal_scope is None
+            or not isinstance(path_value, str)
+            or not path_value
+            or not isinstance(event_experiment_id, str)
+            or SAFE_EXPERIMENT_ID.fullmatch(event_experiment_id) is None
+        ):
+            return True
+        try:
+            event_proposal_scope = proposal_scope
+            if event_proposal_scope.get("experiment_id") != event_experiment_id:
+                event_proposal_scope = normalize_proposal_scope(
+                    strict_json_load(
+                        root
+                        / "research"
+                        / "scopes"
+                        / f"{event_experiment_id}.proposal.json"
+                    ),
+                    expected_experiment_id=event_experiment_id,
+                )
+            run_scope, digest, version = load_versioned_ordinary_run_scope(
+                root,
+                resolve_from_root(root, Path(path_value)),
+                event_proposal_scope,
+            )
+        except (OSError, ValueError):
+            return True
+        if (
+            version != ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION
+            or run_scope.get("execution_kind") != "real_data"
+            or event.get("run_scope_digest") != digest
+        ):
+            return True
+    return False
 
 
 def validate_approval_grant_history(events: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
@@ -736,7 +876,11 @@ def main(
     )
     if (
         not infrastructure_gate
-        and contains_unbound_legacy_real_data_running(history)
+        and contains_unbound_legacy_real_data_running(
+            history,
+            root=root,
+            proposal_scope=proposal_scope,
+        )
         and status != "invalid"
     ):
         parser.error(
@@ -766,11 +910,6 @@ def main(
         threshold_met = True
     else:
         assert isinstance(total, int)
-        if status == "running" and args.execution_kind == "real-data":
-            parser.error(
-                "legacy ROI run scope does not bind execution_kind; real-data "
-                "execution is fail-closed until a versioned run contract binds it"
-            )
         threshold_met = total >= RUN_SCORE_THRESHOLD
         if status == "blocked_score" and threshold_met:
             parser.error("BLOCKED_SCORE is invalid because score meets the threshold")
@@ -871,6 +1010,7 @@ def main(
     run_scope: dict[str, Any] | None = None
     run_scope_digest: str | None = None
     run_scope_path: Path | None = None
+    run_scope_version: str | None = None
     review_digest: str | None = None
 
     run_scope_required = status in {
@@ -917,10 +1057,24 @@ def main(
                     policy_sha256=infrastructure_policy_sha256,
                 )
                 run_scope_digest = canonical_digest(run_scope)
+                run_scope_version = "infrastructure_safety_v1"
             else:
-                run_scope, run_scope_digest = load_frozen_run_scope(
-                    root, run_scope_path, proposal_scope
+                run_scope, run_scope_digest, run_scope_version = (
+                    load_versioned_ordinary_run_scope(
+                        root,
+                        run_scope_path,
+                        proposal_scope,
+                    )
                 )
+                if run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION:
+                    expected_v3_path = (
+                        root / "research" / "scopes" / f"{experiment_id}.run.json"
+                    )
+                    if run_scope_path.resolve() != expected_v3_path.resolve():
+                        raise ValueError(
+                            "v3 ordinary run scope must use its code-owned lifecycle path: "
+                            f"research/scopes/{experiment_id}.run.json"
+                        )
             prior_run_digests = {
                 event.get("run_scope_digest")
                 for event in history
@@ -931,7 +1085,10 @@ def main(
                     "run scope changed after RUN_APPROVAL_REQUIRED; create a new ID or reapprove"
                 )
             observed_commit = execution_commit_provider(root)
-            if run_scope["execution_commit_sha"] != observed_commit:
+            if (
+                run_scope_version != ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION
+                and run_scope["execution_commit_sha"] != observed_commit
+            ):
                 raise ValueError(
                     "execution commit SHA changed after run scope freeze: "
                     f"{run_scope['execution_commit_sha']} != {observed_commit}"
@@ -939,6 +1096,18 @@ def main(
             if infrastructure_gate:
                 verify_infrastructure_run_materials(root, run_scope)
                 infrastructure_diff_verifier(root, run_scope)
+            elif run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION:
+                verify_ordinary_real_data_run_materials(root, run_scope)
+                if github_trust_evidence is None:
+                    raise ValueError(
+                        "GitHub current-main evidence is required for v3 run scope"
+                    )
+                verify_execution_commit_on_current_main(
+                    provider=provider,
+                    repository=args.github_repository,
+                    execution_commit=run_scope["execution_commit_sha"],
+                    current_main=github_trust_evidence["verified_current_main_sha"],
+                )
             else:
                 verify_run_materials(root, run_scope)
             allowed_dirty_paths = {
@@ -948,7 +1117,9 @@ def main(
                 str(queue_path.relative_to(root).as_posix()),
                 str(run_scope_path.relative_to(root).as_posix()),
             }
-            if not infrastructure_gate:
+            if run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION:
+                allowed_dirty_paths.update(hash_bound_repository_paths(run_scope))
+            elif not infrastructure_gate:
                 for field in ("config_hashes", "data_input_manifest_hashes"):
                     allowed_dirty_paths.update(item["path"] for item in run_scope[field])
                 for field in (
@@ -978,6 +1149,25 @@ def main(
                 proposal_digest=proposal_digest,
                 current_run_scope_digest=run_scope_digest if status == "running" else None,
             )
+            if run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION:
+                expected_revalidated_types = {
+                    "approved_to_run": {"APPROVED_TO_PREPARE"},
+                    "running": {"APPROVED_TO_PREPARE", "APPROVED_TO_RUN"},
+                }.get(status, set())
+                observed_types = {
+                    evidence.get("approval_type")
+                    for evidence in revalidated_approval_evidence
+                }
+                if observed_types != expected_revalidated_types:
+                    raise ValueError(
+                        "v3 transition lacks the exact Prepare/Run revalidation set; "
+                        "fail-close"
+                    )
+                for evidence in revalidated_approval_evidence:
+                    require_unedited_v3_approval(
+                        evidence,
+                        expected_type=evidence["approval_type"],
+                    )
         except ValueError as exc:
             parser.error(str(exc))
 
@@ -1007,6 +1197,11 @@ def main(
                 approval_keyword="APPROVED_TO_RUN",
                 approval_digest=run_scope_digest,
             )
+            if run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION:
+                require_unedited_v3_approval(
+                    approval_evidence,
+                    expected_type="APPROVED_TO_RUN",
+                )
         except ValueError as exc:
             parser.error(str(exc))
     elif status == "approved_for_shadow":
@@ -1024,6 +1219,10 @@ def main(
             parser.error(str(exc))
 
     if status == "running" and args.execution_kind == "none":
+        if run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION:
+            parser.error(
+                "v3 RUNNING requires --execution-kind matching its frozen run scope"
+            )
         parser.error("RUNNING requires --execution-kind synthetic")
     if (
         infrastructure_gate
@@ -1037,6 +1236,20 @@ def main(
         parser.error(
             "infrastructure RUNNING execution kind must match the frozen synthetic run scope"
         )
+    if not infrastructure_gate and status == "running":
+        if run_scope_version == "legacy_v2" and args.execution_kind == "real-data":
+            parser.error(
+                "legacy ROI run scope does not bind execution_kind; real-data "
+                "execution is fail-closed until a versioned run contract binds it"
+            )
+        if run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION and (
+            run_scope is None
+            or canonical_execution_kind(args.execution_kind)
+            != run_scope.get("execution_kind")
+        ):
+            parser.error(
+                "v3 RUNNING execution kind differs from the frozen canonical run scope"
+            )
 
     prior_prepare = any(event["status"] == "approved_to_prepare" for event in history)
     prior_run = any(event["status"] == "approved_to_run" for event in history)
@@ -1051,7 +1264,14 @@ def main(
     }
     running = status == "running"
     synthetic_running = running and args.execution_kind == "synthetic"
-    real_data_running = running and args.execution_kind == "real-data"
+    real_data_running = (
+        running
+        and args.execution_kind == "real-data"
+        and run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION
+        and run_scope is not None
+        and run_scope.get("execution_kind") == "real_data"
+    )
+    pending_v3_real_receipt = real_data_running
     if infrastructure_gate:
         assert infrastructure_policy is not None
         event = normalize_infrastructure_event(
@@ -1138,9 +1358,13 @@ def main(
             "human_shadow_approval_recorded": shadow_recorded,
             "preparation_authorized": preparing_allowed,
             "synthetic_fixture_tests_allowed": preparing_allowed or synthetic_running,
-            "real_data_execution_allowed": real_data_running,
-            "automatic_execution_allowed": running,
-            "execution_authorized": running,
+            # A v3 real-data RUNNING event is still a branch-local candidate.
+            # Effective authority is minted only by the durable execution receipt
+            # after this exact event is human-merged and re-fetched from main.
+            "real_data_execution_allowed": real_data_running
+            and not pending_v3_real_receipt,
+            "automatic_execution_allowed": running and not pending_v3_real_receipt,
+            "execution_authorized": running and not pending_v3_real_receipt,
             "production_approved": False,
             "merge_approved": False,
             "buy_approved": False,
@@ -1154,7 +1378,12 @@ def main(
             "artifacts": artifacts,
             "notes": args.notes.strip(),
             "queue_file": str(queue_path),
-            "run_scope_file": str(run_scope_path) if run_scope_path is not None else None,
+            "run_scope_file": (
+                run_scope_path.relative_to(root).as_posix()
+                if run_scope_path is not None
+                and run_scope_version == ORDINARY_REAL_DATA_RUN_SCHEMA_VERSION
+                else (str(run_scope_path) if run_scope_path is not None else None)
+            ),
         }
     line = (
         json.dumps(

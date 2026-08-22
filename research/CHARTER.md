@@ -145,6 +145,20 @@ kind/versionと別pathを追加し、既存v3 scopeを旧policyのまま監査�
 許可する。real-dataを再開するには、execution kindとcapabilityをproposal/run digestへ
 固定し、legacy digestを変更しないversioned ROI contractを別のgovernance PRで導入する。
 
+`ordinary_real_data_run_v3`はこのversioned境界を別schemaとして実装する。version fieldのない
+legacy scopeは従来どおりv2へdispatchし、そのbytes、digest、validation、writer semanticsを
+変更しない。exact v3以外のversionはfail-closeする。v3は有限capability profile、execution kind、
+execution commit、input/environment/command/access/output sealをcanonical digestへ束縛するが、
+scopeまたはgovernance PRの存在だけではrow access authorityを持たない。actual row mountには、
+別の未使用`APPROVED_TO_RUN`、Prepare/Run comment再検証、human-merged current-main `RUNNING`
+event、execution receipt、metadata-only preflight、fresh output root、phase read/write allowlistの全成立を
+必要とする。EXP-034 canonicalizationとEXP-033 research model runは別scope・別root・別sealとする。
+production、Champion、candidate/value policy、BUY、notification、order、stake、merge/promotion能力は
+常にfalseである。
+receipt自体はnon-executingとし、exact phase argvを再観測したbrokerだけが一時的な実効authorityを
+導出する。EXP-033によるEXP-034 output消費には、receipt/result/artifact digestを束縛した
+digest-addressed post-run attestationのGitHub mainへの人間mergeを追加で必要とする。
+
 ### 5.2 ROI reproduction v2 G1 declaration
 
 `roi_reproduction_audit_v2`の現行G1境界は
