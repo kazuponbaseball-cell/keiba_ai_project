@@ -1,0 +1,62 @@
+{
+  "observation_sha256": "0ae35a854670f0d7e9fbfa68e47917132beeb6e6900972785eac77ce2bbefdaf",
+  "overrides": [
+    {
+      "alternative_scenarios": [],
+      "confidence": "",
+      "main_danger_horse": "",
+      "main_scenario": "",
+      "post_time_jst": "2026-08-23T15:00:00+09:00",
+      "race_day_notes": "",
+      "race_id": "2026082307030206",
+      "reason": ""
+    },
+    {
+      "alternative_scenarios": [],
+      "confidence": "",
+      "main_danger_horse": "",
+      "main_scenario": "",
+      "post_time_jst": "2026-08-23T15:10:00+09:00",
+      "race_day_notes": "",
+      "race_id": "2026082301020210",
+      "reason": ""
+    },
+    {
+      "alternative_scenarios": [],
+      "confidence": "",
+      "main_danger_horse": "",
+      "main_scenario": "",
+      "post_time_jst": "2026-08-23T15:25:00+09:00",
+      "race_day_notes": "",
+      "race_id": "2026082304030207",
+      "reason": ""
+    },
+    {
+      "alternative_scenarios": [],
+      "confidence": "",
+      "main_danger_horse": "",
+      "main_scenario": "",
+      "post_time_jst": "2026-08-23T15:35:00+09:00",
+      "race_day_notes": "",
+      "race_id": "2026082307030207",
+      "reason": ""
+    },
+    {
+      "alternative_scenarios": [],
+      "confidence": "",
+      "main_danger_horse": "",
+      "main_scenario": "",
+      "post_time_jst": "2026-08-23T15:45:00+09:00",
+      "race_day_notes": "",
+      "race_id": "2026082301020211",
+      "reason": ""
+    }
+  ],
+  "safety": {
+    "direct_horse_score_edit": false,
+    "probability_claims": false,
+    "ranking_claims": false
+  },
+  "schema_version": "race_intelligence_lite_plus_human_freeze_input_v1",
+  "target_date": "2026-08-23"
+}

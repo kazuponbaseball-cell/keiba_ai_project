@@ -1,0 +1,150 @@
+{
+  "allowlisted_sources": [
+    {
+      "bytes": 36507,
+      "kind": "declared_runner_audit",
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/declared_without_draw_entry_snapshot.csv",
+      "sha256": "4ec29eea0f35d478161b6472ca325f5cc08399cffa71d8e73a196bc7e12dc661"
+    },
+    {
+      "bytes": 81598,
+      "kind": "horse_readiness",
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/predraw_horse_intelligence_readiness.csv",
+      "sha256": "17a35cbe2a0bb0e12ede97aaf860e2260c1c2857f049380862cc29775588b569"
+    },
+    {
+      "bytes": 18489,
+      "kind": "horse_route_coverage",
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/predraw_route_coverage.csv",
+      "sha256": "7518696802b8e77d489c26537d1bd406d2311238a3b6db07038b5a3a8cf6cf99"
+    },
+    {
+      "bytes": 541476,
+      "kind": "market_excluded_history",
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/predraw_history_scope.csv",
+      "sha256": "605587d525dfb5c6aecc720b8f97f82b42edf7c382976403d2e9d7cb5c86cb66"
+    },
+    {
+      "bytes": 35625,
+      "kind": "official_current_entry",
+      "path": "docs/observations/race_intelligence_lite_plus_20260823/snapshot_20260822T180200JST_queue_v02/official_current_entries.json",
+      "sha256": "3b86e2405185a6cab30a6ed390b107f225cc21b1c786aa046a159310b474313e"
+    },
+    {
+      "bytes": 4456,
+      "kind": "resolved_official_targets",
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/resolved_win5_targets_predraw.csv",
+      "sha256": "267d3588ef9300d90aec0d835928f477332d7c0daf002c39851ea8ee82a06e58"
+    },
+    {
+      "bytes": 27399,
+      "kind": "route_requirement_cards",
+      "path": "outputs/analysis/race_intelligence_t0_20260823/codex_t0_handoff_bundle_v0_2/win5_route_requirement_cards_20260823_v0_1.json",
+      "sha256": "fd0630479eed173246cfd1465c5f243dd636a2e08a555492ef28b8a511dd7f2d"
+    },
+    {
+      "bytes": 8101,
+      "kind": "same_condition_coverage",
+      "path": "outputs/analysis/race_intelligence_recovery_20260823/predraw_same_condition_evidence_coverage.csv",
+      "sha256": "8680ff774637d4c8691bf56b95683a86785dd8e1d4a70d3c8424a9fa2c5a4f40"
+    },
+    {
+      "bytes": 1847,
+      "kind": "target_race_name_manifest",
+      "path": "outputs/analysis/race_intelligence_t0_20260823/codex_t0_handoff_bundle_v0_2/win5_target_race_names_20260823_v0_1.json",
+      "sha256": "30ee7c0ed509c857118a48786e833e45c8280901095ecdbb9696d18c36b75992"
+    }
+  ],
+  "excluded_source_classes": [
+    "legacy AI score/rank and derived scenario score/rank",
+    "prediction/model output",
+    "odds/popularity/market/payoff/ROI/EV/mispricing",
+    "BUY/candidate/ticket/stake/Champion/notification/order",
+    "training/backtest/outer OOS/EXP-033 run/EXP-034 real-data execution"
+  ],
+  "generated_at_jst": "2026-08-22T18:02:00+09:00",
+  "official_current_entry": {
+    "fetched_at_jst": "2026-08-22T18:02:00+09:00",
+    "identity_join": "race_id+horse_id exact",
+    "path": "docs/observations/race_intelligence_lite_plus_20260823/snapshot_20260822T180200JST_queue_v02/official_current_entries.json",
+    "raw_pages": [
+      {
+        "field_boundary": "before first div.record_unit; each row truncated before first td.past",
+        "http_status": 200,
+        "leg": 1,
+        "official_entry_url": "https://www.jra.go.jp/JRADB/accessD.html?CNAME=pw01dde0107202603020620260823/16",
+        "race_id": "2026082307030206",
+        "raw_response_bytes": 207994,
+        "raw_response_sha256": "11dbe6fb581ee6e3b90c0777c1e5004a626ce21f334564f7f6e471548bf72048"
+      },
+      {
+        "field_boundary": "before first div.record_unit; each row truncated before first td.past",
+        "http_status": 200,
+        "leg": 2,
+        "official_entry_url": "https://www.jra.go.jp/JRADB/accessD.html?CNAME=pw01dde0101202602021020260823/3D",
+        "race_id": "2026082301020210",
+        "raw_response_bytes": 208602,
+        "raw_response_sha256": "356fc18bf6d9b73ca8af3e950ab3a48aa2c769690e8207134c27cad46afdeb74"
+      },
+      {
+        "field_boundary": "before first div.record_unit; each row truncated before first td.past",
+        "http_status": 200,
+        "leg": 3,
+        "official_entry_url": "https://www.jra.go.jp/JRADB/accessD.html?CNAME=pw01dde0104202603020720260823/ED",
+        "race_id": "2026082304030207",
+        "raw_response_bytes": 133397,
+        "raw_response_sha256": "8e702a4874696dc3910ad0970ac500aa0b54524009288e428daf607eb75a2c82"
+      },
+      {
+        "field_boundary": "before first div.record_unit; each row truncated before first td.past",
+        "http_status": 200,
+        "leg": 4,
+        "official_entry_url": "https://www.jra.go.jp/JRADB/accessD.html?CNAME=pw01dde0107202603020720260823/CB",
+        "race_id": "2026082307030207",
+        "raw_response_bytes": 232843,
+        "raw_response_sha256": "98ec59bb694cb371dc9bd2d2fed5a20f22c4ac8d15bcb3e35c5746c0bdeb91ae"
+      },
+      {
+        "field_boundary": "before first div.record_unit; each row truncated before first td.past",
+        "http_status": 200,
+        "leg": 5,
+        "official_entry_url": "https://www.jra.go.jp/JRADB/accessD.html?CNAME=pw01dde0101202602021120260823/F2",
+        "race_id": "2026082301020211",
+        "raw_response_bytes": 230074,
+        "raw_response_sha256": "1fe715ca76a01e9d59dbd91d4cf5e2e1924aeeef29e5ea7d0b067669ee236d13"
+      }
+    ],
+    "runner_count": 70
+  },
+  "outputs": {
+    "html": {
+      "path": "docs/observations/race_intelligence_lite_plus_20260823/snapshot_20260822T180200JST_queue_v02/race_intelligence_lite_plus.html",
+      "sha256": "8eee4172771ff7302ae83ff583555a6af030a2ce5978ab7299105d90e5f717ca"
+    },
+    "human_freeze_template": {
+      "path": "docs/observations/race_intelligence_lite_plus_20260823/snapshot_20260822T180200JST_queue_v02/human_scenario_freeze.template.json",
+      "sha256": "41e0bda8029ff7828fd3150e00629aa2e515cee6d31983bf286288769a9e4422"
+    },
+    "observation_data": {
+      "path": "docs/observations/race_intelligence_lite_plus_20260823/snapshot_20260822T180200JST_queue_v02/race_intelligence_lite_plus_data.json",
+      "sha256": "0ae35a854670f0d7e9fbfa68e47917132beeb6e6900972785eac77ce2bbefdaf"
+    }
+  },
+  "safety": {
+    "exp_033_run_executed": false,
+    "exp_034_real_data_execution": false,
+    "formal_buy": false,
+    "formal_prediction": false,
+    "market_data_used": false,
+    "observation_only": true,
+    "outer_oos_executed": false,
+    "probability_claims": false,
+    "ranking_claims": false,
+    "read_only_view": true,
+    "send_order": false,
+    "stake": 0,
+    "trading_hooks": false,
+    "training_executed": false
+  },
+  "schema_version": "race_intelligence_lite_plus_source_manifest_v1"
+}
