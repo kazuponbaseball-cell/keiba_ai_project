@@ -1,0 +1,402 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/keiba/decision_summary_layer_v0.schema.json",
+  "title": "Decision Summary Layer V0",
+  "description": "Synthetic-only read-only review-priority view model. It is not an ability ordering, result probability, or purchase decision.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "aggregation_rule",
+    "layer_type",
+    "race_count",
+    "races",
+    "reason_code_catalog",
+    "review_priority_semantics",
+    "runner_count",
+    "safety",
+    "schema_version",
+    "source_mode",
+    "source_projection_sha256",
+    "synthetic_only",
+    "weighted_total_generated"
+  ],
+  "properties": {
+    "aggregation_rule": {"const": "ORDERED_BOOLEAN_PRECEDENCE_V0"},
+    "layer_type": {"const": "READ_ONLY_CONSUMER_VIEW_MODEL"},
+    "race_count": {"type": "integer", "minimum": 1},
+    "races": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/race"}},
+    "reason_code_catalog": {"$ref": "#/$defs/reasonCodeCatalog"},
+    "review_priority_semantics": {"const": "REVIEW_PRIORITY_NOT_ABILITY_ORDERING"},
+    "runner_count": {"type": "integer", "minimum": 1},
+    "safety": {"$ref": "#/$defs/safety"},
+    "schema_version": {"const": "decision_summary_layer_v0"},
+    "source_mode": {"const": "SYNTHETIC_FIXTURE_ONLY"},
+    "source_projection_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "synthetic_only": {"const": true},
+    "weighted_total_generated": {"const": false}
+  },
+  "$defs": {
+    "safety": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "formal_buy",
+        "oos_evaluation_executed",
+        "real_data_materialized",
+        "send_order",
+        "stake",
+        "target_prediction_generated",
+        "training_executed"
+      ],
+      "properties": {
+        "formal_buy": {"const": false},
+        "oos_evaluation_executed": {"const": false},
+        "real_data_materialized": {"const": false},
+        "send_order": {"const": false},
+        "stake": {"const": 0},
+        "target_prediction_generated": {"const": false},
+        "training_executed": {"const": false}
+      }
+    },
+    "reasonCode": {
+      "enum": [
+        "ABILITY_CLEAN_NOT_AVAILABLE",
+        "PRIMARY_ROLE_REACHABLE",
+        "PRIMARY_QUEUE_SUPPORTIVE",
+        "CURRENT_CONDITION_SUPPORTIVE",
+        "CONDITIONAL_MEDIUM_FIRST_TURN_COST",
+        "CONDITIONAL_MEDIUM_PRESSURE_RIVAL",
+        "CONDITIONAL_CAN_RATE_PATH_AVAILABLE",
+        "FRAGILE_ROLE_RANGE_NARROW",
+        "FRAGILE_LEAD_DEPENDENCY_POSSIBLE",
+        "FRAGILE_QUEUE_HIGH_CONFLICT",
+        "FRAGILE_FIRST_TURN_COST_HIGH",
+        "FRAGILE_CURRENT_CONDITION_ADVERSE",
+        "INSUFFICIENT_ROLE_CORE",
+        "INSUFFICIENT_QUEUE_CONTEXT",
+        "CONDITION_CURRENT_NOT_AVAILABLE"
+      ]
+    },
+    "reasonCodes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/reasonCode"}
+    },
+    "reasonCodeCatalog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ABILITY_CLEAN_NOT_AVAILABLE",
+        "PRIMARY_ROLE_REACHABLE",
+        "PRIMARY_QUEUE_SUPPORTIVE",
+        "CURRENT_CONDITION_SUPPORTIVE",
+        "CONDITIONAL_MEDIUM_FIRST_TURN_COST",
+        "CONDITIONAL_MEDIUM_PRESSURE_RIVAL",
+        "CONDITIONAL_CAN_RATE_PATH_AVAILABLE",
+        "FRAGILE_ROLE_RANGE_NARROW",
+        "FRAGILE_LEAD_DEPENDENCY_POSSIBLE",
+        "FRAGILE_QUEUE_HIGH_CONFLICT",
+        "FRAGILE_FIRST_TURN_COST_HIGH",
+        "FRAGILE_CURRENT_CONDITION_ADVERSE",
+        "INSUFFICIENT_ROLE_CORE",
+        "INSUFFICIENT_QUEUE_CONTEXT",
+        "CONDITION_CURRENT_NOT_AVAILABLE"
+      ],
+      "properties": {
+        "ABILITY_CLEAN_NOT_AVAILABLE": {"type": "string", "minLength": 1},
+        "PRIMARY_ROLE_REACHABLE": {"type": "string", "minLength": 1},
+        "PRIMARY_QUEUE_SUPPORTIVE": {"type": "string", "minLength": 1},
+        "CURRENT_CONDITION_SUPPORTIVE": {"type": "string", "minLength": 1},
+        "CONDITIONAL_MEDIUM_FIRST_TURN_COST": {"type": "string", "minLength": 1},
+        "CONDITIONAL_MEDIUM_PRESSURE_RIVAL": {"type": "string", "minLength": 1},
+        "CONDITIONAL_CAN_RATE_PATH_AVAILABLE": {"type": "string", "minLength": 1},
+        "FRAGILE_ROLE_RANGE_NARROW": {"type": "string", "minLength": 1},
+        "FRAGILE_LEAD_DEPENDENCY_POSSIBLE": {"type": "string", "minLength": 1},
+        "FRAGILE_QUEUE_HIGH_CONFLICT": {"type": "string", "minLength": 1},
+        "FRAGILE_FIRST_TURN_COST_HIGH": {"type": "string", "minLength": 1},
+        "FRAGILE_CURRENT_CONDITION_ADVERSE": {"type": "string", "minLength": 1},
+        "INSUFFICIENT_ROLE_CORE": {"type": "string", "minLength": 1},
+        "INSUFFICIENT_QUEUE_CONTEXT": {"type": "string", "minLength": 1},
+        "CONDITION_CURRENT_NOT_AVAILABLE": {"type": "string", "minLength": 1}
+      }
+    },
+    "basics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["age", "assigned_weight", "frame_no", "horse_name", "horse_no", "jockey", "sex", "trainer"],
+      "properties": {
+        "age": {"type": "integer", "minimum": 1},
+        "assigned_weight": {"type": "string", "minLength": 1},
+        "frame_no": {"type": "integer", "minimum": 1},
+        "horse_name": {"type": "string", "minLength": 1},
+        "horse_no": {"type": "integer", "minimum": 1},
+        "jockey": {"type": "string", "minLength": 1},
+        "sex": {"type": "string", "minLength": 1},
+        "trainer": {"type": "string", "minLength": 1}
+      }
+    },
+    "abilityStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "evidence_count", "reason_codes", "value"],
+      "properties": {
+        "availability": {"const": "NOT_AVAILABLE"},
+        "evidence_count": {"const": 0},
+        "reason_codes": {"const": ["ABILITY_CLEAN_NOT_AVAILABLE"]},
+        "value": {"const": "UNKNOWN"}
+      }
+    },
+    "conditionFit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "evidence_count", "source_status", "value"],
+      "properties": {
+        "availability": {"enum": ["AVAILABLE", "NOT_AVAILABLE"]},
+        "evidence_count": {"type": "integer", "minimum": 0},
+        "source_status": {"enum": ["OBSERVED", "DERIVED", "PROXY", "UNOBSERVED"]},
+        "value": {"enum": ["SUPPORTIVE", "NEUTRAL", "ADVERSE", "UNKNOWN"]}
+      }
+    },
+    "queueFit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "evidence_count", "value"],
+      "properties": {
+        "availability": {"enum": ["AVAILABLE", "NOT_AVAILABLE"]},
+        "evidence_count": {"type": "integer", "minimum": 0},
+        "value": {"enum": ["SUPPORTIVE", "CONDITIONAL", "ADVERSE", "UNKNOWN"]}
+      }
+    },
+    "roleExpectedPosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["availability", "expected_position", "position_flexibility", "role", "role_range"],
+      "properties": {
+        "availability": {"enum": ["AVAILABLE", "NOT_AVAILABLE"]},
+        "expected_position": {"enum": ["LEAD", "FRONT", "STALKING", "MIDPACK", "REAR", "UNKNOWN"]},
+        "position_flexibility": {"enum": ["FLEXIBLE", "LIMITED", "UNKNOWN"]},
+        "role": {"enum": ["LEAD", "FRONT", "STALKING", "MIDPACK", "REAR", "UNKNOWN"]},
+        "role_range": {"enum": ["BROAD", "MULTIPLE", "NARROW", "UNKNOWN"]}
+      }
+    },
+    "trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "description", "evidence_count", "evidence_ids", "kind"],
+      "properties": {
+        "code": {
+          "enum": [
+            "WORLD_TARGET_ROLE_REPRODUCED",
+            "WORLD_QUEUE_COST_STAYS_LOW",
+            "WORLD_EARLY_PRESSURE_EASES",
+            "WORLD_CAN_RATE_PATH_AVAILABLE",
+            "WORLD_CURRENT_CONDITION_SUPPORT_PERSISTS",
+            "FAILURE_ROLE_BAND_MISSED",
+            "FAILURE_NONLEAD_POSITION_FORCED",
+            "FAILURE_EARLY_CONFLICT_ESCALATES",
+            "FAILURE_FIRST_TURN_COST_REALIZED",
+            "FAILURE_CURRENT_CONDITION_FAILS"
+          ]
+        },
+        "description": {"type": "string", "minLength": 1},
+        "evidence_count": {"type": "integer", "minimum": 1},
+        "evidence_ids": {"$ref": "#/$defs/nonEmptyEvidenceIds"},
+        "kind": {"enum": ["UPSIDE", "FAILURE"]}
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["available_dimensions", "basis", "upstream_confidence_used", "value"],
+      "properties": {
+        "available_dimensions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"enum": ["ROLE", "QUEUE", "CONDITION"]}
+        },
+        "basis": {"const": "SUMMARY_EVIDENCE_AVAILABILITY_ONLY; UPSTREAM_CONFIDENCE_UNUSED; CAPPED_AT_MEDIUM"},
+        "upstream_confidence_used": {"const": false},
+        "value": {"enum": ["MEDIUM", "LOW", "NOT_AVAILABLE"]}
+      }
+    },
+    "evidenceCount": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification_uses_count", "current_condition", "detail_items", "evidence_ids_by_dimension", "queue", "role", "total_distinct"],
+      "properties": {
+        "classification_uses_count": {"const": false},
+        "current_condition": {"type": "integer", "minimum": 0},
+        "detail_items": {"type": "integer", "minimum": 0},
+        "evidence_ids_by_dimension": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["current_condition", "queue", "role"],
+          "properties": {
+            "current_condition": {"$ref": "#/$defs/evidenceIds"},
+            "queue": {"$ref": "#/$defs/evidenceIds"},
+            "role": {"$ref": "#/$defs/evidenceIds"}
+          }
+        },
+        "queue": {"type": "integer", "minimum": 0},
+        "role": {"type": "integer", "minimum": 0},
+        "total_distinct": {"type": "integer", "minimum": 0}
+      }
+    },
+    "evidenceIds": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"}
+    },
+    "nonEmptyEvidenceIds": {
+      "allOf": [
+        {"$ref": "#/$defs/evidenceIds"},
+        {"minItems": 1}
+      ]
+    },
+    "horseSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ability_status",
+        "basics",
+        "classification",
+        "classification_semantics",
+        "confidence",
+        "current_condition_fit",
+        "detail_ref",
+        "evidence_count",
+        "failure_world_state",
+        "fragility_triggers",
+        "horse_id",
+        "queue_fit",
+        "reason_codes",
+        "role_expected_position",
+        "upside_triggers",
+        "winning_or_in_the_money_world_state"
+      ],
+      "properties": {
+        "ability_status": {"$ref": "#/$defs/abilityStatus"},
+        "basics": {"$ref": "#/$defs/basics"},
+        "classification": {"enum": ["PRIMARY_REVIEW", "CONDITIONAL_REVIEW", "FRAGILE", "INSUFFICIENT"]},
+        "classification_semantics": {"const": "REVIEW_PRIORITY_ONLY"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "current_condition_fit": {"$ref": "#/$defs/conditionFit"},
+        "detail_ref": {"type": "string", "pattern": "^#detail-[A-Za-z0-9._-]+$"},
+        "evidence_count": {"$ref": "#/$defs/evidenceCount"},
+        "failure_world_state": {"type": "string", "minLength": 1},
+        "fragility_triggers": {"type": "array", "items": {"$ref": "#/$defs/trigger"}},
+        "horse_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"},
+        "queue_fit": {"$ref": "#/$defs/queueFit"},
+        "reason_codes": {"$ref": "#/$defs/reasonCodes"},
+        "role_expected_position": {"$ref": "#/$defs/roleExpectedPosition"},
+        "upside_triggers": {"type": "array", "items": {"$ref": "#/$defs/trigger"}},
+        "winning_or_in_the_money_world_state": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"classification": {"const": "PRIMARY_REVIEW"}}, "required": ["classification"]},
+          "then": {"properties": {"fragility_triggers": {"maxItems": 0}}}
+        },
+        {
+          "if": {"properties": {"classification": {"const": "CONDITIONAL_REVIEW"}}, "required": ["classification"]},
+          "then": {"properties": {"upside_triggers": {"minItems": 1}}}
+        },
+        {
+          "if": {"properties": {"classification": {"const": "FRAGILE"}}, "required": ["classification"]},
+          "then": {"properties": {"fragility_triggers": {"minItems": 1}}}
+        }
+      ]
+    },
+    "raceReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "failure_world_state_codes",
+        "horse_id",
+        "horse_name",
+        "horse_no",
+        "positive_world_state_codes",
+        "reason_codes"
+      ],
+      "properties": {
+        "failure_world_state_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "horse_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"},
+        "horse_name": {"type": "string", "minLength": 1},
+        "horse_no": {"type": "integer", "minimum": 1},
+        "positive_world_state_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
+        "reason_codes": {"$ref": "#/$defs/reasonCodes"}
+      }
+    },
+    "keyWorldState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "description", "horse_nos", "state_kind"],
+      "properties": {
+        "code": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "horse_nos": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "integer", "minimum": 1}},
+        "state_kind": {"enum": ["UPSIDE", "FAILURE"]}
+      }
+    },
+    "decisionSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "conditional_review",
+        "display_order_rule",
+        "fragile_or_downgrade",
+        "insufficient_review",
+        "key_world_states",
+        "primary_review"
+      ],
+      "properties": {
+        "conditional_review": {"type": "array", "items": {"$ref": "#/$defs/raceReference"}},
+        "display_order_rule": {"const": "OFFICIAL_HORSE_NO; NOT_REVIEW_ORDER"},
+        "fragile_or_downgrade": {"type": "array", "items": {"$ref": "#/$defs/raceReference"}},
+        "insufficient_review": {"type": "array", "items": {"$ref": "#/$defs/raceReference"}},
+        "key_world_states": {"type": "array", "items": {"$ref": "#/$defs/keyWorldState"}},
+        "primary_review": {"type": "array", "items": {"$ref": "#/$defs/raceReference"}}
+      }
+    },
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_id", "label", "section", "source_note", "status", "value"],
+      "properties": {
+        "evidence_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"},
+        "label": {"type": "string", "minLength": 1},
+        "section": {"enum": ["ROUTE", "QUEUE", "ROLE", "CONDITION", "TRANSFER", "OTHER"]},
+        "source_note": {"type": "string"},
+        "status": {"enum": ["OBSERVED", "DERIVED", "PROXY", "UNOBSERVED"]},
+        "value": {"type": "string"}
+      }
+    },
+    "horseEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["detail_ref", "horse_id", "horse_name", "horse_no", "items"],
+      "properties": {
+        "detail_ref": {"type": "string", "pattern": "^#detail-[A-Za-z0-9._-]+$"},
+        "horse_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"},
+        "horse_name": {"type": "string", "minLength": 1},
+        "horse_no": {"type": "integer", "minimum": 1},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/evidenceItem"}}
+      }
+    },
+    "race": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_summary", "display_order", "evidence_details", "horse_summaries", "race_id", "race_name", "runner_count"],
+      "properties": {
+        "decision_summary": {"$ref": "#/$defs/decisionSummary"},
+        "display_order": {"type": "integer", "minimum": 1},
+        "evidence_details": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/horseEvidence"}},
+        "horse_summaries": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/horseSummary"}},
+        "race_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$"},
+        "race_name": {"type": "string", "minLength": 1},
+        "runner_count": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}
