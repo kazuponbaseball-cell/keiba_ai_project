@@ -15,7 +15,24 @@
 
 既存のdashboard/scenario-labは、旧`ai_score`、順位、市場、BUY経路と結合しているためimportもデータ再利用もしていません。専用generatorは標準ライブラリだけを使い、入力列をallowlistで検査します。禁止列が追加された入力はfail-closeします。
 
-## 生成済みsnapshot
+## Queue proxy v0.2 snapshot
+
+`docs/observations/race_intelligence_lite_plus_20260823/snapshot_20260822T180200JST_queue_v02/`
+
+v0.2は従来のlead/front頭数表示を、target-context role、role range、履歴観測率、lead dependency evidence、初角位置確保cost、canonical pairwise conflict、expected position bandを含むQueue Pressure Mapへ置き換えます。5レース・全70頭を公式馬番順で表示します。
+
+- `all_recent_role`: v1と同じ直近最大5走の絶対角位置帯
+- `target_context_role`: 同surface±200m → ±400m → 同surface → all-recentの固定fallback
+- `normalized_position_proxy`: `(position-1)/max(field_size-1,1)`。今回のmarket-excluded historyには過去頭数がないため全頭`unobserved`
+- `forward_propensity`: 分子・分母付きの単純履歴観測率。今回のハナ・位置取り確率ではない
+- `lead_dependency_evidence`: `dependency_possible / can_rate_observed / mixed / insufficient_evidence`。`need_lead=true`へ変換しない
+- `launch_speed`: 全頭`unobserved`。最初の観測角位置と発馬加速を分離
+- `pairwise_pressure_matrix`: `horse_a.horse_no < horse_b.horse_no`のcanonical upper triangle、self pairなし
+- `queue_pressure_level`: `HIGH / MEDIUM / LOW / UNCERTAIN`。pace taxonomyやHuman Scenarioへ自動変換しない
+
+`Queue Pressure HIGH ≠ FAST`です。QueueはHuman Scenarioの観測材料に限られ、HumanがMIDDLEを選ぶことも許容します。v0.2のrace confidenceはrole-known horse coverageとnormalized-position horse coverageの両方が80%以上の場合だけ`medium`、それ以外は`low`とする固定規則です。今回は過去field size未接続による正規化coverage 0を反映し、全5レース`low`です。
+
+## 保存済みv1 snapshot
 
 `docs/observations/race_intelligence_lite_plus_20260823/snapshot_20260822T132226JST/`
 
@@ -40,9 +57,9 @@ HTMLは単一ファイルで、外部CSS/JavaScript、API、`fetch`、XHR、WebS
 
 Routeは `exact / partial / similar / unclassified / unobserved`、confidenceは `high / medium / low / unobserved` です。`unobserved`をneutral、0、有利・不利へ補完しません。
 
-能力帯は直近最大5走の過去着順を帯化した記述であり、今回の出走馬間の能力順位ではありません。roleは直近最大5走の最初に観測された角位置の絶対位置帯proxyで、頭数補正や発走確率はありません。
+能力帯は直近最大5走の過去着順を帯化した記述であり、今回の出走馬間の能力順位ではありません。v1 roleは直近最大5走の最初に観測された角位置の絶対位置帯proxyです。v0.2ではこれを後方互換表示として残し、target-context層とvariation rangeを別表示します。
 
-`need_lead`は逃げ頻度だけから依存性を断定できないため全頭`unobserved`です。逃げた頻度は別の`lead_frequency_proxy`として表示します。固定長データの非完走sentinel（100/300/400、99.9秒）は着順・上がり評価から除外し、「非完走等」としてだけ表示します。
+v0.2は`need_lead`を出力しません。直近最大5走のlead/nonleadとvalid finish 1–3着を透明に数え、肯定証拠が限られる場合も`dependency_possible`に留めます。固定長データの非完走sentinel（100/300/400、99.9秒）は着順・上がり評価から除外し、「非完走等」としてだけ表示します。
 
 Scenario sensitivityのSLOW/MIDDLE/FASTは、独立taxonomyと個体responseが凍結されていないため全頭を`unobserved`としています。既存の`actual_lap_mode`はpaceとshapeを混在するため、S/M/Fへ変換していません。
 
@@ -59,7 +76,7 @@ Transferの`observed race shape`も、history scopeにはRA joinフラグだけ�
 - horse intelligence readiness / route coverage
 - same-condition evidence coverage
 - route requirement cards
-- 2026-08-22 13:22:26 JSTのJRA公式current entry field
+- 2026-08-22 18:02:00 JSTに再取得したJRA公式current entry field（v0.2）
 
 JRA HTMLはShift_JISとして読み、最初の`div.record_unit`より前だけを対象にし、各rowを最初の`td.past`より前で切っています。過去走人気・オッズは抽出しません。保存済み8月21日snapshotとのidentityは`race_id+horse_id`で70/70一致し、現在は枠・馬番・性齢・騎手・調教師・斤量が70/70観測済みです。
 
@@ -73,7 +90,7 @@ JRA HTMLはShift_JISとして読み、最初の`div.record_unit`より前だけ�
 python scripts/research/build_race_intelligence_lite_plus.py capture-official `
   --targets <resolved_win5_targets_predraw.csv> `
   --entries <declared_without_draw_entry_snapshot.csv> `
-  --fetched-at-jst 2026-08-22T13:22:26+09:00 `
+  --fetched-at-jst 2026-08-22T18:02:00+09:00 `
   --output <snapshot>/official_current_entries.json
 
 python scripts/research/build_race_intelligence_lite_plus.py build `
@@ -86,7 +103,7 @@ python scripts/research/build_race_intelligence_lite_plus.py build `
   --readiness <predraw_horse_intelligence_readiness.csv> `
   --route-coverage <predraw_route_coverage.csv> `
   --official-entries <snapshot>/official_current_entries.json `
-  --generated-at-jst 2026-08-22T13:22:26+09:00 `
+  --generated-at-jst 2026-08-22T18:02:00+09:00 `
   --output-dir <snapshot>
 ```
 
@@ -137,6 +154,10 @@ python scripts/research/build_race_intelligence_lite_plus.py verify `
 - Exact routeは全5レース0。renovation/versionが未解決であり、「一致なし」の意味ではありません。
 - Similarは全5レース0。similarity metric未凍結であり、「類似なし」の意味ではありません。
 - Full curve geometryは未整備。course descriptionは定性表示だけです。
+- market-excluded historyに過去`field_size`がないため、normalized positionとfront-quartile observed rateは全頭`unobserved`です。対象頭数や角位置最大値から推測していません。
+- launch/個体200m start speedは未観測です。first observed corner positionをstart accelerationとして扱いません。
+- WIN4はroute cardに初角までの距離を安全に分類できる記述がなく、first-turn position costは全頭`unobserved`です。
+- Queue pairは観測role/rateに基づく定性proxyで、誰が速い・誰がハナを取るかを断定しません。
 - target個体調教joinは未実行のためconditionは原則`unobserved`です。
 - RA coverageはsame-condition race-levelで100%ですが、個体別sectionalではありません。
 - 当日馬場、day bias、風はHuman freeze前の入力待ちです。
