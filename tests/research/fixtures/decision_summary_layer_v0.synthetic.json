@@ -1,0 +1,276 @@
+{
+  "schema_version": "decision_summary_layer_v0_synthetic_source",
+  "synthetic_fixture": true,
+  "safety": {
+    "real_data_materialized": false,
+    "training_executed": false,
+    "oos_evaluation_executed": false,
+    "target_prediction_generated": false,
+    "formal_buy": false,
+    "send_order": false,
+    "stake": 0
+  },
+  "races": [
+    {
+      "display_order": 1,
+      "race_id": "SYN-R01",
+      "race_name": "Synthetic Route Review Cup",
+      "runners": [
+        {
+          "horse_id": "SYN-H01",
+          "basics": {
+            "horse_name": "Synthetic Alpha",
+            "frame_no": 1,
+            "horse_no": 1,
+            "jockey": "Fixture Jockey A",
+            "trainer": "Fixture Trainer A",
+            "sex": "M",
+            "age": 4,
+            "assigned_weight": "57.0"
+          },
+          "role_queue_evidence": {
+            "target_context_role": "FRONT",
+            "role_range": "MULTIPLE",
+            "expected_position": "FRONT",
+            "position_flexibility": "FLEXIBLE",
+            "forward_propensity": "FORWARD",
+            "lead_dependency": "NO",
+            "first_turn_position_cost": "LOW",
+            "can_rate": "YES",
+            "pressure_rivals": [
+              {
+                "horse_no": 2,
+                "conflict_level": "LOW",
+                "evidence_ids": ["A-QUEUE-01"]
+              }
+            ],
+            "role_evidence_ids": ["A-ROLE-01", "A-ROLE-02"],
+            "queue_evidence_ids": ["A-QUEUE-01"]
+          },
+          "current_condition_evidence": {
+            "fit": "SUPPORTIVE",
+            "status": "OBSERVED",
+            "evidence_ids": ["A-COND-01"]
+          },
+          "evidence_details": [
+            {
+              "evidence_id": "A-ROLE-01",
+              "section": "ROLE",
+              "label": "target-context role",
+              "value": "front",
+              "status": "OBSERVED",
+              "source_note": "Synthetic Horsecard role evidence."
+            },
+            {
+              "evidence_id": "A-ROLE-02",
+              "section": "ROUTE",
+              "label": "expected position band",
+              "value": "front",
+              "status": "DERIVED",
+              "source_note": "Synthetic route/role projection."
+            },
+            {
+              "evidence_id": "A-QUEUE-01",
+              "section": "QUEUE",
+              "label": "first-turn burden and neighbor context",
+              "value": "low burden",
+              "status": "DERIVED",
+              "source_note": "Synthetic Queue evidence."
+            },
+            {
+              "evidence_id": "A-COND-01",
+              "section": "CONDITION",
+              "label": "current-condition observation",
+              "value": "supportive",
+              "status": "OBSERVED",
+              "source_note": "Synthetic direct observation."
+            }
+          ]
+        },
+        {
+          "horse_id": "SYN-H02",
+          "basics": {
+            "horse_name": "Synthetic Beta",
+            "frame_no": 2,
+            "horse_no": 2,
+            "jockey": "Fixture Jockey B",
+            "trainer": "Fixture Trainer B",
+            "sex": "F",
+            "age": 4,
+            "assigned_weight": "55.0"
+          },
+          "role_queue_evidence": {
+            "target_context_role": "STALKING",
+            "role_range": "MULTIPLE",
+            "expected_position": "STALKING",
+            "position_flexibility": "FLEXIBLE",
+            "forward_propensity": "MIXED",
+            "lead_dependency": "NO",
+            "first_turn_position_cost": "MEDIUM",
+            "can_rate": "YES",
+            "pressure_rivals": [
+              {
+                "horse_no": 1,
+                "conflict_level": "MEDIUM",
+                "evidence_ids": ["B-RIVAL-01"]
+              }
+            ],
+            "role_evidence_ids": ["B-ROLE-01"],
+            "queue_evidence_ids": ["B-QUEUE-01", "B-RIVAL-01"]
+          },
+          "current_condition_evidence": {
+            "fit": "NEUTRAL",
+            "status": "OBSERVED",
+            "evidence_ids": ["B-COND-01"]
+          },
+          "evidence_details": [
+            {
+              "evidence_id": "B-ROLE-01",
+              "section": "ROLE",
+              "label": "role range",
+              "value": "front to stalking",
+              "status": "OBSERVED",
+              "source_note": "Synthetic Horsecard role evidence."
+            },
+            {
+              "evidence_id": "B-QUEUE-01",
+              "section": "QUEUE",
+              "label": "first-turn position cost",
+              "value": "medium",
+              "status": "DERIVED",
+              "source_note": "Synthetic Queue projection."
+            },
+            {
+              "evidence_id": "B-RIVAL-01",
+              "section": "QUEUE",
+              "label": "pressure rival",
+              "value": "medium conflict",
+              "status": "DERIVED",
+              "source_note": "Synthetic pair conflict evidence."
+            },
+            {
+              "evidence_id": "B-COND-01",
+              "section": "CONDITION",
+              "label": "current-condition observation",
+              "value": "neutral",
+              "status": "OBSERVED",
+              "source_note": "Synthetic direct observation."
+            }
+          ]
+        },
+        {
+          "horse_id": "SYN-H03",
+          "basics": {
+            "horse_name": "Synthetic Gamma",
+            "frame_no": 3,
+            "horse_no": 3,
+            "jockey": "Fixture Jockey C",
+            "trainer": "Fixture Trainer C",
+            "sex": "G",
+            "age": 5,
+            "assigned_weight": "58.0"
+          },
+          "role_queue_evidence": {
+            "target_context_role": "LEAD",
+            "role_range": "NARROW",
+            "expected_position": "LEAD",
+            "position_flexibility": "LIMITED",
+            "forward_propensity": "FORWARD",
+            "lead_dependency": "POSSIBLE",
+            "first_turn_position_cost": "HIGH",
+            "can_rate": "NO",
+            "pressure_rivals": [
+              {
+                "horse_no": 2,
+                "conflict_level": "HIGH",
+                "evidence_ids": ["C-RIVAL-01"]
+              }
+            ],
+            "role_evidence_ids": ["C-ROLE-01"],
+            "queue_evidence_ids": ["C-QUEUE-01", "C-RIVAL-01"]
+          },
+          "current_condition_evidence": {
+            "fit": "ADVERSE",
+            "status": "OBSERVED",
+            "evidence_ids": ["C-COND-01"]
+          },
+          "evidence_details": [
+            {
+              "evidence_id": "C-ROLE-01",
+              "section": "ROLE",
+              "label": "role dependency",
+              "value": "narrow lead role",
+              "status": "OBSERVED",
+              "source_note": "Synthetic Horsecard role evidence."
+            },
+            {
+              "evidence_id": "C-QUEUE-01",
+              "section": "QUEUE",
+              "label": "first-turn position cost",
+              "value": "high",
+              "status": "DERIVED",
+              "source_note": "Synthetic Queue projection."
+            },
+            {
+              "evidence_id": "C-RIVAL-01",
+              "section": "QUEUE",
+              "label": "pressure rival",
+              "value": "high conflict",
+              "status": "DERIVED",
+              "source_note": "Synthetic pair conflict evidence."
+            },
+            {
+              "evidence_id": "C-COND-01",
+              "section": "CONDITION",
+              "label": "current-condition observation",
+              "value": "adverse",
+              "status": "OBSERVED",
+              "source_note": "Synthetic direct observation."
+            }
+          ]
+        },
+        {
+          "horse_id": "SYN-H04",
+          "basics": {
+            "horse_name": "Synthetic Delta",
+            "frame_no": 4,
+            "horse_no": 4,
+            "jockey": "Fixture Jockey D",
+            "trainer": "Fixture Trainer D",
+            "sex": "M",
+            "age": 3,
+            "assigned_weight": "56.0"
+          },
+          "role_queue_evidence": {
+            "target_context_role": "UNKNOWN",
+            "role_range": "UNKNOWN",
+            "expected_position": "UNKNOWN",
+            "position_flexibility": "UNKNOWN",
+            "forward_propensity": "UNKNOWN",
+            "lead_dependency": "UNKNOWN",
+            "first_turn_position_cost": "UNKNOWN",
+            "can_rate": "UNKNOWN",
+            "pressure_rivals": [],
+            "role_evidence_ids": [],
+            "queue_evidence_ids": []
+          },
+          "current_condition_evidence": {
+            "fit": "UNKNOWN",
+            "status": "UNOBSERVED",
+            "evidence_ids": []
+          },
+          "evidence_details": [
+            {
+              "evidence_id": "D-MISSING-01",
+              "section": "OTHER",
+              "label": "missing structured evidence",
+              "value": "not available in synthetic source",
+              "status": "UNOBSERVED",
+              "source_note": "Missingness is retained, not imputed."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

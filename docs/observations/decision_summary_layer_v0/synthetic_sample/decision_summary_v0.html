@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Decision Summary Layer V0 — Synthetic Observation</title>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1020; --panel:#151c31; --line:#2b3857; --text:#eef3ff; --muted:#9eabc6; --cyan:#79d9ee; --amber:#ffd27a; --red:#ff8d96; --green:#92e4b8; }
+    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--text); font:14px/1.55 system-ui,"Yu Gothic UI",sans-serif; }
+    main { width:min(1600px,100%); margin:auto; padding:24px; } .hero { border:1px solid var(--line); border-radius:18px; padding:24px; background:linear-gradient(135deg,#17213b,#10172a); }
+    .hero h1,.race h2 { margin:.15rem 0; } .guardrails { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+    .guardrails span,.chip,.classification { display:inline-block; border:1px solid var(--line); border-radius:999px; padding:3px 8px; }
+    .race { margin-top:28px; border:1px solid var(--line); border-radius:18px; overflow:hidden; background:#10172a; } .race-header,.decision-summary,.all-runners,.evidence-section { padding:22px; }
+    .race-header { background:#19233d; } .decision-summary { border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+    .section-heading { margin-bottom:14px; } .section-heading p { margin:.2rem 0; color:var(--muted); } .eyebrow { text-transform:uppercase; letter-spacing:.14em; color:var(--cyan)!important; font-size:12px; }
+    .review-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; } .review-group { border:1px solid var(--line); border-radius:14px; padding:14px; background:var(--panel); min-height:150px; }
+    .review-group.primary { border-top:3px solid var(--green); } .review-group.conditional { border-top:3px solid var(--amber); } .review-group.fragile { border-top:3px solid var(--red); } .review-group.world { border-top:3px solid var(--cyan); }
+    .review-group h3,.review-horse h4 { margin:.15rem 0 .55rem; } .review-horse { border-top:1px solid var(--line); padding:.6rem 0; } .review-horse:first-of-type { border-top:0; }
+    .chips { display:flex; flex-wrap:wrap; gap:4px; } .chip { font:11px/1.3 ui-monospace,Consolas,monospace; color:#c6d8ff; }
+    .table-wrap { overflow:auto; border:1px solid var(--line); border-radius:12px; } table { width:100%; border-collapse:collapse; min-width:1100px; } th,td { text-align:left; vertical-align:top; padding:10px; border-bottom:1px solid var(--line); } th { position:sticky; top:0; background:#1a2540; color:#cad8f5; }
+    .summary-table td { min-width:125px; } .summary-table td:first-child { min-width:180px; } code { color:var(--cyan); } a { color:var(--cyan); } small,.muted { color:var(--muted); }
+    .classification.primary_review { color:var(--green); } .classification.conditional_review { color:var(--amber); } .classification.fragile { color:var(--red); }
+    .horse-evidence { margin:10px 0; border:1px solid var(--line); border-radius:12px; background:var(--panel); } .horse-evidence summary { cursor:pointer; padding:14px; font-weight:700; } .horse-evidence .table-wrap { margin:0 14px 14px; }
+    @media(max-width:1050px) { .review-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } } @media(max-width:620px) { main { padding:10px; } .review-grid { grid-template-columns:1fr; } .race-header,.decision-summary,.all-runners,.evidence-section { padding:14px; } }
+  </style>
+</head>
+<body><main>
+  <header class="hero">
+    <p class="eyebrow">Horse Intelligence / WIN5 · Weekend V0</p>
+    <h1>Decision Summary Layer V0</h1>
+    <p>全馬の詳細証拠を読む前に、まず見る馬・条件待ち・明示的fragilityを確認するread-only view modelです。</p>
+    <div class="guardrails"><span>Review priority only</span><span>能力順位ではありません</span><span>勝率・複勝率ではありません</span><span>Synthetic fixture only</span><span>No trading hooks</span></div>
+    <p class="muted">source projection sha256: <code>d46baf10878a8bc7e5cf43ba480c1019121daa2c9038426ea241a6e0a1b4ea2e</code></p>
+  </header>
+  <article class="race" data-race-id="SYN-R01">
+      <header class="race-header"><p>Race 1 · SYN-R01</p><h2>Synthetic Route Review Cup</h2><p>4 runners · official horse-number order</p></header>
+      <section class="decision-summary" aria-label="Decision Summary">
+        <div class="section-heading"><p class="eyebrow">Decision Summary</p><h2>最初に確認する観測ポイント</h2><p>review priorityのみ。能力順位・結果確率ではありません。</p></div>
+        <div class="review-grid">
+          <section class="review-group primary"><h3>まず見る馬</h3><article class="review-horse"><h4>1 Synthetic Alpha</h4><div class="chips"><span class="chip">ABILITY_CLEAN_NOT_AVAILABLE</span><span class="chip">PRIMARY_ROLE_REACHABLE</span><span class="chip">PRIMARY_QUEUE_SUPPORTIVE</span><span class="chip">CURRENT_CONDITION_SUPPORTIVE</span></div></article></section>
+          <section class="review-group conditional"><h3>展開次第で見る馬</h3><article class="review-horse"><h4>2 Synthetic Beta</h4><div class="chips"><span class="chip">ABILITY_CLEAN_NOT_AVAILABLE</span><span class="chip">PRIMARY_ROLE_REACHABLE</span><span class="chip">CONDITIONAL_MEDIUM_FIRST_TURN_COST</span><span class="chip">CONDITIONAL_MEDIUM_PRESSURE_RIVAL</span><span class="chip">CONDITIONAL_CAN_RATE_PATH_AVAILABLE</span></div></article></section>
+          <section class="review-group fragile"><h3>Fragile / 割引・注意</h3><article class="review-horse"><h4>3 Synthetic Gamma</h4><div class="chips"><span class="chip">ABILITY_CLEAN_NOT_AVAILABLE</span><span class="chip">PRIMARY_ROLE_REACHABLE</span><span class="chip">FRAGILE_ROLE_RANGE_NARROW</span><span class="chip">FRAGILE_LEAD_DEPENDENCY_POSSIBLE</span><span class="chip">FRAGILE_QUEUE_HIGH_CONFLICT</span><span class="chip">FRAGILE_FIRST_TURN_COST_HIGH</span><span class="chip">FRAGILE_CURRENT_CONDITION_ADVERSE</span></div></article></section>
+          <section class="review-group world"><h3>Key world states</h3><ul><li><code>WORLD_TARGET_ROLE_REPRODUCED</code> 今回も対象roleと想定位置帯を再現できる <span class="muted">対象馬番: 1, 2, 3</span></li><li><code>WORLD_QUEUE_COST_STAYS_LOW</code> 序盤のQueue負荷が低いまま推移する <span class="muted">対象馬番: 1</span></li><li><code>WORLD_EARLY_PRESSURE_EASES</code> 序盤の位置取り圧が緩和される <span class="muted">対象馬番: 2</span></li><li><code>WORLD_CAN_RATE_PATH_AVAILABLE</code> 控える選択肢が機能して位置依存を弱める <span class="muted">対象馬番: 2</span></li><li><code>WORLD_CURRENT_CONDITION_SUPPORT_PERSISTS</code> 直接観測された状態面の支えが維持される <span class="muted">対象馬番: 1</span></li><li><code>FAILURE_ROLE_BAND_MISSED</code> 必要な位置帯へ入れない <span class="muted">対象馬番: 3</span></li><li><code>FAILURE_NONLEAD_POSITION_FORCED</code> 主導権を取れず依存する位置を失う <span class="muted">対象馬番: 3</span></li><li><code>FAILURE_EARLY_CONFLICT_ESCALATES</code> 序盤のQueue競合が強まる <span class="muted">対象馬番: 3</span></li><li><code>FAILURE_FIRST_TURN_COST_REALIZED</code> 1角までの位置確保コストが顕在化する <span class="muted">対象馬番: 3</span></li><li><code>FAILURE_CURRENT_CONDITION_FAILS</code> 状態面の逆風がレース中の反応を制限する <span class="muted">対象馬番: 3</span></li></ul></section>
+        </div>
+      </section>
+      <section class="all-runners" aria-label="All runner summaries">
+        <div class="section-heading"><p class="eyebrow">All runners preserved</p><h2>全馬 Decision Summary</h2><p>分類外の馬もINSUFFICIENTとして保持します。行順はreview priorityではなく公式馬番順です。</p></div>
+        <div class="table-wrap"><table class="summary-table"><thead><tr><th>馬</th><th>review priority</th><th>ability</th><th>condition</th><th>Queue</th><th>role / expected</th><th>upside trigger</th><th>fragility trigger</th><th>winning / in-the-money world</th><th>failure world</th><th>confidence</th><th>evidence</th><th>reason codes</th></tr></thead><tbody>
+      <tr data-horse-id="SYN-H01">
+        <td><strong>1 Synthetic Alpha</strong><br><a href="#detail-r7-SYN-R01-h7-SYN-H01">詳細証拠</a></td>
+        <td><span class="classification primary_review">PRIMARY_REVIEW</span></td>
+        <td>UNKNOWN / NOT_AVAILABLE</td>
+        <td>SUPPORTIVE</td>
+        <td>SUPPORTIVE</td>
+        <td>FRONT → FRONT<br><small>MULTIPLE / FLEXIBLE</small></td>
+        <td><span class="trigger"><code>WORLD_TARGET_ROLE_REPRODUCED</code> 今回も対象roleと想定位置帯を再現できる</span><br><span class="trigger"><code>WORLD_QUEUE_COST_STAYS_LOW</code> 序盤のQueue負荷が低いまま推移する</span><br><span class="trigger"><code>WORLD_CURRENT_CONDITION_SUPPORT_PERSISTS</code> 直接観測された状態面の支えが維持される</span></td>
+        <td><span class="muted">—</span></td>
+        <td>今回も対象roleと想定位置帯を再現できる / 序盤のQueue負荷が低いまま推移する / 直接観測された状態面の支えが維持される</td>
+        <td>想定位置帯に届かない、またはQueue・状態面の肯定条件が成立しない</td>
+        <td>MEDIUM<br><small>upstream未使用</small></td>
+        <td>4 distinct / 4 detail</td>
+        <td><div class="chips"><span class="chip">ABILITY_CLEAN_NOT_AVAILABLE</span><span class="chip">PRIMARY_ROLE_REACHABLE</span><span class="chip">PRIMARY_QUEUE_SUPPORTIVE</span><span class="chip">CURRENT_CONDITION_SUPPORTIVE</span></div></td>
+      </tr>
+      <tr data-horse-id="SYN-H02">
+        <td><strong>2 Synthetic Beta</strong><br><a href="#detail-r7-SYN-R01-h7-SYN-H02">詳細証拠</a></td>
+        <td><span class="classification conditional_review">CONDITIONAL_REVIEW</span></td>
+        <td>UNKNOWN / NOT_AVAILABLE</td>
+        <td>NEUTRAL</td>
+        <td>CONDITIONAL</td>
+        <td>STALKING → STALKING<br><small>MULTIPLE / FLEXIBLE</small></td>
+        <td><span class="trigger"><code>WORLD_TARGET_ROLE_REPRODUCED</code> 今回も対象roleと想定位置帯を再現できる</span><br><span class="trigger"><code>WORLD_EARLY_PRESSURE_EASES</code> 序盤の位置取り圧が緩和される</span><br><span class="trigger"><code>WORLD_CAN_RATE_PATH_AVAILABLE</code> 控える選択肢が機能して位置依存を弱める</span></td>
+        <td><span class="muted">—</span></td>
+        <td>今回も対象roleと想定位置帯を再現できる / 序盤の位置取り圧が緩和される / 控える選択肢が機能して位置依存を弱める</td>
+        <td>想定位置帯に届かない、またはQueue・状態面の肯定条件が成立しない</td>
+        <td>MEDIUM<br><small>upstream未使用</small></td>
+        <td>4 distinct / 4 detail</td>
+        <td><div class="chips"><span class="chip">ABILITY_CLEAN_NOT_AVAILABLE</span><span class="chip">PRIMARY_ROLE_REACHABLE</span><span class="chip">CONDITIONAL_MEDIUM_FIRST_TURN_COST</span><span class="chip">CONDITIONAL_MEDIUM_PRESSURE_RIVAL</span><span class="chip">CONDITIONAL_CAN_RATE_PATH_AVAILABLE</span></div></td>
+      </tr>
+      <tr data-horse-id="SYN-H03">
+        <td><strong>3 Synthetic Gamma</strong><br><a href="#detail-r7-SYN-R01-h7-SYN-H03">詳細証拠</a></td>
+        <td><span class="classification fragile">FRAGILE</span></td>
+        <td>UNKNOWN / NOT_AVAILABLE</td>
+        <td>ADVERSE</td>
+        <td>ADVERSE</td>
+        <td>LEAD → LEAD<br><small>NARROW / LIMITED</small></td>
+        <td><span class="trigger"><code>WORLD_TARGET_ROLE_REPRODUCED</code> 今回も対象roleと想定位置帯を再現できる</span></td>
+        <td><span class="trigger"><code>FAILURE_ROLE_BAND_MISSED</code> 必要な位置帯へ入れない</span><br><span class="trigger"><code>FAILURE_NONLEAD_POSITION_FORCED</code> 主導権を取れず依存する位置を失う</span><br><span class="trigger"><code>FAILURE_EARLY_CONFLICT_ESCALATES</code> 序盤のQueue競合が強まる</span><br><span class="trigger"><code>FAILURE_FIRST_TURN_COST_REALIZED</code> 1角までの位置確保コストが顕在化する</span><br><span class="trigger"><code>FAILURE_CURRENT_CONDITION_FAILS</code> 状態面の逆風がレース中の反応を制限する</span></td>
+        <td>今回も対象roleと想定位置帯を再現できる</td>
+        <td>必要な位置帯へ入れない / 主導権を取れず依存する位置を失う / 序盤のQueue競合が強まる / 1角までの位置確保コストが顕在化する / 状態面の逆風がレース中の反応を制限する</td>
+        <td>LOW<br><small>upstream未使用</small></td>
+        <td>4 distinct / 4 detail</td>
+        <td><div class="chips"><span class="chip">ABILITY_CLEAN_NOT_AVAILABLE</span><span class="chip">PRIMARY_ROLE_REACHABLE</span><span class="chip">FRAGILE_ROLE_RANGE_NARROW</span><span class="chip">FRAGILE_LEAD_DEPENDENCY_POSSIBLE</span><span class="chip">FRAGILE_QUEUE_HIGH_CONFLICT</span><span class="chip">FRAGILE_FIRST_TURN_COST_HIGH</span><span class="chip">FRAGILE_CURRENT_CONDITION_ADVERSE</span></div></td>
+      </tr>
+      <tr data-horse-id="SYN-H04">
+        <td><strong>4 Synthetic Delta</strong><br><a href="#detail-r7-SYN-R01-h7-SYN-H04">詳細証拠</a></td>
+        <td><span class="classification insufficient">INSUFFICIENT</span></td>
+        <td>UNKNOWN / NOT_AVAILABLE</td>
+        <td>UNKNOWN</td>
+        <td>UNKNOWN</td>
+        <td>UNKNOWN → UNKNOWN<br><small>UNKNOWN / UNKNOWN</small></td>
+        <td><span class="muted">—</span></td>
+        <td><span class="muted">—</span></td>
+        <td>NOT_AVAILABLE: positive world-state evidence is insufficient.</td>
+        <td>NOT_AVAILABLE: failure world-state evidence is insufficient.</td>
+        <td>NOT_AVAILABLE<br><small>upstream未使用</small></td>
+        <td>0 distinct / 1 detail</td>
+        <td><div class="chips"><span class="chip">ABILITY_CLEAN_NOT_AVAILABLE</span><span class="chip">INSUFFICIENT_ROLE_CORE</span><span class="chip">INSUFFICIENT_QUEUE_CONTEXT</span><span class="chip">CONDITION_CURRENT_NOT_AVAILABLE</span></div></td>
+      </tr></tbody></table></div>
+      </section>
+      <section class="evidence-section" aria-label="Horsecard evidence details">
+        <div class="section-heading"><p class="eyebrow">Expandable evidence</p><h2>Horsecard / Queue / Route 詳細証拠</h2><p>既存詳細を置換せず、各馬の折りたたみ内に保持します。</p></div>
+        <details class="horse-evidence" id="detail-r7-SYN-R01-h7-SYN-H01">
+        <summary>1 Synthetic Alpha — Horsecard / Queue / Route evidence</summary>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>section</th><th>label</th><th>value</th><th>status</th><th>source note</th></tr></thead><tbody><tr><td><code>A-COND-01</code></td><td>CONDITION</td><td>current-condition observation</td><td>supportive</td><td>OBSERVED</td><td>Synthetic direct observation.</td></tr><tr><td><code>A-QUEUE-01</code></td><td>QUEUE</td><td>first-turn burden and neighbor context</td><td>low burden</td><td>DERIVED</td><td>Synthetic Queue evidence.</td></tr><tr><td><code>A-ROLE-01</code></td><td>ROLE</td><td>target-context role</td><td>front</td><td>OBSERVED</td><td>Synthetic Horsecard role evidence.</td></tr><tr><td><code>A-ROLE-02</code></td><td>ROUTE</td><td>expected position band</td><td>front</td><td>DERIVED</td><td>Synthetic route/role projection.</td></tr></tbody></table></div>
+      </details>
+      <details class="horse-evidence" id="detail-r7-SYN-R01-h7-SYN-H02">
+        <summary>2 Synthetic Beta — Horsecard / Queue / Route evidence</summary>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>section</th><th>label</th><th>value</th><th>status</th><th>source note</th></tr></thead><tbody><tr><td><code>B-COND-01</code></td><td>CONDITION</td><td>current-condition observation</td><td>neutral</td><td>OBSERVED</td><td>Synthetic direct observation.</td></tr><tr><td><code>B-QUEUE-01</code></td><td>QUEUE</td><td>first-turn position cost</td><td>medium</td><td>DERIVED</td><td>Synthetic Queue projection.</td></tr><tr><td><code>B-RIVAL-01</code></td><td>QUEUE</td><td>pressure rival</td><td>medium conflict</td><td>DERIVED</td><td>Synthetic pair conflict evidence.</td></tr><tr><td><code>B-ROLE-01</code></td><td>ROLE</td><td>role range</td><td>front to stalking</td><td>OBSERVED</td><td>Synthetic Horsecard role evidence.</td></tr></tbody></table></div>
+      </details>
+      <details class="horse-evidence" id="detail-r7-SYN-R01-h7-SYN-H03">
+        <summary>3 Synthetic Gamma — Horsecard / Queue / Route evidence</summary>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>section</th><th>label</th><th>value</th><th>status</th><th>source note</th></tr></thead><tbody><tr><td><code>C-COND-01</code></td><td>CONDITION</td><td>current-condition observation</td><td>adverse</td><td>OBSERVED</td><td>Synthetic direct observation.</td></tr><tr><td><code>C-QUEUE-01</code></td><td>QUEUE</td><td>first-turn position cost</td><td>high</td><td>DERIVED</td><td>Synthetic Queue projection.</td></tr><tr><td><code>C-RIVAL-01</code></td><td>QUEUE</td><td>pressure rival</td><td>high conflict</td><td>DERIVED</td><td>Synthetic pair conflict evidence.</td></tr><tr><td><code>C-ROLE-01</code></td><td>ROLE</td><td>role dependency</td><td>narrow lead role</td><td>OBSERVED</td><td>Synthetic Horsecard role evidence.</td></tr></tbody></table></div>
+      </details>
+      <details class="horse-evidence" id="detail-r7-SYN-R01-h7-SYN-H04">
+        <summary>4 Synthetic Delta — Horsecard / Queue / Route evidence</summary>
+        <div class="table-wrap"><table><thead><tr><th>ID</th><th>section</th><th>label</th><th>value</th><th>status</th><th>source note</th></tr></thead><tbody><tr><td><code>D-MISSING-01</code></td><td>OTHER</td><td>missing structured evidence</td><td>not available in synthetic source</td><td>UNOBSERVED</td><td>Missingness is retained, not imputed.</td></tr></tbody></table></div>
+      </details>
+      </section>
+    </article>
+</main></body></html>
