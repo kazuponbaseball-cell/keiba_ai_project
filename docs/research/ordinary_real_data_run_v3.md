@@ -2,11 +2,13 @@
 
 ## Governance route
 
-`ordinary_real_data_run_v3` is a Research OS control-plane contract introduced by a
-human-owned Draft governance pull request under D-024/D-029. It is not an ordinary
-racing hypothesis, does not receive a Hypothesis Scorecard score, and is not
-self-authorized by `infrastructure_safety_v1`. The containing commit must be reviewed
-and merged to `main` by a human before the contract can be used as a trust root.
+`ordinary_real_data_run_v3` is a Research OS control-plane contract introduced by this
+human-owned Draft governance pull request. Existing D-024 is its prerequisite and
+evidence; D-029 is introduced by the same PR and is neither pre-existing nor
+self-authorizing. It is not an ordinary racing hypothesis, does not receive a
+Hypothesis Scorecard score, and is not self-authorized by
+`infrastructure_safety_v1`. The containing commit must be reviewed and merged to
+`main` by a human before the contract can become a trust root.
 
 Merging this contract adds validation capability only. It does not create an experiment,
 Registry event, run scope, approval, RUNNING receipt, real-data mount, model fit,
