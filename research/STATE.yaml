@@ -340,6 +340,31 @@ legacy_roi_execution_contract:
   reenable_requires: versioned_roi_contract_governance_change
   existing_scope_bytes_and_digests_unchanged: true
 
+ordinary_real_data_run_contract_v3:
+  schema_version: ordinary_real_data_run_v3
+  route: human_owned_draft_governance_pr
+  activation_requires_containing_commit_merged_to_main: true
+  branch_copy_or_pr_merge_is_run_authority: false
+  legacy_v2_fields_bytes_digest_validation_and_writer_unchanged: true
+  absent_version_dispatch: legacy_v2
+  unknown_version_action: FAIL_CLOSE
+  execution_kind_digest_bound: true
+  finite_capability_profile_digest_bound: true
+  metadata_only_preflight_before_row_mount: true
+  actual_row_mount_requires_human_merged_running_event_and_execution_receipt: true
+  durable_receipt_execution_flags: false
+  effective_authority_requires_exact_phase_argv_broker_revalidation: true
+  approved_to_run_comment_must_be_distinct_unused_and_exact: true
+  prepare_and_run_comment_revalidation_before_running: true
+  fresh_profile_specific_output_root_required: true
+  append_only_result_seal_required: true
+  exp034_and_exp033_use_separate_scope_root_and_manifest: true
+  exp033_consumption_requires_human_merged_exp034_output_attestation: true
+  governance_change_real_data_rows_opened: 0
+  formal_buy: false
+  send_order: false
+  stake: 0
+
 roi_reproduction_gate_v2:
   gate_kind: roi_reproduction_audit_v2
   governance_layer: G1

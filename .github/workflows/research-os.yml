@@ -63,6 +63,7 @@ jobs:
           python scripts/research/create_experiment.py --help
           python scripts/research/create_infrastructure_experiment.py --help
           python scripts/research/prepare_run_scope.py --help
+          python scripts/research/prepare_ordinary_real_data_run_scope_v3.py --help
           python scripts/research/prepare_infrastructure_run_scope.py --help
           python scripts/research/update_registry.py --help
           python scripts/research/summarize_experiment.py --help

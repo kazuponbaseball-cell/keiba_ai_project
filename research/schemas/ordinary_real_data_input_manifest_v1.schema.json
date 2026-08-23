@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kazuponbaseball-cell.github.io/keiba_ai_project/research/schemas/ordinary_real_data_input_manifest_v1.schema.json",
+  "title": "Ordinary Real-Data Input Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "manifest_kind",
+    "source_release_id",
+    "row_count",
+    "race_count",
+    "runner_count",
+    "source_event_time_coverage",
+    "received_at_coverage",
+    "available_as_of_coverage",
+    "max_source_event_time",
+    "max_received_at",
+    "max_available_as_of",
+    "revoked",
+    "revocation_status",
+    "row_blob_refs",
+    "identity_set_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "ordinary_real_data_input_manifest_v1"},
+    "manifest_id": {"type": "string", "minLength": 3},
+    "manifest_kind": {
+      "enum": ["runner_universe", "training_source", "target_source", "supporting_input", "synthetic_fixture"]
+    },
+    "source_release_id": {"type": "string", "minLength": 3},
+    "row_count": {"type": "integer", "minimum": 0},
+    "race_count": {"type": "integer", "minimum": 0},
+    "runner_count": {"type": "integer", "minimum": 0},
+    "source_event_time_coverage": {"$ref": "#/$defs/coverage"},
+    "received_at_coverage": {"$ref": "#/$defs/coverage"},
+    "available_as_of_coverage": {"$ref": "#/$defs/coverage"},
+    "max_source_event_time": {"$ref": "#/$defs/utcTimestamp"},
+    "max_received_at": {"$ref": "#/$defs/utcTimestamp"},
+    "max_available_as_of": {"$ref": "#/$defs/utcTimestamp"},
+    "revoked": {"const": false},
+    "revocation_status": {"const": "active"},
+    "row_blob_refs": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/rowRef"}
+    },
+    "identity_set_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["covered_count", "total_count"],
+      "properties": {
+        "covered_count": {"type": "integer", "minimum": 0},
+        "total_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "rowRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "access_class", "required_capability", "phases"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repositoryPath"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "access_class": {
+          "enum": [
+            "runner_row_blob",
+            "canonicalization_source_row_blob",
+            "historical_training_row_blob",
+            "sealed_input_row_blob"
+          ]
+        },
+        "required_capability": {
+          "enum": [
+            "read_real_runner_rows",
+            "canonicalize_input_release",
+            "read_historical_training_rows",
+            "read_sealed_canonical_input_release"
+          ]
+        },
+        "phases": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+      }
+    },
+    "utcTimestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?Z$"
+    }
+  }
+}
